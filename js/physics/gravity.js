@@ -12,6 +12,9 @@ import type {Mass, Vector, Entity} from '../types';
  * towards m2
  */
 const computeAccel = (m1: Mass, m2: Mass, dist: Vector): Vector => {
+  if (m1 == 0 || m2 == 0) {
+    return {x: 0, y: 0};
+  }
   const totalDist = sqrt(dist.x * dist.x + dist.y * dist.y);
   const theta = atan2(dist.y, dist.x);
   const f = (config.G * m1 * m2) / (totalDist * totalDist);

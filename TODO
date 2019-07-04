@@ -1,9 +1,6 @@
 
  - - - - - - TODO - - - - - -
  - deploy to github (don't forget package.json)
- - implement projectiles and shooting
- - implement historical paths
-
 
  - - - - - - NEXT - - - - - -
  - research/setup multiplayer frameworks like eureca

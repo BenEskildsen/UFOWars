@@ -40,6 +40,10 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
       case 39:
         // right
         dispatch({ type: 'SET_TURN', playerID: playerID, thetaSpeed: 0 });
+        break;
+      case 32:
+        // space
+        dispatch({ type: 'FIRE_LASER', playerID: playerID });
     }
   };
 };

@@ -62,6 +62,30 @@ const initRenderSystem = (store: Store): void => {
       }
     }
 
+    // render projectiles
+    for (const projectile of game.projectiles) {
+      ctx.save();
+      let color = 'white';
+      let length = 50;
+      let width = 50;
+      if (projectile.type == 'laser') {
+        color = 'lime';
+        length = config.laserSize * 6;
+        width = config.laserSize;
+      }
+      ctx.strokeStyle = {'0': 'blue', '1': 'red'}[projectile.playerID];
+      ctx.lineWidth = 1;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.translate(projectile.position.x, projectile.position.y);
+      ctx.rotate(projectile.theta);
+      ctx.rect(0, 0, length, width);
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.restore();
+    }
+
     // render sun
     const {sun} = game;
     ctx.fillStyle = 'yellow';

@@ -20,6 +20,9 @@ var _require2 = require('../utils/vectors'),
  * towards m2
  */
 var computeAccel = function computeAccel(m1, m2, dist) {
+  if (m1 == 0 || m2 == 0) {
+    return { x: 0, y: 0 };
+  }
   var totalDist = sqrt(dist.x * dist.x + dist.y * dist.y);
   var theta = atan2(dist.y, dist.x);
   var f = config.G * m1 * m2 / (totalDist * totalDist);

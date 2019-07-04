@@ -1,6 +1,8 @@
 // @flow
 
+const {config} = require('../config');
 const {tickReducer} = require('./tickReducer');
+const {fireProjectileReducer} = require('./fireProjectileReducer');
 
 import type {State, GameState, Action} from '../types';
 
@@ -30,6 +32,8 @@ const gameReducer = (state: GameState, action: Action): GameState => {
           },
         },
       };
+    case 'FIRE_LASER':
+      return fireProjectileReducer(state, action);
   }
 
   return state;

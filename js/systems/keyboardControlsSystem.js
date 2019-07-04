@@ -29,6 +29,9 @@ const initKeyboardControlsSystem = (store) => {
         break;
       case 39: // right
         dispatch({type: 'SET_TURN', playerID, thetaSpeed: 0});
+        break;
+      case 32: // space
+        dispatch({type: 'FIRE_LASER', playerID});
     }
   }
 };

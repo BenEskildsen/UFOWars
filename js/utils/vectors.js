@@ -1,6 +1,8 @@
 // @flow
 
-import type {Vector} from '../types';
+const {cos, sin} = Math;
+
+import type {Vector, Radians} from '../types';
 
 const add = (...vectors: Array<Vector>): Vector => {
   const resultVec = {x: 0, y: 0};
@@ -20,7 +22,14 @@ const subtract = (...vectors: Array<Vector>): Vector => {
   return resultVec;
 }
 
+const makeVector = (theta: Radians, speed: number): Vector => {
+  const x = speed * cos(theta);
+  const y = speed * sin(theta);
+  return {x, y};
+}
+
 module.exports = {
   add,
   subtract,
+  makeVector,
 };

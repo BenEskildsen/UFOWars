@@ -85,7 +85,53 @@ var initRenderSystem = function initRenderSystem(store) {
       }
     }
 
-    // render sun
+    // render projectiles
+    var _iteratorNormalCompletion2 = true;
+    var _didIteratorError2 = false;
+    var _iteratorError2 = undefined;
+
+    try {
+      for (var _iterator2 = game.projectiles[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+        var projectile = _step2.value;
+
+        ctx.save();
+        var color = 'white';
+        var length = 50;
+        var width = 50;
+        if (projectile.type == 'laser') {
+          color = 'lime';
+          length = config.laserSize * 6;
+          width = config.laserSize;
+        }
+        ctx.strokeStyle = { '0': 'blue', '1': 'red' }[projectile.playerID];
+        ctx.lineWidth = 1;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.translate(projectile.position.x, projectile.position.y);
+        ctx.rotate(projectile.theta);
+        ctx.rect(0, 0, length, width);
+        ctx.fill();
+        ctx.stroke();
+        ctx.closePath();
+        ctx.restore();
+      }
+
+      // render sun
+    } catch (err) {
+      _didIteratorError2 = true;
+      _iteratorError2 = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion2 && _iterator2.return) {
+          _iterator2.return();
+        }
+      } finally {
+        if (_didIteratorError2) {
+          throw _iteratorError2;
+        }
+      }
+    }
+
     var sun = game.sun;
 
     ctx.fillStyle = 'yellow';
