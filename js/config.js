@@ -17,6 +17,7 @@ const config = {
     mass: 10000,
   },
   G: 1, // gravitational constant
+  queueSize: 100,
 };
 
 module.exports = {config};

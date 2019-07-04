@@ -12,7 +12,18 @@ const rootReducer = (state: State, action: Action): State => {
   switch (action.type) {
     case 'START': {
       return {
+        ...state,
         game: initGameState(),
+      };
+    }
+    case 'CREATE_PLAYER': {
+      const {id, isThisClient, name} = action;
+      return {
+        ...state,
+        players: [
+          ...state.players,
+          {id, isThisClient, name, score: 0},
+        ],
       };
     }
     case 'RESTART':

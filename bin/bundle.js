@@ -6,7 +6,7 @@ var config = {
   width: 800,
   height: 800,
   ship: {
-    thrust: 0.1,
+    thrust: 0.05,
     thetaSpeed: 5 * Math.PI / 180,
     radius: 15,
     mass: 10,
@@ -17,7 +17,8 @@ var config = {
     radius: 50,
     mass: 10000
   },
-  G: 1 // gravitational constant
+  G: 1, // gravitational constant
+  queueSize: 100
 };
 
 module.exports = { config: config };
@@ -32,7 +33,8 @@ var makeEntity = function makeEntity(mass, radius, position, velocity, theta) {
     velocity: velocity || { x: 0, y: 0 },
     accel: { x: 0, y: 0 },
     theta: theta || 0,
-    thetaSpeed: 0
+    thetaSpeed: 0,
+    history: []
   };
 };
 
@@ -49,8 +51,9 @@ var _require2 = require('../config'),
     config = _require2.config;
 
 var makeShip = function makeShip(playerID, mass, radius, position, velocity) {
-  // TODO make velocity and theta functions of position
-  return _extends({}, makeEntity(mass, radius, position, velocity, 0 /* theta */), {
+  // TODO make velocity function of position to guarantee stable orbit
+  var theta = Math.atan2(velocity.y, velocity.x);
+  return _extends({}, makeEntity(mass, radius, position, velocity, theta), {
     playerID: playerID,
     thrust: 0,
 
@@ -73,22 +76,32 @@ var ReactDOM = require('react-dom');
 var _require2 = require('./reducers/rootReducer'),
     rootReducer = _require2.rootReducer;
 
-var _require3 = require('./systems/tickSystem'),
-    initTickSystem = _require3.initTickSystem;
+var _require3 = require('./utils/clientToServer'),
+    setupClientToServer = _require3.setupClientToServer;
 
-var _require4 = require('./systems/renderSystem'),
-    initRenderSystem = _require4.initRenderSystem;
+var _require4 = require('./systems/tickSystem'),
+    initTickSystem = _require4.initTickSystem;
 
-var _require5 = require('./systems/keyboardControlsSystem'),
-    initKeyboardControlsSystem = _require5.initKeyboardControlsSystem;
+var _require5 = require('./systems/renderSystem'),
+    initRenderSystem = _require5.initRenderSystem;
+
+var _require6 = require('./systems/keyboardControlsSystem'),
+    initKeyboardControlsSystem = _require6.initKeyboardControlsSystem;
 
 var store = createStore(rootReducer);
 window.store = store; // useful for debugging
 
+// set up client connection to server
+var client = setupClientToServer(store);
+
 // TODO there's probably a better way to set up the systems when the game starts
 var started = false;
 store.subscribe(function () {
-  if (started || !store.getState().game) {
+  if (started) {
+    return;
+  }
+  var state = store.getState();
+  if (!state.game || state.players.length == 0) {
     return;
   }
   started = true;
@@ -101,7 +114,7 @@ store.subscribe(function () {
 store.dispatch({ type: 'START' });
 
 ReactDOM.render(React.createElement(Game, { store: store }), document.getElementById('container'));
-},{"./reducers/rootReducer":7,"./systems/keyboardControlsSystem":12,"./systems/renderSystem":13,"./systems/tickSystem":14,"./ui/Game.react":16,"react":42,"react-dom":37,"redux":50}],5:[function(require,module,exports){
+},{"./reducers/rootReducer":7,"./systems/keyboardControlsSystem":12,"./systems/renderSystem":13,"./systems/tickSystem":14,"./ui/Game.react":16,"./utils/clientToServer":17,"react":44,"react-dom":39,"redux":52}],5:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -169,7 +182,7 @@ module.exports = {
   computeAccel: computeAccel,
   computeNextEntity: computeNextEntity
 };
-},{"../config":1,"../utils/vectors":18}],6:[function(require,module,exports){
+},{"../config":1,"../utils/vectors":20}],6:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -206,6 +219,8 @@ module.exports = { gameReducer: gameReducer };
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 var _require = require('./gameReducer'),
     gameReducer = _require.gameReducer;
 
@@ -221,9 +236,19 @@ var rootReducer = function rootReducer(state, action) {
   switch (action.type) {
     case 'START':
       {
-        return {
+        return _extends({}, state, {
           game: initGameState()
-        };
+        });
+      }
+    case 'CREATE_PLAYER':
+      {
+        var id = action.id,
+            isThisClient = action.isThisClient,
+            name = action.name;
+
+        return _extends({}, state, {
+          players: [].concat(_toConsumableArray(state.players), [{ id: id, isThisClient: isThisClient, name: name, score: 0 }])
+        });
       }
     case 'RESTART':
       // TODO: restart systems if necessary
@@ -250,6 +275,12 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 var _require = require('../physics/gravity'),
     computeNextEntity = _require.computeNextEntity;
 
+var _require2 = require('../utils/queue'),
+    queueAdd = _require2.queueAdd;
+
+var _require3 = require('../config'),
+    config = _require3.config;
+
 var sin = Math.sin,
     cos = Math.cos,
     abs = Math.abs,
@@ -268,13 +299,20 @@ var tickReducer = function tickReducer(state) {
 
   for (var id in state.ships) {
     var ship = state.ships[id];
-
-    state.ships[id] = _extends({}, ship, computeNextEntity(sun, ship, ship.thrust));
+    var history = ship.history;
+    queueAdd(history, ship, config.queueSize);
+    state.ships[id] = _extends({}, ship, computeNextEntity(sun, ship, ship.thrust), {
+      history: history
+    });
   }
 
   // update planets
   state.planets = state.planets.map(function (planet) {
-    return _extends({}, planet, computeNextEntity(sun, planet));
+    var history = planet.history;
+    queueAdd(history, planet, config.queueSize);
+    return _extends({}, planet, computeNextEntity(sun, planet), {
+      history: history
+    });
   });
 
   // TODO update projectiles/lasers/missiles
@@ -285,7 +323,7 @@ var tickReducer = function tickReducer(state) {
 };
 
 module.exports = { tickReducer: tickReducer };
-},{"../physics/gravity":5}],9:[function(require,module,exports){
+},{"../config":1,"../physics/gravity":5,"../utils/queue":19}],9:[function(require,module,exports){
 'use strict';
 
 var _require = require('../utils/errors'),
@@ -293,13 +331,12 @@ var _require = require('../utils/errors'),
 
 var getClientPlayerID = function getClientPlayerID(state) {
   var playerID = null;
-  invariant(state.game != null, 'trying to get playerID before game started');
   var _iteratorNormalCompletion = true;
   var _didIteratorError = false;
   var _iteratorError = undefined;
 
   try {
-    for (var _iterator = state.game.players[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+    for (var _iterator = state.players[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
       var player = _step.value;
 
       if (player.isThisClient) {
@@ -328,7 +365,7 @@ var getClientPlayerID = function getClientPlayerID(state) {
 module.exports = {
   getClientPlayerID: getClientPlayerID
 };
-},{"../utils/errors":17}],10:[function(require,module,exports){
+},{"../utils/errors":18}],10:[function(require,module,exports){
 'use strict';
 
 var _require = require('../entities/entity'),
@@ -348,29 +385,15 @@ var initGameState = function initGameState() {
 
   return {
     time: 0,
-    players: [{
-      id: '0',
-      name: 'me',
-      score: 0,
-      isThisClient: true
-    }, {
-      id: '1',
-      name: 'opponent',
-      score: 0,
-      isThisClient: false
-    }], // TODO: where does the other player come from?
-
     ships: {
       '0': makeShip('0', // playerID
       ship.mass, ship.radius, { x: 400, y: 700 }, // position
       { x: 5, y: 0 } // velocity
+      ),
+      '1': makeShip('1', // playerID
+      ship.mass, ship.radius, { x: 400, y: 100 }, // position
+      { x: -5, y: 0 } // velocity
       )
-      //'1': makeShip(
-      //  '1', // playerID
-      //  ship.mass, ship.radius,
-      //  {x: 400, y: 100}, // position
-      //  {x: 0, y: 0}, // velocity
-      //),
     },
 
     sun: makeEntity(sun.mass, sun.radius, { x: width / 2, y: width / 2 }),
@@ -386,7 +409,8 @@ module.exports = { initGameState: initGameState };
 
 var initState = function initState() {
   return {
-    game: null
+    game: null,
+    players: []
   };
 };
 
@@ -400,46 +424,80 @@ var _require = require('../config'),
 var _require2 = require('../selectors/selectors'),
     getClientPlayerID = _require2.getClientPlayerID;
 
+var _require3 = require('../utils/clientToServer'),
+    dispatchToServer = _require3.dispatchToServer;
+
 var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
   var dispatch = store.dispatch;
 
   var state = store.getState();
   var playerID = getClientPlayerID(state);
+  var time = state.time;
+
 
   document.onkeydown = function (ev) {
     switch (ev.keyCode) {
       case 37:
-        // left
-        dispatch({ type: 'SET_TURN', playerID: playerID, thetaSpeed: -1 * config.ship.thetaSpeed });
-        break;
+        {
+          // left
+          var action = {
+            type: 'SET_TURN', time: time, playerID: playerID, thetaSpeed: -1 * config.ship.thetaSpeed
+          };
+          dispatchToServer(playerID, action);
+          dispatch(action);
+          break;
+        }
       case 38:
-        // up
-        dispatch({ type: 'SET_THRUST', playerID: playerID, thrust: config.ship.thrust });
-        break;
+        {
+          // up
+          var _action = { type: 'SET_THRUST', time: time, playerID: playerID, thrust: config.ship.thrust };
+          dispatchToServer(playerID, _action);
+          dispatch(_action);
+          break;
+        }
       case 39:
-        // right
-        dispatch({ type: 'SET_TURN', playerID: playerID, thetaSpeed: config.ship.thetaSpeed });
+        {
+          // right
+          var _action2 = { type: 'SET_TURN', time: time, playerID: playerID, thetaSpeed: config.ship.thetaSpeed };
+          dispatchToServer(playerID, _action2);
+          dispatch(_action2);
+          break;
+        }
     }
   };
 
   document.onkeyup = function (ev) {
     switch (ev.keyCode) {
       case 37:
-        // left
-        dispatch({ type: 'SET_TURN', playerID: playerID, thetaSpeed: 0 });
+        {
+          // left
+          var action = { type: 'SET_TURN', time: time, playerID: playerID, thetaSpeed: 0 };
+          dispatchToServer(playerID, action);
+          dispatch(action);
+          break;
+        }
       case 38:
-        // up
-        dispatch({ type: 'SET_THRUST', playerID: playerID, thrust: 0 });
-        break;
+        {
+          // up
+          var _action3 = { type: 'SET_THRUST', time: time, playerID: playerID, thrust: 0 };
+          dispatchToServer(playerID, _action3);
+          dispatch(_action3);
+          break;
+        }
       case 39:
-        // right
-        dispatch({ type: 'SET_TURN', playerID: playerID, thetaSpeed: 0 });
+        {
+          // right
+          var _action4 = { type: 'SET_TURN', time: time, playerID: playerID, thetaSpeed: 0 };
+          dispatchToServer(playerID, _action4);
+          dispatch(_action4);
+          break;
+        }
     }
   };
 };
 
 module.exports = { initKeyboardControlsSystem: initKeyboardControlsSystem };
-},{"../config":1,"../selectors/selectors":9}],13:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":9,"../utils/clientToServer":17}],13:[function(require,module,exports){
 'use strict';
 
 var _require = require('../config'),
@@ -499,6 +557,32 @@ var initRenderSystem = function initRenderSystem(store) {
         ctx.fill();
       }
       ctx.restore();
+
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = ship.history[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var pastShip = _step.value;
+
+          ctx.fillStyle = { '0': 'blue', '1': 'red' }[id];
+          ctx.fillRect(pastShip.position.x, pastShip.position.y, 2, 2);
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
     }
 
     // render sun
@@ -576,7 +660,7 @@ var Canvas = function (_React$Component) {
 ;
 
 module.exports = Canvas;
-},{"React":21}],16:[function(require,module,exports){
+},{"React":23}],16:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -645,7 +729,35 @@ var Game = function (_React$Component) {
 ;
 
 module.exports = Game;
-},{"../config":1,"./Canvas.react":15,"React":21}],17:[function(require,module,exports){
+},{"../config":1,"./Canvas.react":15,"React":23}],17:[function(require,module,exports){
+"use strict";
+
+/**
+ * Call these functions to send info to the server
+ */
+
+var server = null;
+var setupClientToServer = function setupClientToServer(store) {
+  var client = new Eureca.Client();
+  // relay actions received from the server to this client's store
+  client.exports.receiveAction = function (action) {
+    store.dispatch(action);
+  };
+  client.ready(function (serverProxy) {
+    server = serverProxy;
+  });
+  return client;
+};
+
+var dispatchToServer = function dispatchToServer(playerID, action) {
+  server.dispatch(playerID, action);
+};
+
+module.exports = {
+  setupClientToServer: setupClientToServer,
+  dispatchToServer: dispatchToServer
+};
+},{}],18:[function(require,module,exports){
 "use strict";
 
 var invariant = function invariant(condition, message) {
@@ -655,7 +767,18 @@ var invariant = function invariant(condition, message) {
 };
 
 module.exports = { invariant: invariant };
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
+"use strict";
+
+var queueAdd = function queueAdd(queue, item, maxLength) {
+  queue.push(item);
+  if (queue.length > maxLength) {
+    queue.shift();
+  }
+};
+
+module.exports = { queueAdd: queueAdd };
+},{}],20:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -712,7 +835,7 @@ module.exports = {
   add: add,
   subtract: subtract
 };
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 (function (process){
 /** @license React v16.8.6
  * react.development.js
@@ -2617,7 +2740,7 @@ module.exports = react;
 }
 
 }).call(this,require('_process'))
-},{"_process":60,"object-assign":34,"prop-types/checkPropTypes":22}],20:[function(require,module,exports){
+},{"_process":62,"object-assign":36,"prop-types/checkPropTypes":24}],22:[function(require,module,exports){
 /** @license React v16.8.6
  * react.production.min.js
  *
@@ -2644,7 +2767,7 @@ b,d){return W().useImperativeHandle(a,b,d)},useDebugValue:function(){},useLayout
 b){void 0!==b.ref&&(h=b.ref,f=J.current);void 0!==b.key&&(g=""+b.key);var l=void 0;a.type&&a.type.defaultProps&&(l=a.type.defaultProps);for(c in b)K.call(b,c)&&!L.hasOwnProperty(c)&&(e[c]=void 0===b[c]&&void 0!==l?l[c]:b[c])}c=arguments.length-2;if(1===c)e.children=d;else if(1<c){l=Array(c);for(var m=0;m<c;m++)l[m]=arguments[m+2];e.children=l}return{$$typeof:p,type:a.type,key:g,ref:h,props:e,_owner:f}},createFactory:function(a){var b=M.bind(null,a);b.type=a;return b},isValidElement:N,version:"16.8.6",
 unstable_ConcurrentMode:x,unstable_Profiler:u,__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{ReactCurrentDispatcher:I,ReactCurrentOwner:J,assign:k}},Y={default:X},Z=Y&&X||Y;module.exports=Z.default||Z;
 
-},{"object-assign":34}],21:[function(require,module,exports){
+},{"object-assign":36}],23:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -2655,7 +2778,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react.development.js":19,"./cjs/react.production.min.js":20,"_process":60}],22:[function(require,module,exports){
+},{"./cjs/react.development.js":21,"./cjs/react.production.min.js":22,"_process":62}],24:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -2761,7 +2884,7 @@ checkPropTypes.resetWarningCache = function() {
 module.exports = checkPropTypes;
 
 }).call(this,require('_process'))
-},{"./lib/ReactPropTypesSecret":23,"_process":60}],23:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":25,"_process":62}],25:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  *
@@ -2775,7 +2898,7 @@ var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 
 module.exports = ReactPropTypesSecret;
 
-},{}],24:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 var root = require('./_root');
 
 /** Built-in value references. */
@@ -2783,7 +2906,7 @@ var Symbol = root.Symbol;
 
 module.exports = Symbol;
 
-},{"./_root":31}],25:[function(require,module,exports){
+},{"./_root":33}],27:[function(require,module,exports){
 var Symbol = require('./_Symbol'),
     getRawTag = require('./_getRawTag'),
     objectToString = require('./_objectToString');
@@ -2813,7 +2936,7 @@ function baseGetTag(value) {
 
 module.exports = baseGetTag;
 
-},{"./_Symbol":24,"./_getRawTag":28,"./_objectToString":29}],26:[function(require,module,exports){
+},{"./_Symbol":26,"./_getRawTag":30,"./_objectToString":31}],28:[function(require,module,exports){
 (function (global){
 /** Detect free variable `global` from Node.js. */
 var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
@@ -2821,7 +2944,7 @@ var freeGlobal = typeof global == 'object' && global && global.Object === Object
 module.exports = freeGlobal;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],27:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 var overArg = require('./_overArg');
 
 /** Built-in value references. */
@@ -2829,7 +2952,7 @@ var getPrototype = overArg(Object.getPrototypeOf, Object);
 
 module.exports = getPrototype;
 
-},{"./_overArg":30}],28:[function(require,module,exports){
+},{"./_overArg":32}],30:[function(require,module,exports){
 var Symbol = require('./_Symbol');
 
 /** Used for built-in method references. */
@@ -2877,7 +3000,7 @@ function getRawTag(value) {
 
 module.exports = getRawTag;
 
-},{"./_Symbol":24}],29:[function(require,module,exports){
+},{"./_Symbol":26}],31:[function(require,module,exports){
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
 
@@ -2901,7 +3024,7 @@ function objectToString(value) {
 
 module.exports = objectToString;
 
-},{}],30:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 /**
  * Creates a unary function that invokes `func` with its argument transformed.
  *
@@ -2918,7 +3041,7 @@ function overArg(func, transform) {
 
 module.exports = overArg;
 
-},{}],31:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 var freeGlobal = require('./_freeGlobal');
 
 /** Detect free variable `self`. */
@@ -2929,7 +3052,7 @@ var root = freeGlobal || freeSelf || Function('return this')();
 
 module.exports = root;
 
-},{"./_freeGlobal":26}],32:[function(require,module,exports){
+},{"./_freeGlobal":28}],34:[function(require,module,exports){
 /**
  * Checks if `value` is object-like. A value is object-like if it's not `null`
  * and has a `typeof` result of "object".
@@ -2960,7 +3083,7 @@ function isObjectLike(value) {
 
 module.exports = isObjectLike;
 
-},{}],33:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 var baseGetTag = require('./_baseGetTag'),
     getPrototype = require('./_getPrototype'),
     isObjectLike = require('./isObjectLike');
@@ -3024,7 +3147,7 @@ function isPlainObject(value) {
 
 module.exports = isPlainObject;
 
-},{"./_baseGetTag":25,"./_getPrototype":27,"./isObjectLike":32}],34:[function(require,module,exports){
+},{"./_baseGetTag":27,"./_getPrototype":29,"./isObjectLike":34}],36:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -3116,7 +3239,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],35:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 (function (process){
 /** @license React v16.8.6
  * react-dom.development.js
@@ -24398,7 +24521,7 @@ module.exports = reactDom;
 }
 
 }).call(this,require('_process'))
-},{"_process":60,"object-assign":34,"prop-types/checkPropTypes":38,"react":42,"scheduler":56,"scheduler/tracing":57}],36:[function(require,module,exports){
+},{"_process":62,"object-assign":36,"prop-types/checkPropTypes":40,"react":44,"scheduler":58,"scheduler/tracing":59}],38:[function(require,module,exports){
 /** @license React v16.8.6
  * react-dom.production.min.js
  *
@@ -24669,7 +24792,7 @@ x("38"):void 0;return Si(a,b,c,!1,d)},unmountComponentAtNode:function(a){Qi(a)?v
 X;X=!0;try{ki(a)}finally{(X=b)||W||Yh(1073741823,!1)}},__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{Events:[Ia,Ja,Ka,Ba.injectEventPluginsByName,pa,Qa,function(a){ya(a,Pa)},Eb,Fb,Dd,Da]}};function Ui(a,b){Qi(a)?void 0:x("299","unstable_createRoot");return new Pi(a,!0,null!=b&&!0===b.hydrate)}
 (function(a){var b=a.findFiberByHostInstance;return Te(n({},a,{overrideProps:null,currentDispatcherRef:Tb.ReactCurrentDispatcher,findHostInstanceByFiber:function(a){a=hd(a);return null===a?null:a.stateNode},findFiberByHostInstance:function(a){return b?b(a):null}}))})({findFiberByHostInstance:Ha,bundleType:0,version:"16.8.6",rendererPackageName:"react-dom"});var Wi={default:Vi},Xi=Wi&&Vi||Wi;module.exports=Xi.default||Xi;
 
-},{"object-assign":34,"react":42,"scheduler":56}],37:[function(require,module,exports){
+},{"object-assign":36,"react":44,"scheduler":58}],39:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -24711,21 +24834,21 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":35,"./cjs/react-dom.production.min.js":36,"_process":60}],38:[function(require,module,exports){
-arguments[4][22][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":39,"_process":60,"dup":22}],39:[function(require,module,exports){
-arguments[4][23][0].apply(exports,arguments)
-},{"dup":23}],40:[function(require,module,exports){
-arguments[4][19][0].apply(exports,arguments)
-},{"_process":60,"dup":19,"object-assign":34,"prop-types/checkPropTypes":43}],41:[function(require,module,exports){
-arguments[4][20][0].apply(exports,arguments)
-},{"dup":20,"object-assign":34}],42:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":37,"./cjs/react-dom.production.min.js":38,"_process":62}],40:[function(require,module,exports){
+arguments[4][24][0].apply(exports,arguments)
+},{"./lib/ReactPropTypesSecret":41,"_process":62,"dup":24}],41:[function(require,module,exports){
+arguments[4][25][0].apply(exports,arguments)
+},{"dup":25}],42:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./cjs/react.development.js":40,"./cjs/react.production.min.js":41,"_process":60,"dup":21}],43:[function(require,module,exports){
+},{"_process":62,"dup":21,"object-assign":36,"prop-types/checkPropTypes":45}],43:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":44,"_process":60,"dup":22}],44:[function(require,module,exports){
+},{"dup":22,"object-assign":36}],44:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"dup":23}],45:[function(require,module,exports){
+},{"./cjs/react.development.js":42,"./cjs/react.production.min.js":43,"_process":62,"dup":23}],45:[function(require,module,exports){
+arguments[4][24][0].apply(exports,arguments)
+},{"./lib/ReactPropTypesSecret":46,"_process":62,"dup":24}],46:[function(require,module,exports){
+arguments[4][25][0].apply(exports,arguments)
+},{"dup":25}],47:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -24784,7 +24907,7 @@ function applyMiddleware() {
     };
   };
 }
-},{"./compose":48}],46:[function(require,module,exports){
+},{"./compose":50}],48:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -24836,7 +24959,7 @@ function bindActionCreators(actionCreators, dispatch) {
   }
   return boundActionCreators;
 }
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -24982,7 +25105,7 @@ function combineReducers(reducers) {
   };
 }
 }).call(this,require('_process'))
-},{"./createStore":49,"./utils/warning":51,"_process":60,"lodash/isPlainObject":33}],48:[function(require,module,exports){
+},{"./createStore":51,"./utils/warning":53,"_process":62,"lodash/isPlainObject":35}],50:[function(require,module,exports){
 "use strict";
 
 exports.__esModule = true;
@@ -25019,7 +25142,7 @@ function compose() {
     };
   });
 }
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -25281,7 +25404,7 @@ var ActionTypes = exports.ActionTypes = {
     replaceReducer: replaceReducer
   }, _ref2[_symbolObservable2['default']] = observable, _ref2;
 }
-},{"lodash/isPlainObject":33,"symbol-observable":58}],50:[function(require,module,exports){
+},{"lodash/isPlainObject":35,"symbol-observable":60}],52:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -25330,7 +25453,7 @@ exports.bindActionCreators = _bindActionCreators2['default'];
 exports.applyMiddleware = _applyMiddleware2['default'];
 exports.compose = _compose2['default'];
 }).call(this,require('_process'))
-},{"./applyMiddleware":45,"./bindActionCreators":46,"./combineReducers":47,"./compose":48,"./createStore":49,"./utils/warning":51,"_process":60}],51:[function(require,module,exports){
+},{"./applyMiddleware":47,"./bindActionCreators":48,"./combineReducers":49,"./compose":50,"./createStore":51,"./utils/warning":53,"_process":62}],53:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -25356,7 +25479,7 @@ function warning(message) {
   } catch (e) {}
   /* eslint-enable no-empty */
 }
-},{}],52:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 (function (process){
 /** @license React v0.13.6
  * scheduler-tracing.development.js
@@ -25783,7 +25906,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 }
 
 }).call(this,require('_process'))
-},{"_process":60}],53:[function(require,module,exports){
+},{"_process":62}],55:[function(require,module,exports){
 /** @license React v0.13.6
  * scheduler-tracing.production.min.js
  *
@@ -25795,7 +25918,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 
 'use strict';Object.defineProperty(exports,"__esModule",{value:!0});var b=0;exports.__interactionsRef=null;exports.__subscriberRef=null;exports.unstable_clear=function(a){return a()};exports.unstable_getCurrent=function(){return null};exports.unstable_getThreadID=function(){return++b};exports.unstable_trace=function(a,d,c){return c()};exports.unstable_wrap=function(a){return a};exports.unstable_subscribe=function(){};exports.unstable_unsubscribe=function(){};
 
-},{}],54:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 (function (process,global){
 /** @license React v0.13.6
  * scheduler.development.js
@@ -26498,7 +26621,7 @@ exports.unstable_getFirstCallbackNode = unstable_getFirstCallbackNode;
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":60}],55:[function(require,module,exports){
+},{"_process":62}],57:[function(require,module,exports){
 (function (global){
 /** @license React v0.13.6
  * scheduler.production.min.js
@@ -26523,7 +26646,7 @@ b=c.previous;b.next=c.previous=a;a.next=c;a.previous=b}return a};exports.unstabl
 exports.unstable_shouldYield=function(){return!e&&(null!==d&&d.expirationTime<l||w())};exports.unstable_continueExecution=function(){null!==d&&p()};exports.unstable_pauseExecution=function(){};exports.unstable_getFirstCallbackNode=function(){return d};
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],56:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -26534,7 +26657,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":54,"./cjs/scheduler.production.min.js":55,"_process":60}],57:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":56,"./cjs/scheduler.production.min.js":57,"_process":62}],59:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -26545,7 +26668,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler-tracing.development.js":52,"./cjs/scheduler-tracing.production.min.js":53,"_process":60}],58:[function(require,module,exports){
+},{"./cjs/scheduler-tracing.development.js":54,"./cjs/scheduler-tracing.production.min.js":55,"_process":62}],60:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -26577,7 +26700,7 @@ if (typeof self !== 'undefined') {
 var result = (0, _ponyfill2['default'])(root);
 exports['default'] = result;
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./ponyfill.js":59}],59:[function(require,module,exports){
+},{"./ponyfill.js":61}],61:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -26601,7 +26724,7 @@ function symbolObservablePonyfill(root) {
 
 	return result;
 };
-},{}],60:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 

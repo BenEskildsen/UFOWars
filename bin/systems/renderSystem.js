@@ -57,6 +57,32 @@ var initRenderSystem = function initRenderSystem(store) {
         ctx.fill();
       }
       ctx.restore();
+
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = ship.history[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var pastShip = _step.value;
+
+          ctx.fillStyle = { '0': 'blue', '1': 'red' }[id];
+          ctx.fillRect(pastShip.position.x, pastShip.position.y, 2, 2);
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
     }
 
     // render sun

@@ -2,7 +2,8 @@
 
 var initState = function initState() {
   return {
-    game: null
+    game: null,
+    players: []
   };
 };
 

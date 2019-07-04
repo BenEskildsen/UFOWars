@@ -1,15 +1,15 @@
 
  - - - - - - TODO - - - - - -
- - deploy to github (don't forget package.json)
- - implement projectiles and shooting
- - implement historical paths
+ - add time to player actions, and recompute positions based on them
+ - ask the client what they want their name to be and track on the server
 
 
  - - - - - - NEXT - - - - - -
- - research/setup multiplayer frameworks like eureca
  - how will state track what is shown vs actuals?
  - implement future/projected paths
  - implement thrust using fuel
+ - implement collisions
+ - implement win/lose/restart
 
 
  - - - - - - LATER - - - - - -
@@ -19,10 +19,10 @@
 
 
  - - - - - - REFACTOR - - - - - -
+ - server side code should live in its own directory?
  - abstract away rendering into something neater
  - separate pixels and distances
  - make systems flow-checked
- - add time to player actions, and recompute positions based on them
 
 
  - - - - - - BUGS - - - - - -
@@ -41,3 +41,10 @@
  - tune gravitational constants to get stable orbits
  - controls for turning/thrust
  - create gameReducer for to game-specific actions
+ - research/setup multiplayer frameworks like eureca
+
+ - deploy to github (don't forget package.json)
+ - implement historical paths
+ - implement sending player actions to the server
+ - implement receiving player actions from the server
+ - implement projectiles and shooting

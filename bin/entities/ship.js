@@ -9,8 +9,9 @@ var _require2 = require('../config'),
     config = _require2.config;
 
 var makeShip = function makeShip(playerID, mass, radius, position, velocity) {
-  // TODO make velocity and theta functions of position
-  return _extends({}, makeEntity(mass, radius, position, velocity, 0 /* theta */), {
+  // TODO make velocity function of position to guarantee stable orbit
+  var theta = Math.atan2(velocity.y, velocity.x);
+  return _extends({}, makeEntity(mass, radius, position, velocity, theta), {
     playerID: playerID,
     thrust: 0,
 

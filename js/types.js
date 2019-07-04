@@ -34,6 +34,7 @@ export type Store = {
 // -------------------------------------------------------------------------------
 
 export type State = {
+  players: Array<Player>,
   game: ?GameState,
 };
 
@@ -50,16 +51,12 @@ export type Player = {
 
 export type GameState = {
   time: number,
-  players: Array<Player>,
 
   // entities
   ships: {[id: PlayerID]: Ship},
   planets: Array<Entity>,
   sun: Entity,
   projectiles: Array<Projectile>,
-
-  paths: Array<Path>, // historical or projected paths of entities
-
 };
 
 export type Entity = {
@@ -72,6 +69,8 @@ export type Entity = {
 
   theta: Radians,
   thetaSpeed: Radians, // how theta changes over time
+
+  history: Array<Entity>,
 };
 
 export type Ship = Entity & {
@@ -89,9 +88,6 @@ export type Ship = Entity & {
 
 export type Projectile = {}; // TODO
 
-export type Path = {}; // TODO
-
-
 // -------------------------------------------------------------------------------
 // Actions
 // -------------------------------------------------------------------------------
@@ -99,7 +95,8 @@ export type Path = {}; // TODO
 export type Action =
   {type: 'START'} |
   {type: 'RESTART'} |
-  {type: 'SET_TURN', playerID: PlayerID, thetaSpeed: Radians} |
-  {type: 'SET_THRUST', playerID: PlayerID, thrust: number} |
+  {type: 'SET_TURN', playerID: PlayerID, thetaSpeed: Radians, time: number} |
+  {type: 'SET_THRUST', playerID: PlayerID, thrust: number, time: number} |
+  {type: 'CREATE_PLAYER', id: PlayerID, name: string, isThisClient: boolean} |
   {type: 'TICK'};
 

@@ -5,7 +5,7 @@ var config = {
   width: 800,
   height: 800,
   ship: {
-    thrust: 0.1,
+    thrust: 0.05,
     thetaSpeed: 5 * Math.PI / 180,
     radius: 15,
     mass: 10,
@@ -16,7 +16,8 @@ var config = {
     radius: 50,
     mass: 10000
   },
-  G: 1 // gravitational constant
+  G: 1, // gravitational constant
+  queueSize: 100
 };
 
 module.exports = { config: config };

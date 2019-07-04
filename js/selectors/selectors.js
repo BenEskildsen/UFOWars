@@ -6,8 +6,7 @@ import type {State, PlayerID} from '../types';
 
 const getClientPlayerID = (state: State): PlayerID => {
   let playerID = null;
-  invariant(state.game != null, 'trying to get playerID before game started');
-  for (const player of state.game.players) {
+  for (const player of state.players) {
     if (player.isThisClient) {
       playerID = player.id;
     }

@@ -5,13 +5,12 @@ var _require = require('../utils/errors'),
 
 var getClientPlayerID = function getClientPlayerID(state) {
   var playerID = null;
-  invariant(state.game != null, 'trying to get playerID before game started');
   var _iteratorNormalCompletion = true;
   var _didIteratorError = false;
   var _iteratorError = undefined;
 
   try {
-    for (var _iterator = state.game.players[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+    for (var _iterator = state.players[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
       var player = _step.value;
 
       if (player.isThisClient) {
