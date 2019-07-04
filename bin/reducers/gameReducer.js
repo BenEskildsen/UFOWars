@@ -4,8 +4,14 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-var _require = require('./tickReducer'),
-    tickReducer = _require.tickReducer;
+var _require = require('../config'),
+    config = _require.config;
+
+var _require2 = require('./tickReducer'),
+    tickReducer = _require2.tickReducer;
+
+var _require3 = require('./fireProjectileReducer'),
+    fireProjectileReducer = _require3.fireProjectileReducer;
 
 var gameReducer = function gameReducer(state, action) {
   switch (action.type) {
@@ -23,6 +29,8 @@ var gameReducer = function gameReducer(state, action) {
           thrust: action.thrust
         })))
       });
+    case 'FIRE_LASER':
+      return fireProjectileReducer(state, action);
   }
 
   return state;

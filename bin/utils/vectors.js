@@ -2,6 +2,10 @@
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+var cos = Math.cos,
+    sin = Math.sin;
+
+
 var add = function add() {
   for (var _len = arguments.length, vectors = Array(_len), _key = 0; _key < _len; _key++) {
     vectors[_key] = arguments[_key];
@@ -50,7 +54,14 @@ var subtract = function subtract() {
   return resultVec;
 };
 
+var makeVector = function makeVector(theta, speed) {
+  var x = speed * cos(theta);
+  var y = speed * sin(theta);
+  return { x: x, y: y };
+};
+
 module.exports = {
   add: add,
-  subtract: subtract
+  subtract: subtract,
+  makeVector: makeVector
 };
