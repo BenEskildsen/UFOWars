@@ -1,0 +1,43 @@
+
+ - - - - - - TODO - - - - - -
+ - deploy to github (don't forget package.json)
+ - implement projectiles and shooting
+ - implement historical paths
+
+
+ - - - - - - NEXT - - - - - -
+ - research/setup multiplayer frameworks like eureca
+ - how will state track what is shown vs actuals?
+ - implement future/projected paths
+ - implement thrust using fuel
+
+
+ - - - - - - LATER - - - - - -
+ - implement UI sidebar
+ - set up deploy script
+ - set up transition between lobby and game itself
+
+
+ - - - - - - REFACTOR - - - - - -
+ - abstract away rendering into something neater
+ - separate pixels and distances
+ - make systems flow-checked
+ - add time to player actions, and recompute positions based on them
+
+
+ - - - - - - BUGS - - - - - -
+
+
+ - - - - - - WISH - - - - - -
+
+
+
+ - - - - - - DONE - - - - - -
+ - basic game state
+ - set up centralized config outside of state
+
+ - physics set up
+ - rendering
+ - tune gravitational constants to get stable orbits
+ - controls for turning/thrust
+ - create gameReducer for to game-specific actions

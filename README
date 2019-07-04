@@ -1,0 +1,17 @@
+UFO Wars: Jul/Aug/Sep 2019
+
+compile with
+ > ./compile.bash
+files in js get babelified into the bin directory,
+and then browser-side-required into bundle.js
+
+deploy with
+ > ./deploy.bash
+
+run the app locally with:
+ > npm start
+or
+ > python -m SimpleHTTPServer
+then in the browser go to:
+  localhost:8000
+

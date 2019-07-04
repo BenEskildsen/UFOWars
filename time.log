@@ -1,0 +1,10 @@
+Time spent log
+
+Date  Time Started  Time Spent  Work Completed
+----  ------------  ----------  --------------
+
+6/2      7:45pm     1hr 30min   Set up this directory, basic state, and entities
+
+6/3      9:30am     2hr 30min   Set up physics engine and rendering system
+         6:15m      2hr         Tune gravity for stable orbits
+                                Controls (and rendering) for turning/thrust
