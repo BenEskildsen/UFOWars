@@ -8,7 +8,8 @@ var makeEntity = function makeEntity(mass, radius, position, velocity, theta) {
     velocity: velocity || { x: 0, y: 0 },
     accel: { x: 0, y: 0 },
     theta: theta || 0,
-    thetaSpeed: 0
+    thetaSpeed: 0,
+    history: []
   };
 };
 

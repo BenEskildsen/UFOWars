@@ -57,9 +57,6 @@ export type GameState = {
   planets: Array<Entity>,
   sun: Entity,
   projectiles: Array<Projectile>,
-
-  paths: Array<Path>, // historical or projected paths of entities
-
 };
 
 export type Entity = {
@@ -72,6 +69,8 @@ export type Entity = {
 
   theta: Radians,
   thetaSpeed: Radians, // how theta changes over time
+
+  history: Array<Entity>,
 };
 
 export type Ship = Entity & {
@@ -88,9 +87,6 @@ export type Ship = Entity & {
 };
 
 export type Projectile = {}; // TODO
-
-export type Path = {}; // TODO
-
 
 // -------------------------------------------------------------------------------
 // Actions

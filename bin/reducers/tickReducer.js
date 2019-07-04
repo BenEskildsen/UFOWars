@@ -5,6 +5,12 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 var _require = require('../physics/gravity'),
     computeNextEntity = _require.computeNextEntity;
 
+var _require2 = require('../utils/queue'),
+    queueAdd = _require2.queueAdd;
+
+var _require3 = require('../config'),
+    config = _require3.config;
+
 var sin = Math.sin,
     cos = Math.cos,
     abs = Math.abs,
@@ -23,13 +29,20 @@ var tickReducer = function tickReducer(state) {
 
   for (var id in state.ships) {
     var ship = state.ships[id];
-
-    state.ships[id] = _extends({}, ship, computeNextEntity(sun, ship, ship.thrust));
+    var history = ship.history;
+    queueAdd(history, ship, config.queueSize);
+    state.ships[id] = _extends({}, ship, computeNextEntity(sun, ship, ship.thrust), {
+      history: history
+    });
   }
 
   // update planets
   state.planets = state.planets.map(function (planet) {
-    return _extends({}, planet, computeNextEntity(sun, planet));
+    var history = planet.history;
+    queueAdd(history, planet, config.queueSize);
+    return _extends({}, planet, computeNextEntity(sun, planet), {
+      history: history
+    });
   });
 
   // TODO update projectiles/lasers/missiles

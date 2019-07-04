@@ -55,6 +55,11 @@ const initRenderSystem = (store: Store): void => {
         ctx.fill();
       }
       ctx.restore();
+
+      for (const pastShip of ship.history) {
+        ctx.fillStyle = {'0': 'blue', '1': 'red'}[id];
+        ctx.fillRect(pastShip.position.x, pastShip.position.y, 2, 2);
+      }
     }
 
     // render sun

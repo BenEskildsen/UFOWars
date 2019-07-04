@@ -17,6 +17,7 @@ const makeEntity = (
     accel: {x: 0, y: 0},
     theta: theta || 0,
     thetaSpeed: 0,
+    history: [],
   };
 };
 
