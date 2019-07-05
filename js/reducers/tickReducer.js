@@ -19,7 +19,7 @@ const tickReducer = (state: GameState): GameState => {
   for (const id in state.ships) {
     const ship: Ship = state.ships[id];
     const history: Array<Entity> = ship.history;
-    queueAdd(history, ship, config.queueSize);
+    queueAdd(history, ship, config.maxHistorySize);
     state.ships[id] = {
       ...ship,
       ...computeNextEntity(sun, ship, ship.thrust),
@@ -30,7 +30,7 @@ const tickReducer = (state: GameState): GameState => {
   // update planets
   state.planets = state.planets.map(planet => {
     const history: Array<Entity> = planet.history;
-    queueAdd(history, planet, config.queueSize);
+    queueAdd(history, planet, config.maxHistorySize);
     return {
       ...planet,
       ...computeNextEntity(sun, planet),
@@ -41,7 +41,7 @@ const tickReducer = (state: GameState): GameState => {
   // update projectiles
   state.projectiles = state.projectiles.map(projectile => {
     const history: Array<Entity> = projectile.history;
-    queueAdd(history, projectile, config.queueSize);
+    queueAdd(history, projectile, config.maxHistorySize);
     return {
       ...projectile,
       ...computeNextEntity(sun, projectile),

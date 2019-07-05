@@ -18,7 +18,7 @@ var config = {
     mass: 10000
   },
   G: 1, // gravitational constant
-  queueSize: 100,
+  maxHistorySize: 100,
   laserSize: 4,
   laserSpeed: 30,
   maxProjectiles: 100
@@ -370,7 +370,7 @@ var tickReducer = function tickReducer(state) {
   for (var id in state.ships) {
     var ship = state.ships[id];
     var history = ship.history;
-    queueAdd(history, ship, config.queueSize);
+    queueAdd(history, ship, config.maxHistorySize);
     state.ships[id] = _extends({}, ship, computeNextEntity(sun, ship, ship.thrust), {
       history: history
     });
@@ -379,7 +379,7 @@ var tickReducer = function tickReducer(state) {
   // update planets
   state.planets = state.planets.map(function (planet) {
     var history = planet.history;
-    queueAdd(history, planet, config.queueSize);
+    queueAdd(history, planet, config.maxHistorySize);
     return _extends({}, planet, computeNextEntity(sun, planet), {
       history: history
     });
@@ -388,7 +388,7 @@ var tickReducer = function tickReducer(state) {
   // update projectiles
   state.projectiles = state.projectiles.map(function (projectile) {
     var history = projectile.history;
-    queueAdd(history, projectile, config.queueSize);
+    queueAdd(history, projectile, config.maxHistorySize);
     return _extends({}, projectile, computeNextEntity(sun, projectile), {
       history: history
     });
