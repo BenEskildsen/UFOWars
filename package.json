@@ -7,7 +7,7 @@
     "flow": "flow",
     "babel": "babel",
     "browserify": "browserify",
-    "start": "python -m SimpleHTTPServer"
+    "start": "node server.js"
   },
   "author": "ben eskildsen",
   "license": "MIT",
@@ -24,6 +24,9 @@
   "description": "UFO Wars: Jul/Aug/Sep 2019",
   "dependencies": {
     "babel-preset-react": "^6.24.1",
+    "engine.io": "^3.3.2",
+    "eureca.io": "^0.8.2",
+    "express": "^4.17.1",
     "json-parser": "^1.1.5",
     "parse-json": "^4.0.0",
     "react": "^16.8.6",

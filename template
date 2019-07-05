@@ -26,7 +26,7 @@ sudo npm install --save react react-dom
 sudo npm install --save redux
 
 # eureca
-# sudo npm install eureca.io
-# sudo npm install wrtc
-# sudo npm install engine.io
-# sudo npm install express
+sudo npm install eureca.io
+sudo npm install wrtc
+sudo npm install engine.io
+sudo npm install express

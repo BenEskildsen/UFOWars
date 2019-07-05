@@ -34,6 +34,7 @@ export type Store = {
 // -------------------------------------------------------------------------------
 
 export type State = {
+  players: Array<Player>,
   game: ?GameState,
 };
 
@@ -50,7 +51,6 @@ export type Player = {
 
 export type GameState = {
   time: number,
-  players: Array<Player>,
 
   // entities
   ships: {[id: PlayerID]: Ship},
@@ -98,7 +98,8 @@ export type Projectile = Entity & {
 export type Action =
   {type: 'START'} |
   {type: 'RESTART'} |
-  {type: 'SET_TURN', playerID: PlayerID, thetaSpeed: Radians} |
-  {type: 'SET_THRUST', playerID: PlayerID, thrust: number} |
+  {type: 'SET_TURN', playerID: PlayerID, thetaSpeed: Radians, time: number} |
+  {type: 'SET_THRUST', playerID: PlayerID, thrust: number, time: number} |
+  {type: 'CREATE_PLAYER', id: PlayerID, name: string, isThisClient: boolean} |
   {type: 'TICK'};
 

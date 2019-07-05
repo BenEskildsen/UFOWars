@@ -12,9 +12,10 @@ const makeShip = (
   position: Vector,
   velocity: Vector,
 ): Ship => {
-  // TODO make velocity and theta functions of position
+  // TODO make velocity function of position to guarantee stable orbit
+  const theta = Math.atan2(velocity.y, velocity.x);
   return {
-    ...makeEntity(mass, radius, position, velocity, 0 /* theta */),
+    ...makeEntity(mass, radius, position, velocity, theta),
     playerID,
     thrust: 0,
 
