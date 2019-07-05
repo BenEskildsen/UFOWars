@@ -74,6 +74,14 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
           dispatch(_action4);
           break;
         }
+      case 32:
+        {
+          // space
+          var _action5 = { type: 'FIRE_LASER', playerID: playerID };
+          dispatchToServer(playerID, _action5);
+          dispatch(_action5);
+          break;
+        }
     }
   };
 };

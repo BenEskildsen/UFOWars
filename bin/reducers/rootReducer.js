@@ -39,6 +39,7 @@ var rootReducer = function rootReducer(state, action) {
     case 'TICK':
     case 'SET_TURN':
     case 'SET_THRUST':
+    case 'FIRE_LASER':
       if (!state.game) {
         return state;
       }

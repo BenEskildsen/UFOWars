@@ -86,7 +86,10 @@ export type Ship = Entity & {
   // missiles: Resource,
 };
 
-export type Projectile = {}; // TODO
+export type Projectile = Entity & {
+  playerID: PlayerID,
+  type: string,
+};
 
 // -------------------------------------------------------------------------------
 // Actions

@@ -18,6 +18,9 @@ const config = {
   },
   G: 1, // gravitational constant
   queueSize: 100,
+  laserSize: 4,
+  laserSpeed: 30,
+  maxProjectiles: 100,
 };
 
 module.exports = {config};

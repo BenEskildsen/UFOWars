@@ -38,7 +38,16 @@ const tickReducer = (state: GameState): GameState => {
     };
   });
 
-  // TODO update projectiles/lasers/missiles
+  // update projectiles
+  state.projectiles = state.projectiles.map(projectile => {
+    const history: Array<Entity> = projectile.history;
+    queueAdd(history, projectile, config.queueSize);
+    return {
+      ...projectile,
+      ...computeNextEntity(sun, projectile),
+      history,
+    };
+  });
 
   // TODO update paths
 

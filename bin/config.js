@@ -17,7 +17,10 @@ var config = {
     mass: 10000
   },
   G: 1, // gravitational constant
-  queueSize: 100
+  queueSize: 100,
+  laserSize: 4,
+  laserSpeed: 30,
+  maxProjectiles: 100
 };
 
 module.exports = { config: config };

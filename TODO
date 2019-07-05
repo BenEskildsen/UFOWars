@@ -1,8 +1,12 @@
 
  - - - - - - TODO - - - - - -
+<<<<<<< HEAD
  - add time to player actions, and recompute positions based on them
  - ask the client what they want their name to be and track on the server
 
+=======
+ - deploy to github (don't forget package.json)
+>>>>>>> 41d1bc40ead60c6d03587dfcc47d57d35cad6160
 
  - - - - - - NEXT - - - - - -
  - how will state track what is shown vs actuals?

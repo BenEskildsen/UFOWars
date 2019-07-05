@@ -45,7 +45,14 @@ var tickReducer = function tickReducer(state) {
     });
   });
 
-  // TODO update projectiles/lasers/missiles
+  // update projectiles
+  state.projectiles = state.projectiles.map(function (projectile) {
+    var history = projectile.history;
+    queueAdd(history, projectile, config.queueSize);
+    return _extends({}, projectile, computeNextEntity(sun, projectile), {
+      history: history
+    });
+  });
 
   // TODO update paths
 

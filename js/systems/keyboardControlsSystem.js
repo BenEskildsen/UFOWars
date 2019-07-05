@@ -54,6 +54,12 @@ const initKeyboardControlsSystem = (store) => {
         dispatch(action);
         break;
       }
+      case 32: { // space
+        const action = {type: 'FIRE_LASER', playerID};
+        dispatchToServer(playerID, action);
+        dispatch(action);
+        break;
+      }
     }
   }
 };
