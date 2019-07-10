@@ -2,19 +2,43 @@
 
 const {invariant} = require('../utils/errors');
 
-import type {State, PlayerID} from '../types';
+import type {GameID, State, Player, PlayerID, Game} from '../types';
 
 const getClientPlayerID = (state: State): PlayerID => {
-  let playerID = null;
+  return getClientPlayer(state).id;
+};
+
+const getClientPlayer = (state: State): Player => {
   for (const player of state.players) {
     if (player.isThisClient) {
-      playerID = player.id;
+      return player;
     }
   }
-  invariant(playerID != null, 'no playerID matches this client');
-  return playerID;
+  invariant(false, 'this client has no player');
 };
+
+const getClientGame = (state: State): Game => {
+  return state.games[getClientPlayer(state).gameID];
+};
+
+/**
+ *  Since the client should know about all games that exist, it can compute this?
+ *  TODO this is insanely dangerous though
+ */
+const getNextGameID = (state: State): GameID => {
+  let nextGameID = -1;
+  for (const gameID in state.games) {
+    if (parseInt(gameID) > nextGameID) {
+      nextGameID = parseInt(gameID);
+    }
+  }
+  // what're the odds there's a collision!?
+  return '' + (nextGameID + Math.round(Math.random() * 100));
+}
 
 module.exports = {
   getClientPlayerID,
+  getClientPlayer,
+  getClientGame,
+  getNextGameID,
 };

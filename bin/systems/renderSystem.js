@@ -34,9 +34,10 @@ var initRenderSystem = function initRenderSystem(store) {
     // render ships
     var game = state.game;
 
+    var colorIndex = 0;
     for (var id in game.ships) {
       ctx.save();
-      ctx.fillStyle = { '0': 'blue', '1': 'red' }[id];
+      ctx.fillStyle = ['blue', 'red'][colorIndex];
       var ship = game.ships[id];
       ctx.beginPath();
       ctx.translate(ship.position.x, ship.position.y);
@@ -66,7 +67,7 @@ var initRenderSystem = function initRenderSystem(store) {
         for (var _iterator = ship.history[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
           var pastShip = _step.value;
 
-          ctx.fillStyle = { '0': 'blue', '1': 'red' }[id];
+          ctx.fillStyle = ['blue', 'red'][colorIndex];
           ctx.fillRect(pastShip.position.x, pastShip.position.y, 2, 2);
         }
       } catch (err) {
@@ -83,6 +84,8 @@ var initRenderSystem = function initRenderSystem(store) {
           }
         }
       }
+
+      colorIndex++;
     }
 
     // render projectiles
@@ -103,7 +106,8 @@ var initRenderSystem = function initRenderSystem(store) {
           length = config.laserSize * 6;
           width = config.laserSize;
         }
-        ctx.strokeStyle = { '0': 'blue', '1': 'red' }[projectile.playerID];
+        // TODO track colors better
+        // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
         ctx.lineWidth = 1;
         ctx.fillStyle = color;
         ctx.beginPath();
@@ -111,7 +115,7 @@ var initRenderSystem = function initRenderSystem(store) {
         ctx.rotate(projectile.theta);
         ctx.rect(0, 0, length, width);
         ctx.fill();
-        ctx.stroke();
+        // ctx.stroke();
         ctx.closePath();
         ctx.restore();
       }

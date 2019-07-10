@@ -33,9 +33,6 @@ store.subscribe(() => {
   initKeyboardControlsSystem(store);
 });
 
-// TODO this doesn't go here
-store.dispatch({type: 'START'});
-
 ReactDOM.render(
   <Game store={store} />,
   document.getElementById('container'),

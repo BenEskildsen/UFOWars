@@ -10,21 +10,69 @@ const rootReducer = (state: State, action: Action): State => {
   if (state === undefined) return initState();
 
   switch (action.type) {
-    case 'START': {
+    case 'CREATE_GAME': {
+      const {gameID, playerID} = action;
+      for (const player of state.players) {
+        if (player.id === playerID) {
+          player.gameID = gameID;
+        }
+      }
       return {
         ...state,
-        game: initGameState(),
+        games: {
+          ...state.games,
+          [gameID]: {id: gameID, players: [playerID], started: false},
+        },
+      };
+    }
+    case 'JOIN_GAME': {
+      const {gameID, playerID} = action;
+      for (const player of state.players) {
+        if (player.id === playerID) {
+          player.gameID = gameID;
+        }
+      }
+      return {
+        ...state,
+        games: {
+          ...state.games,
+          [gameID]: {
+            ...state.games[gameID],
+            players: [...state.games[gameID].players, playerID],
+          },
+        },
+      };
+    }
+    case 'START': {
+      const {gameID} = action;
+      const {players} = state.games[gameID];
+      return {
+        ...state,
+        game: initGameState(players),
+        games: {
+          ...state.games,
+          [gameID]: {...state.games[gameID], started: true},
+        },
       };
     }
     case 'CREATE_PLAYER': {
-      const {id, isThisClient, name} = action;
+      const {playerID, gameID, isThisClient, name} = action;
       return {
         ...state,
         players: [
           ...state.players,
-          {id, isThisClient, name, score: 0},
+          {id: playerID, isThisClient, name, score: 0, gameID, ready: false},
         ],
       };
+    }
+    case 'SET_PLAYER_NAME': {
+      const {playerID, name} = action;
+      for (const player of state.players) {
+        if (player.id === playerID) {
+          player.name = name;
+        }
+      }
+      return state;
     }
     case 'RESTART':
       // TODO: restart systems if necessary

@@ -1,11 +1,12 @@
 
  - - - - - - TODO - - - - - -
+ - synchronize the clients so they start at the same time (using setTimeout now...)
  - add time to player actions, and recompute positions based on them
- - ask the client what they want their name to be and track on the server
- - synchronize the clients so they aren't at different t's
+ - need to track game metadata on the server to update new players
 
 
  - - - - - - NEXT - - - - - -
+ - ask the client what they want their name to be and track on the server
  - how will state track what is shown vs actuals?
  - implement future/projected paths
  - implement thrust using fuel
@@ -15,14 +16,18 @@
 
  - - - - - - LATER - - - - - -
  - implement UI sidebar
+ - styling and fancy UI for lobby
  - set up deploy script
  - set up transition between lobby and game itself
+ - implement ending games and cleaning them up off the server when players disc
 
 
  - - - - - - REFACTOR - - - - - -
+ - how should unique gameIDs be assigned to newly-created games?
  - server side code should live in its own directory?
  - abstract away rendering into something neater
  - separate pixels and distances
+ - remove node_modules and bin from git repo
  - make systems flow-checked
 
 
@@ -49,3 +54,5 @@
  - implement sending player actions to the server
  - implement receiving player actions from the server
  - implement projectiles and shooting
+
+ - implement lobby with creatable/joinable games

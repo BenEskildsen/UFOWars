@@ -18,9 +18,6 @@ export type Degrees = number;
 export type Size = number;
 export type Pixel = number;
 
-// some unique id per player
-export type PlayerID = string;
-
 export type Listener = () => mixed; // some callback passed to subscribe
 export type Unsubscribe = () => mixed; // unsubscribe a listener
 export type Store = {
@@ -33,9 +30,21 @@ export type Store = {
 // General State
 // -------------------------------------------------------------------------------
 
+// some unique id per player
+export type PlayerID = string; // number in practice lol
+// unique id per game, 0 == lobby
+export type GameID = string; // number in practice lol
+
 export type State = {
-  players: Array<Player>,
+  players: Array<Player>, // all players in any game
+  games: {[id: GameID]: Game}, // all games that exist, for showing in the lobby
   game: ?GameState,
+};
+
+export type Game = {
+  id: GameID,
+  players: Array<PlayerID>,
+  started: boolean,
 };
 
 export type Player = {
@@ -43,6 +52,8 @@ export type Player = {
   name: string, // display name
   score: number, // keep track of each player's score across games
   isThisClient: boolean, // whether the player is the one on this computer
+  gameID: GameID,
+  ready: boolean,
 };
 
 // -------------------------------------------------------------------------------
@@ -50,6 +61,7 @@ export type Player = {
 // -------------------------------------------------------------------------------
 
 export type GameState = {
+  gamePlayers: Array<PlayerID>, // the players participating in this game
   time: number,
 
   // entities
@@ -96,10 +108,16 @@ export type Projectile = Entity & {
 // -------------------------------------------------------------------------------
 
 export type Action =
-  {type: 'START'} |
+  {type: 'CREATE_GAME', gameID: GameID, playerID: PlayerID} |
+  {type: 'JOIN_GAME', gameID: GameID, playerID: PlayerID} |
   {type: 'RESTART'} |
+  {type: 'CREATE_PLAYER',
+    playerID: PlayerID, name: string, isThisClient: boolean, gameID: GameID
+  } |
+  {type: 'START', gameID: GameID} |
   {type: 'SET_TURN', playerID: PlayerID, thetaSpeed: Radians, time: number} |
   {type: 'SET_THRUST', playerID: PlayerID, thrust: number, time: number} |
-  {type: 'CREATE_PLAYER', id: PlayerID, name: string, isThisClient: boolean} |
+  {type: 'FIRE_LASER', playerID: PlayerID, time: number} |
+  {type: 'SET_PLAYER_NAME', playerID: PlayerID, name: string} |
   {type: 'TICK'};
 

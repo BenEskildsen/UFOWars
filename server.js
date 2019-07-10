@@ -18,60 +18,101 @@ eurecaServer.attach(server);
 // functions under exports namespace become callable from client side
 // ------------------------------------------------------------------------------
 eurecaServer.exports.dispatch = function (playerID, action) {
-  if (action != null) {
-    console.log('player: ' + playerID + ' dispatches ' + action.type);
+  if (action == null) {
+    return;
   }
-  dispatchToOtherClients(playerID, action);
+  console.log('player: ' + playerID + ' dispatches ' + action.type);
+  // some actions need to be sent to ALL clients, not just those in this player's game:
+  let allClients = false;
+  switch (action.type) {
+    case 'CREATE_GAME':
+    case 'JOIN_GAME':
+      clientToGame[playerID] = action.gameID; // assign player to game
+      // fall through
+    case 'SET_PLAYER_NAME':
+      allClients = true;
+      break;
+  }
+
+  dispatchToOtherClients(playerID, action, allClients);
 }
+
+// ------------------------------------------------------------------------------
+// Server state
+// ------------------------------------------------------------------------------
+let nextPlayerID = 0;
+const eurecaClients = {}; // PlayerID -> socket.clientProxy
+const clientNames = {}; // PlayerID -> string
+
+const LOBBY_ID = 0;
+const clientToGame = {}; // PlayerID -> GameID
 
 // ------------------------------------------------------------------------------
 // each time a client is connected we call
 // ------------------------------------------------------------------------------
-const clients = {}; // track clients
-let nextID = 0;
 eurecaServer.onConnect(function (socket) {
   const client = socket.clientProxy; // get remote client ref
 
   client.receiveAction({
     type: 'CREATE_PLAYER',
-    id: nextID,
+    playerID: nextPlayerID,
     isThisClient: true,
-    name: nextID // TODO
+    name: nextPlayerID, // default name
+    gameID: LOBBY_ID
   });
 
   // update the just-connected client with other clients that may exist
-  for (const clientID in clients) {
+  for (const clientID in eurecaClients) {
     client.receiveAction({
       type: 'CREATE_PLAYER',
-      id: clientID,
+      playerID: clientID,
       isThisClient: false,
-      name: clientID, // TODO track player names
+      name: clientNames[clientID] || clientID,
+      gameID: clientToGame[clientID] || LOBBY_ID
     });
   }
+  // update the just-connected client with other games that may exist
+  // TODO
 
   // update the other clients that this one exists
-  dispatchToOtherClients(nextID, {
+  dispatchToOtherClients(nextPlayerID, {
     type: 'CREATE_PLAYER',
-    id: nextID,
+    playerID: nextPlayerID,
     isThisClient: false,
-    name: nextID // TODO
-  });
+    name: nextPlayerID, // default name
+    gameID: LOBBY_ID
+  }, true /* ALL clients */);
 
-  clients[nextID] = client;
+  eurecaClients[nextPlayerID] = client;
+  clientNames[nextPlayerID] = nextPlayerID; // default name
+  clientToGame[nextPlayerID] = LOBBY_ID;
 
-  nextID++;
+  nextPlayerID++;
 });
 
 // ------------------------------------------------------------------------------
 // helpers
 // ------------------------------------------------------------------------------
 
-function dispatchToOtherClients(playerID, action) {
-  for (const clientID in clients) {
+function dispatchToOtherClients(playerID, action, allClients) {
+  const clientsToSendTo = allClients
+    ? eurecaClients
+    : clientsInGame(clientToGame[playerID]);
+  for (const clientID in clientsToSendTo) {
     if (clientID != playerID) {
-      clients[clientID].receiveAction(action);
+      eurecaClients[clientID].receiveAction(action);
     }
   }
+}
+
+function clientsInGame(gameID) {
+  const clients = {}
+  for (const clientID in clientToGame) {
+    if (clientToGame[clientID] == gameID) {
+      clients[clientID] = eurecaClients[clientID];
+    }
+  }
+  return clients;
 }
 
 // ------------------------------------------------------------------------------

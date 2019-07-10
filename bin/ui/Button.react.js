@@ -1,7 +1,5 @@
 'use strict';
 
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -12,64 +10,42 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var React = require('React');
 
-var _require = require('../config'),
-    config = _require.config;
+// props:
+// id: ?string
+// label: string
+// onClick: () => void
+// disabled: optional boolean
 
-var Canvas = require('./Canvas.react');
-var Lobby = require('./Lobby.react');
+var Button = function (_React$Component) {
+  _inherits(Button, _React$Component);
 
-/**
- * props: {store}
- * state: {...store.getState()}
- */
+  function Button() {
+    _classCallCheck(this, Button);
 
-var Game = function (_React$Component) {
-  _inherits(Game, _React$Component);
-
-  function Game(props) {
-    _classCallCheck(this, Game);
-
-    var _this = _possibleConstructorReturn(this, (Game.__proto__ || Object.getPrototypeOf(Game)).call(this, props));
-
-    props.store.subscribe(function () {
-      _this.setState(_extends({}, _this.props.store.getState()));
-    });
-    _this.state = _extends({}, _this.props.store.getState());
-    return _this;
+    return _possibleConstructorReturn(this, (Button.__proto__ || Object.getPrototypeOf(Button)).apply(this, arguments));
   }
 
-  _createClass(Game, [{
+  _createClass(Button, [{
     key: 'render',
     value: function render() {
-      var dispatch = this.props.store.dispatch;
-      var state = this.state;
+      var props = this.props;
 
-      var content = null;
-      if (state.players.length != 0) {
-        content = React.createElement(Lobby, { store: this.props.store });
-      }
-      if (state.game != null) {
-        content = React.createElement(
-          React.Fragment,
-          null,
-          React.createElement(Canvas, {
-            game: state.game,
-            width: config.width, height: config.height
-          })
-        );
-      }
-
+      var id = props.id || props.label;
       return React.createElement(
-        'div',
-        { className: 'background' },
-        content
+        'button',
+        { type: 'button',
+          key: id,
+          className: props.disabled ? 'buttonDisable' : '',
+          id: id.toUpperCase() + '_button',
+          onClick: props.disabled ? function () {} : props.onClick,
+          disabled: props.disabled
+        },
+        props.label
       );
     }
   }]);
 
-  return Game;
+  return Button;
 }(React.Component);
 
-;
-
-module.exports = Game;
+module.exports = Button;

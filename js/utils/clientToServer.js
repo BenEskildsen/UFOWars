@@ -7,6 +7,7 @@ const setupClientToServer = (store) => {
   const client = new Eureca.Client();
   // relay actions received from the server to this client's store
   client.exports.receiveAction = (action) => {
+    console.log(action);
     store.dispatch(action);
   }
   client.ready(function (serverProxy) {

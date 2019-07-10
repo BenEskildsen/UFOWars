@@ -2,7 +2,7 @@
 
 const {makeEntity} = require('./entity');
 
-import type {PlayerID, Vector, Projectile} from '../types';
+import type {Radians, PlayerID, Vector, Projectile} from '../types';
 
 const makeLaserProjectile = (
   playerID: PlayerID,

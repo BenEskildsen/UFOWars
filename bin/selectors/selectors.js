@@ -4,7 +4,10 @@ var _require = require('../utils/errors'),
     invariant = _require.invariant;
 
 var getClientPlayerID = function getClientPlayerID(state) {
-  var playerID = null;
+  return getClientPlayer(state).id;
+};
+
+var getClientPlayer = function getClientPlayer(state) {
   var _iteratorNormalCompletion = true;
   var _didIteratorError = false;
   var _iteratorError = undefined;
@@ -14,7 +17,7 @@ var getClientPlayerID = function getClientPlayerID(state) {
       var player = _step.value;
 
       if (player.isThisClient) {
-        playerID = player.id;
+        return player;
       }
     }
   } catch (err) {
@@ -32,10 +35,31 @@ var getClientPlayerID = function getClientPlayerID(state) {
     }
   }
 
-  invariant(playerID != null, 'no playerID matches this client');
-  return playerID;
+  invariant(false, 'this client has no player');
+};
+
+var getClientGame = function getClientGame(state) {
+  return state.games[getClientPlayer(state).gameID];
+};
+
+/**
+ *  Since the client should know about all games that exist, it can compute this?
+ *  TODO this is insanely dangerous though
+ */
+var getNextGameID = function getNextGameID(state) {
+  var nextGameID = -1;
+  for (var gameID in state.games) {
+    if (parseInt(gameID) > nextGameID) {
+      nextGameID = parseInt(gameID);
+    }
+  }
+  // what're the odds there's a collision!?
+  return '' + (nextGameID + Math.round(Math.random() * 100));
 };
 
 module.exports = {
-  getClientPlayerID: getClientPlayerID
+  getClientPlayerID: getClientPlayerID,
+  getClientPlayer: getClientPlayer,
+  getClientGame: getClientGame,
+  getNextGameID: getNextGameID
 };

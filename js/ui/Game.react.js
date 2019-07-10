@@ -2,10 +2,11 @@
 const React = require('React');
 const {config} = require('../config');
 const Canvas = require('./Canvas.react');
+const Lobby = require('./Lobby.react');
 
 /**
- * state: {...store.getState()}
  * props: {store}
+ * state: {...store.getState()}
  */
 class Game extends React.Component {
 
@@ -20,14 +21,20 @@ class Game extends React.Component {
   render() {
     const {dispatch} = this.props.store;
     const {state} = this;
-    let content = (
-      <React.Fragment>
-        <Canvas
-          game={state.game}
-          width={config.width} height={config.height}
-        />
-      </React.Fragment>
-    );
+    let content = null;
+    if (state.players.length != 0) {
+      content = <Lobby store={this.props.store} />;
+    }
+    if (state.game != null) {
+      content = (
+        <React.Fragment>
+          <Canvas
+            game={state.game}
+            width={config.width} height={config.height}
+          />
+        </React.Fragment>
+      );
+    }
 
     return (
       <div className="background">

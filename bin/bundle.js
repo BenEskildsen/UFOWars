@@ -129,11 +129,8 @@ store.subscribe(function () {
   initKeyboardControlsSystem(store);
 });
 
-// TODO this doesn't go here
-store.dispatch({ type: 'START' });
-
 ReactDOM.render(React.createElement(Game, { store: store }), document.getElementById('container'));
-},{"./reducers/rootReducer":9,"./systems/keyboardControlsSystem":14,"./systems/renderSystem":15,"./systems/tickSystem":16,"./ui/Game.react":18,"./utils/clientToServer":19,"react":46,"react-dom":41,"redux":54}],6:[function(require,module,exports){
+},{"./reducers/rootReducer":9,"./systems/keyboardControlsSystem":14,"./systems/renderSystem":15,"./systems/tickSystem":16,"./ui/Game.react":19,"./utils/clientToServer":21,"react":48,"react-dom":43,"redux":56}],6:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -204,7 +201,7 @@ module.exports = {
   computeAccel: computeAccel,
   computeNextEntity: computeNextEntity
 };
-},{"../config":1,"../utils/vectors":22}],7:[function(require,module,exports){
+},{"../config":1,"../utils/vectors":24}],7:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -243,7 +240,7 @@ var fireProjectileReducer = function fireProjectileReducer(state, action) {
 };
 
 module.exports = { fireProjectileReducer: fireProjectileReducer };
-},{"../config":1,"../entities/projectile":3,"../utils/queue":21,"../utils/vectors":22}],8:[function(require,module,exports){
+},{"../config":1,"../entities/projectile":3,"../utils/queue":23,"../utils/vectors":24}],8:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -290,6 +287,8 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 var _require = require('./gameReducer'),
     gameReducer = _require.gameReducer;
 
@@ -303,21 +302,131 @@ var rootReducer = function rootReducer(state, action) {
   if (state === undefined) return initState();
 
   switch (action.type) {
+    case 'CREATE_GAME':
+      {
+        var gameID = action.gameID,
+            playerID = action.playerID;
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = state.players[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var player = _step.value;
+
+            if (player.id === playerID) {
+              player.gameID = gameID;
+            }
+          }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+        }
+
+        return _extends({}, state, {
+          games: _extends({}, state.games, _defineProperty({}, gameID, { id: gameID, players: [playerID], started: false }))
+        });
+      }
+    case 'JOIN_GAME':
+      {
+        var _gameID = action.gameID,
+            _playerID = action.playerID;
+        var _iteratorNormalCompletion2 = true;
+        var _didIteratorError2 = false;
+        var _iteratorError2 = undefined;
+
+        try {
+          for (var _iterator2 = state.players[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+            var _player = _step2.value;
+
+            if (_player.id === _playerID) {
+              _player.gameID = _gameID;
+            }
+          }
+        } catch (err) {
+          _didIteratorError2 = true;
+          _iteratorError2 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion2 && _iterator2.return) {
+              _iterator2.return();
+            }
+          } finally {
+            if (_didIteratorError2) {
+              throw _iteratorError2;
+            }
+          }
+        }
+
+        return _extends({}, state, {
+          games: _extends({}, state.games, _defineProperty({}, _gameID, _extends({}, state.games[_gameID], {
+            players: [].concat(_toConsumableArray(state.games[_gameID].players), [_playerID])
+          })))
+        });
+      }
     case 'START':
       {
+        var _gameID2 = action.gameID;
+        var players = state.games[_gameID2].players;
+
         return _extends({}, state, {
-          game: initGameState()
+          game: initGameState(players),
+          games: _extends({}, state.games, _defineProperty({}, _gameID2, _extends({}, state.games[_gameID2], { started: true })))
         });
       }
     case 'CREATE_PLAYER':
       {
-        var id = action.id,
+        var _playerID2 = action.playerID,
+            _gameID3 = action.gameID,
             isThisClient = action.isThisClient,
             name = action.name;
 
         return _extends({}, state, {
-          players: [].concat(_toConsumableArray(state.players), [{ id: id, isThisClient: isThisClient, name: name, score: 0 }])
+          players: [].concat(_toConsumableArray(state.players), [{ id: _playerID2, isThisClient: isThisClient, name: name, score: 0, gameID: _gameID3, ready: false }])
         });
+      }
+    case 'SET_PLAYER_NAME':
+      {
+        var _playerID3 = action.playerID,
+            _name = action.name;
+        var _iteratorNormalCompletion3 = true;
+        var _didIteratorError3 = false;
+        var _iteratorError3 = undefined;
+
+        try {
+          for (var _iterator3 = state.players[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+            var _player2 = _step3.value;
+
+            if (_player2.id === _playerID3) {
+              _player2.name = _name;
+            }
+          }
+        } catch (err) {
+          _didIteratorError3 = true;
+          _iteratorError3 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion3 && _iterator3.return) {
+              _iterator3.return();
+            }
+          } finally {
+            if (_didIteratorError3) {
+              throw _iteratorError3;
+            }
+          }
+        }
+
+        return state;
       }
     case 'RESTART':
       // TODO: restart systems if necessary
@@ -400,14 +509,17 @@ var tickReducer = function tickReducer(state) {
 };
 
 module.exports = { tickReducer: tickReducer };
-},{"../config":1,"../physics/gravity":6,"../utils/queue":21}],11:[function(require,module,exports){
+},{"../config":1,"../physics/gravity":6,"../utils/queue":23}],11:[function(require,module,exports){
 'use strict';
 
 var _require = require('../utils/errors'),
     invariant = _require.invariant;
 
 var getClientPlayerID = function getClientPlayerID(state) {
-  var playerID = null;
+  return getClientPlayer(state).id;
+};
+
+var getClientPlayer = function getClientPlayer(state) {
   var _iteratorNormalCompletion = true;
   var _didIteratorError = false;
   var _iteratorError = undefined;
@@ -417,7 +529,7 @@ var getClientPlayerID = function getClientPlayerID(state) {
       var player = _step.value;
 
       if (player.isThisClient) {
-        playerID = player.id;
+        return player;
       }
     }
   } catch (err) {
@@ -435,15 +547,38 @@ var getClientPlayerID = function getClientPlayerID(state) {
     }
   }
 
-  invariant(playerID != null, 'no playerID matches this client');
-  return playerID;
+  invariant(false, 'this client has no player');
+};
+
+var getClientGame = function getClientGame(state) {
+  return state.games[getClientPlayer(state).gameID];
+};
+
+/**
+ *  Since the client should know about all games that exist, it can compute this?
+ *  TODO this is insanely dangerous though
+ */
+var getNextGameID = function getNextGameID(state) {
+  var nextGameID = -1;
+  for (var gameID in state.games) {
+    if (parseInt(gameID) > nextGameID) {
+      nextGameID = parseInt(gameID);
+    }
+  }
+  // what're the odds there's a collision!?
+  return '' + (nextGameID + Math.round(Math.random() * 100));
 };
 
 module.exports = {
-  getClientPlayerID: getClientPlayerID
+  getClientPlayerID: getClientPlayerID,
+  getClientPlayer: getClientPlayer,
+  getClientGame: getClientGame,
+  getNextGameID: getNextGameID
 };
-},{"../utils/errors":20}],12:[function(require,module,exports){
+},{"../utils/errors":22}],12:[function(require,module,exports){
 'use strict';
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 var _require = require('../entities/entity'),
     makeEntity = _require.makeEntity;
@@ -454,24 +589,24 @@ var _require2 = require('../entities/ship'),
 var _require3 = require('../config'),
     config = _require3.config;
 
-var initGameState = function initGameState() {
+var initGameState = function initGameState(players) {
+  var _ships;
+
   var ship = config.ship,
       sun = config.sun,
       width = config.width,
       height = config.height;
 
   return {
+    gamePlayers: players,
     time: 0,
-    ships: {
-      '0': makeShip('0', // playerID
-      ship.mass, ship.radius, { x: 400, y: 700 }, // position
-      { x: 5, y: 0 } // velocity
-      ),
-      '1': makeShip('1', // playerID
-      ship.mass, ship.radius, { x: 400, y: 100 }, // position
-      { x: -5, y: 0 } // velocity
-      )
-    },
+    ships: (_ships = {}, _defineProperty(_ships, players[0], makeShip(players[0], // playerID
+    ship.mass, ship.radius, { x: 400, y: 700 }, // position
+    { x: 5, y: 0 } // velocity
+    )), _defineProperty(_ships, players[1], makeShip(players[1], // playerID
+    ship.mass, ship.radius, { x: 400, y: 100 }, // position
+    { x: -5, y: 0 } // velocity
+    )), _ships),
 
     sun: makeEntity(sun.mass, sun.radius, { x: width / 2, y: width / 2 }),
     planets: [],
@@ -487,7 +622,8 @@ module.exports = { initGameState: initGameState };
 var initState = function initState() {
   return {
     game: null,
-    players: []
+    players: [],
+    games: { '0': { id: '0', players: [], started: false } }
   };
 };
 
@@ -572,7 +708,7 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
       case 32:
         {
           // space
-          var _action5 = { type: 'FIRE_LASER', playerID: playerID };
+          var _action5 = { type: 'FIRE_LASER', time: time, playerID: playerID };
           dispatchToServer(playerID, _action5);
           dispatch(_action5);
           break;
@@ -582,7 +718,7 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
 };
 
 module.exports = { initKeyboardControlsSystem: initKeyboardControlsSystem };
-},{"../config":1,"../selectors/selectors":11,"../utils/clientToServer":19}],15:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":11,"../utils/clientToServer":21}],15:[function(require,module,exports){
 'use strict';
 
 var _require = require('../config'),
@@ -619,9 +755,10 @@ var initRenderSystem = function initRenderSystem(store) {
     // render ships
     var game = state.game;
 
+    var colorIndex = 0;
     for (var id in game.ships) {
       ctx.save();
-      ctx.fillStyle = { '0': 'blue', '1': 'red' }[id];
+      ctx.fillStyle = ['blue', 'red'][colorIndex];
       var ship = game.ships[id];
       ctx.beginPath();
       ctx.translate(ship.position.x, ship.position.y);
@@ -651,7 +788,7 @@ var initRenderSystem = function initRenderSystem(store) {
         for (var _iterator = ship.history[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
           var pastShip = _step.value;
 
-          ctx.fillStyle = { '0': 'blue', '1': 'red' }[id];
+          ctx.fillStyle = ['blue', 'red'][colorIndex];
           ctx.fillRect(pastShip.position.x, pastShip.position.y, 2, 2);
         }
       } catch (err) {
@@ -668,6 +805,8 @@ var initRenderSystem = function initRenderSystem(store) {
           }
         }
       }
+
+      colorIndex++;
     }
 
     // render projectiles
@@ -688,7 +827,8 @@ var initRenderSystem = function initRenderSystem(store) {
           length = config.laserSize * 6;
           width = config.laserSize;
         }
-        ctx.strokeStyle = { '0': 'blue', '1': 'red' }[projectile.playerID];
+        // TODO track colors better
+        // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
         ctx.lineWidth = 1;
         ctx.fillStyle = color;
         ctx.beginPath();
@@ -696,7 +836,7 @@ var initRenderSystem = function initRenderSystem(store) {
         ctx.rotate(projectile.theta);
         ctx.rect(0, 0, length, width);
         ctx.fill();
-        ctx.stroke();
+        // ctx.stroke();
         ctx.closePath();
         ctx.restore();
       }
@@ -746,6 +886,58 @@ var initTickSystem = function initTickSystem(store) {
 
 module.exports = { initTickSystem: initTickSystem };
 },{"../config":1}],17:[function(require,module,exports){
+'use strict';
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var React = require('React');
+
+// props:
+// id: ?string
+// label: string
+// onClick: () => void
+// disabled: optional boolean
+
+var Button = function (_React$Component) {
+  _inherits(Button, _React$Component);
+
+  function Button() {
+    _classCallCheck(this, Button);
+
+    return _possibleConstructorReturn(this, (Button.__proto__ || Object.getPrototypeOf(Button)).apply(this, arguments));
+  }
+
+  _createClass(Button, [{
+    key: 'render',
+    value: function render() {
+      var props = this.props;
+
+      var id = props.id || props.label;
+      return React.createElement(
+        'button',
+        { type: 'button',
+          key: id,
+          className: props.disabled ? 'buttonDisable' : '',
+          id: id.toUpperCase() + '_button',
+          onClick: props.disabled ? function () {} : props.onClick,
+          disabled: props.disabled
+        },
+        props.label
+      );
+    }
+  }]);
+
+  return Button;
+}(React.Component);
+
+module.exports = Button;
+},{"React":27}],18:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -791,7 +983,7 @@ var Canvas = function (_React$Component) {
 ;
 
 module.exports = Canvas;
-},{"React":25}],18:[function(require,module,exports){
+},{"React":27}],19:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -810,10 +1002,11 @@ var _require = require('../config'),
     config = _require.config;
 
 var Canvas = require('./Canvas.react');
+var Lobby = require('./Lobby.react');
 
 /**
- * state: {...store.getState()}
  * props: {store}
+ * state: {...store.getState()}
  */
 
 var Game = function (_React$Component) {
@@ -837,14 +1030,20 @@ var Game = function (_React$Component) {
       var dispatch = this.props.store.dispatch;
       var state = this.state;
 
-      var content = React.createElement(
-        React.Fragment,
-        null,
-        React.createElement(Canvas, {
-          game: state.game,
-          width: config.width, height: config.height
-        })
-      );
+      var content = null;
+      if (state.players.length != 0) {
+        content = React.createElement(Lobby, { store: this.props.store });
+      }
+      if (state.game != null) {
+        content = React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(Canvas, {
+            game: state.game,
+            width: config.width, height: config.height
+          })
+        );
+      }
 
       return React.createElement(
         'div',
@@ -860,7 +1059,183 @@ var Game = function (_React$Component) {
 ;
 
 module.exports = Game;
-},{"../config":1,"./Canvas.react":17,"React":25}],19:[function(require,module,exports){
+},{"../config":1,"./Canvas.react":18,"./Lobby.react":20,"React":27}],20:[function(require,module,exports){
+'use strict';
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var React = require('React');
+
+var _require = require('../selectors/selectors'),
+    getNextGameID = _require.getNextGameID,
+    getClientPlayerID = _require.getClientPlayerID,
+    getClientPlayer = _require.getClientPlayer,
+    getClientGame = _require.getClientGame;
+
+var _require2 = require('../utils/clientToServer'),
+    dispatchToServer = _require2.dispatchToServer;
+
+var Button = require('./Button.react');
+
+/**
+ * props: {store}
+ * state: {...state.getState()}
+ */
+
+var Lobby = function (_React$Component) {
+  _inherits(Lobby, _React$Component);
+
+  function Lobby(props) {
+    _classCallCheck(this, Lobby);
+
+    var _this = _possibleConstructorReturn(this, (Lobby.__proto__ || Object.getPrototypeOf(Lobby)).call(this, props));
+
+    props.store.subscribe(function () {
+      _this.setState(_extends({}, _this.props.store.getState()));
+    });
+    _this.state = _extends({}, _this.props.store.getState());
+    return _this;
+  }
+
+  _createClass(Lobby, [{
+    key: 'render',
+    value: function render() {
+      var state = this.state;
+      var players = state.players,
+          games = state.games;
+
+      var clientPlayer = getClientPlayer(state);
+      var clientGame = getClientGame(state);
+
+      var hostedGame = null;
+      var gameRows = [];
+      for (var gameID in games) {
+        if (gameID == 0) {
+          continue;
+        }
+        var game = games[gameID];
+        var host = game.players[0];
+        if (host == clientPlayer.id) {
+          hostedGame = React.createElement(
+            'div',
+            { className: 'hostedGame' },
+            React.createElement(
+              'p',
+              null,
+              'Joined: ',
+              game.players.length == 2 ? game.players[1] : 'None'
+            ),
+            this.startButton()
+          );
+          continue;
+        }
+        gameRows.push(React.createElement(
+          'div',
+          { className: 'gameRow', key: 'gameRow_' + host },
+          React.createElement(
+            'p',
+            null,
+            'Host: ',
+            host
+          ),
+          React.createElement(
+            'p',
+            null,
+            '# Players: ',
+            game.players.length
+          ),
+          React.createElement(
+            'p',
+            null,
+            game.started ? 'Game in progress' : this.joinButton(game.id, game.players.length > 1)
+          )
+        ));
+      }
+
+      return React.createElement(
+        'div',
+        { className: 'lobby' },
+        React.createElement(
+          'div',
+          { className: 'nameRow' },
+          'Name: ',
+          clientPlayer.name
+        ),
+        this.createButton(),
+        hostedGame,
+        gameRows
+      );
+    }
+  }, {
+    key: 'startButton',
+    value: function startButton() {
+      var state = this.state;
+      var playerID = getClientPlayerID(state);
+      var clientGame = getClientGame(state);
+      var gameReady = clientGame.players.length == 2;
+      var dispatch = this.props.store.dispatch;
+
+      return React.createElement(Button, {
+        label: 'Start Game',
+        onClick: function onClick() {
+          var startAction = { type: 'START', gameID: clientGame.id };
+          dispatchToServer(playerID, startAction);
+          setTimeout(function () {
+            return dispatch(startAction);
+          }, 300); // TODO
+        },
+        disabled: !gameReady
+      });
+    }
+  }, {
+    key: 'createButton',
+    value: function createButton() {
+      var gameID = getNextGameID(this.state);
+      var playerID = getClientPlayerID(this.state);
+      var clientGame = getClientGame(this.state);
+      var dispatch = this.props.store.dispatch;
+
+      return React.createElement(Button, {
+        label: 'Create Game',
+        onClick: function onClick() {
+          var createAction = { type: 'CREATE_GAME', playerID: playerID, gameID: gameID };
+          dispatchToServer(playerID, createAction);
+          dispatch(createAction);
+        },
+        disabled: clientGame.id != 0
+      });
+    }
+  }, {
+    key: 'joinButton',
+    value: function joinButton(gameID, disabled) {
+      var playerID = getClientPlayerID(this.state);
+      var dispatch = this.props.store.dispatch;
+
+      return React.createElement(Button, {
+        label: 'Join Game',
+        onClick: function onClick() {
+          var joinAction = { type: 'JOIN_GAME', playerID: playerID, gameID: gameID };
+          dispatchToServer(playerID, joinAction);
+          dispatch(joinAction);
+        },
+        disabled: disabled
+      });
+    }
+  }]);
+
+  return Lobby;
+}(React.Component);
+
+module.exports = Lobby;
+},{"../selectors/selectors":11,"../utils/clientToServer":21,"./Button.react":17,"React":27}],21:[function(require,module,exports){
 "use strict";
 
 /**
@@ -872,6 +1247,7 @@ var setupClientToServer = function setupClientToServer(store) {
   var client = new Eureca.Client();
   // relay actions received from the server to this client's store
   client.exports.receiveAction = function (action) {
+    console.log(action);
     store.dispatch(action);
   };
   client.ready(function (serverProxy) {
@@ -888,7 +1264,7 @@ module.exports = {
   setupClientToServer: setupClientToServer,
   dispatchToServer: dispatchToServer
 };
-},{}],20:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 
 var invariant = function invariant(condition, message) {
@@ -898,7 +1274,7 @@ var invariant = function invariant(condition, message) {
 };
 
 module.exports = { invariant: invariant };
-},{}],21:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 
 var queueAdd = function queueAdd(queue, item, maxLength) {
@@ -909,7 +1285,7 @@ var queueAdd = function queueAdd(queue, item, maxLength) {
 };
 
 module.exports = { queueAdd: queueAdd };
-},{}],22:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -977,7 +1353,7 @@ module.exports = {
   subtract: subtract,
   makeVector: makeVector
 };
-},{}],23:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 (function (process){
 /** @license React v16.8.6
  * react.development.js
@@ -2882,7 +3258,7 @@ module.exports = react;
 }
 
 }).call(this,require('_process'))
-},{"_process":64,"object-assign":38,"prop-types/checkPropTypes":26}],24:[function(require,module,exports){
+},{"_process":66,"object-assign":40,"prop-types/checkPropTypes":28}],26:[function(require,module,exports){
 /** @license React v16.8.6
  * react.production.min.js
  *
@@ -2909,7 +3285,7 @@ b,d){return W().useImperativeHandle(a,b,d)},useDebugValue:function(){},useLayout
 b){void 0!==b.ref&&(h=b.ref,f=J.current);void 0!==b.key&&(g=""+b.key);var l=void 0;a.type&&a.type.defaultProps&&(l=a.type.defaultProps);for(c in b)K.call(b,c)&&!L.hasOwnProperty(c)&&(e[c]=void 0===b[c]&&void 0!==l?l[c]:b[c])}c=arguments.length-2;if(1===c)e.children=d;else if(1<c){l=Array(c);for(var m=0;m<c;m++)l[m]=arguments[m+2];e.children=l}return{$$typeof:p,type:a.type,key:g,ref:h,props:e,_owner:f}},createFactory:function(a){var b=M.bind(null,a);b.type=a;return b},isValidElement:N,version:"16.8.6",
 unstable_ConcurrentMode:x,unstable_Profiler:u,__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{ReactCurrentDispatcher:I,ReactCurrentOwner:J,assign:k}},Y={default:X},Z=Y&&X||Y;module.exports=Z.default||Z;
 
-},{"object-assign":38}],25:[function(require,module,exports){
+},{"object-assign":40}],27:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -2920,7 +3296,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react.development.js":23,"./cjs/react.production.min.js":24,"_process":64}],26:[function(require,module,exports){
+},{"./cjs/react.development.js":25,"./cjs/react.production.min.js":26,"_process":66}],28:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -3026,7 +3402,7 @@ checkPropTypes.resetWarningCache = function() {
 module.exports = checkPropTypes;
 
 }).call(this,require('_process'))
-},{"./lib/ReactPropTypesSecret":27,"_process":64}],27:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":29,"_process":66}],29:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  *
@@ -3040,7 +3416,7 @@ var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 
 module.exports = ReactPropTypesSecret;
 
-},{}],28:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 var root = require('./_root');
 
 /** Built-in value references. */
@@ -3048,7 +3424,7 @@ var Symbol = root.Symbol;
 
 module.exports = Symbol;
 
-},{"./_root":35}],29:[function(require,module,exports){
+},{"./_root":37}],31:[function(require,module,exports){
 var Symbol = require('./_Symbol'),
     getRawTag = require('./_getRawTag'),
     objectToString = require('./_objectToString');
@@ -3078,7 +3454,7 @@ function baseGetTag(value) {
 
 module.exports = baseGetTag;
 
-},{"./_Symbol":28,"./_getRawTag":32,"./_objectToString":33}],30:[function(require,module,exports){
+},{"./_Symbol":30,"./_getRawTag":34,"./_objectToString":35}],32:[function(require,module,exports){
 (function (global){
 /** Detect free variable `global` from Node.js. */
 var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
@@ -3086,7 +3462,7 @@ var freeGlobal = typeof global == 'object' && global && global.Object === Object
 module.exports = freeGlobal;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],31:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 var overArg = require('./_overArg');
 
 /** Built-in value references. */
@@ -3094,7 +3470,7 @@ var getPrototype = overArg(Object.getPrototypeOf, Object);
 
 module.exports = getPrototype;
 
-},{"./_overArg":34}],32:[function(require,module,exports){
+},{"./_overArg":36}],34:[function(require,module,exports){
 var Symbol = require('./_Symbol');
 
 /** Used for built-in method references. */
@@ -3142,7 +3518,7 @@ function getRawTag(value) {
 
 module.exports = getRawTag;
 
-},{"./_Symbol":28}],33:[function(require,module,exports){
+},{"./_Symbol":30}],35:[function(require,module,exports){
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
 
@@ -3166,7 +3542,7 @@ function objectToString(value) {
 
 module.exports = objectToString;
 
-},{}],34:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 /**
  * Creates a unary function that invokes `func` with its argument transformed.
  *
@@ -3183,7 +3559,7 @@ function overArg(func, transform) {
 
 module.exports = overArg;
 
-},{}],35:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 var freeGlobal = require('./_freeGlobal');
 
 /** Detect free variable `self`. */
@@ -3194,7 +3570,7 @@ var root = freeGlobal || freeSelf || Function('return this')();
 
 module.exports = root;
 
-},{"./_freeGlobal":30}],36:[function(require,module,exports){
+},{"./_freeGlobal":32}],38:[function(require,module,exports){
 /**
  * Checks if `value` is object-like. A value is object-like if it's not `null`
  * and has a `typeof` result of "object".
@@ -3225,7 +3601,7 @@ function isObjectLike(value) {
 
 module.exports = isObjectLike;
 
-},{}],37:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 var baseGetTag = require('./_baseGetTag'),
     getPrototype = require('./_getPrototype'),
     isObjectLike = require('./isObjectLike');
@@ -3289,7 +3665,7 @@ function isPlainObject(value) {
 
 module.exports = isPlainObject;
 
-},{"./_baseGetTag":29,"./_getPrototype":31,"./isObjectLike":36}],38:[function(require,module,exports){
+},{"./_baseGetTag":31,"./_getPrototype":33,"./isObjectLike":38}],40:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -3381,7 +3757,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],39:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 (function (process){
 /** @license React v16.8.6
  * react-dom.development.js
@@ -24663,7 +25039,7 @@ module.exports = reactDom;
 }
 
 }).call(this,require('_process'))
-},{"_process":64,"object-assign":38,"prop-types/checkPropTypes":42,"react":46,"scheduler":60,"scheduler/tracing":61}],40:[function(require,module,exports){
+},{"_process":66,"object-assign":40,"prop-types/checkPropTypes":44,"react":48,"scheduler":62,"scheduler/tracing":63}],42:[function(require,module,exports){
 /** @license React v16.8.6
  * react-dom.production.min.js
  *
@@ -24934,7 +25310,7 @@ x("38"):void 0;return Si(a,b,c,!1,d)},unmountComponentAtNode:function(a){Qi(a)?v
 X;X=!0;try{ki(a)}finally{(X=b)||W||Yh(1073741823,!1)}},__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{Events:[Ia,Ja,Ka,Ba.injectEventPluginsByName,pa,Qa,function(a){ya(a,Pa)},Eb,Fb,Dd,Da]}};function Ui(a,b){Qi(a)?void 0:x("299","unstable_createRoot");return new Pi(a,!0,null!=b&&!0===b.hydrate)}
 (function(a){var b=a.findFiberByHostInstance;return Te(n({},a,{overrideProps:null,currentDispatcherRef:Tb.ReactCurrentDispatcher,findHostInstanceByFiber:function(a){a=hd(a);return null===a?null:a.stateNode},findFiberByHostInstance:function(a){return b?b(a):null}}))})({findFiberByHostInstance:Ha,bundleType:0,version:"16.8.6",rendererPackageName:"react-dom"});var Wi={default:Vi},Xi=Wi&&Vi||Wi;module.exports=Xi.default||Xi;
 
-},{"object-assign":38,"react":46,"scheduler":60}],41:[function(require,module,exports){
+},{"object-assign":40,"react":48,"scheduler":62}],43:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -24976,21 +25352,21 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":39,"./cjs/react-dom.production.min.js":40,"_process":64}],42:[function(require,module,exports){
-arguments[4][26][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":43,"_process":64,"dup":26}],43:[function(require,module,exports){
-arguments[4][27][0].apply(exports,arguments)
-},{"dup":27}],44:[function(require,module,exports){
-arguments[4][23][0].apply(exports,arguments)
-},{"_process":64,"dup":23,"object-assign":38,"prop-types/checkPropTypes":47}],45:[function(require,module,exports){
-arguments[4][24][0].apply(exports,arguments)
-},{"dup":24,"object-assign":38}],46:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":41,"./cjs/react-dom.production.min.js":42,"_process":66}],44:[function(require,module,exports){
+arguments[4][28][0].apply(exports,arguments)
+},{"./lib/ReactPropTypesSecret":45,"_process":66,"dup":28}],45:[function(require,module,exports){
+arguments[4][29][0].apply(exports,arguments)
+},{"dup":29}],46:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"./cjs/react.development.js":44,"./cjs/react.production.min.js":45,"_process":64,"dup":25}],47:[function(require,module,exports){
+},{"_process":66,"dup":25,"object-assign":40,"prop-types/checkPropTypes":49}],47:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":48,"_process":64,"dup":26}],48:[function(require,module,exports){
+},{"dup":26,"object-assign":40}],48:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"dup":27}],49:[function(require,module,exports){
+},{"./cjs/react.development.js":46,"./cjs/react.production.min.js":47,"_process":66,"dup":27}],49:[function(require,module,exports){
+arguments[4][28][0].apply(exports,arguments)
+},{"./lib/ReactPropTypesSecret":50,"_process":66,"dup":28}],50:[function(require,module,exports){
+arguments[4][29][0].apply(exports,arguments)
+},{"dup":29}],51:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -25049,7 +25425,7 @@ function applyMiddleware() {
     };
   };
 }
-},{"./compose":52}],50:[function(require,module,exports){
+},{"./compose":54}],52:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -25101,7 +25477,7 @@ function bindActionCreators(actionCreators, dispatch) {
   }
   return boundActionCreators;
 }
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -25247,7 +25623,7 @@ function combineReducers(reducers) {
   };
 }
 }).call(this,require('_process'))
-},{"./createStore":53,"./utils/warning":55,"_process":64,"lodash/isPlainObject":37}],52:[function(require,module,exports){
+},{"./createStore":55,"./utils/warning":57,"_process":66,"lodash/isPlainObject":39}],54:[function(require,module,exports){
 "use strict";
 
 exports.__esModule = true;
@@ -25284,7 +25660,7 @@ function compose() {
     };
   });
 }
-},{}],53:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -25546,7 +25922,7 @@ var ActionTypes = exports.ActionTypes = {
     replaceReducer: replaceReducer
   }, _ref2[_symbolObservable2['default']] = observable, _ref2;
 }
-},{"lodash/isPlainObject":37,"symbol-observable":62}],54:[function(require,module,exports){
+},{"lodash/isPlainObject":39,"symbol-observable":64}],56:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -25595,7 +25971,7 @@ exports.bindActionCreators = _bindActionCreators2['default'];
 exports.applyMiddleware = _applyMiddleware2['default'];
 exports.compose = _compose2['default'];
 }).call(this,require('_process'))
-},{"./applyMiddleware":49,"./bindActionCreators":50,"./combineReducers":51,"./compose":52,"./createStore":53,"./utils/warning":55,"_process":64}],55:[function(require,module,exports){
+},{"./applyMiddleware":51,"./bindActionCreators":52,"./combineReducers":53,"./compose":54,"./createStore":55,"./utils/warning":57,"_process":66}],57:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -25621,7 +25997,7 @@ function warning(message) {
   } catch (e) {}
   /* eslint-enable no-empty */
 }
-},{}],56:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 (function (process){
 /** @license React v0.13.6
  * scheduler-tracing.development.js
@@ -26048,7 +26424,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 }
 
 }).call(this,require('_process'))
-},{"_process":64}],57:[function(require,module,exports){
+},{"_process":66}],59:[function(require,module,exports){
 /** @license React v0.13.6
  * scheduler-tracing.production.min.js
  *
@@ -26060,7 +26436,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 
 'use strict';Object.defineProperty(exports,"__esModule",{value:!0});var b=0;exports.__interactionsRef=null;exports.__subscriberRef=null;exports.unstable_clear=function(a){return a()};exports.unstable_getCurrent=function(){return null};exports.unstable_getThreadID=function(){return++b};exports.unstable_trace=function(a,d,c){return c()};exports.unstable_wrap=function(a){return a};exports.unstable_subscribe=function(){};exports.unstable_unsubscribe=function(){};
 
-},{}],58:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 (function (process,global){
 /** @license React v0.13.6
  * scheduler.development.js
@@ -26763,7 +27139,7 @@ exports.unstable_getFirstCallbackNode = unstable_getFirstCallbackNode;
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":64}],59:[function(require,module,exports){
+},{"_process":66}],61:[function(require,module,exports){
 (function (global){
 /** @license React v0.13.6
  * scheduler.production.min.js
@@ -26788,7 +27164,7 @@ b=c.previous;b.next=c.previous=a;a.next=c;a.previous=b}return a};exports.unstabl
 exports.unstable_shouldYield=function(){return!e&&(null!==d&&d.expirationTime<l||w())};exports.unstable_continueExecution=function(){null!==d&&p()};exports.unstable_pauseExecution=function(){};exports.unstable_getFirstCallbackNode=function(){return d};
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],60:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -26799,7 +27175,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":58,"./cjs/scheduler.production.min.js":59,"_process":64}],61:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":60,"./cjs/scheduler.production.min.js":61,"_process":66}],63:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -26810,7 +27186,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler-tracing.development.js":56,"./cjs/scheduler-tracing.production.min.js":57,"_process":64}],62:[function(require,module,exports){
+},{"./cjs/scheduler-tracing.development.js":58,"./cjs/scheduler-tracing.production.min.js":59,"_process":66}],64:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -26842,7 +27218,7 @@ if (typeof self !== 'undefined') {
 var result = (0, _ponyfill2['default'])(root);
 exports['default'] = result;
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./ponyfill.js":63}],63:[function(require,module,exports){
+},{"./ponyfill.js":65}],65:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -26866,7 +27242,7 @@ function symbolObservablePonyfill(root) {
 
 	return result;
 };
-},{}],64:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 

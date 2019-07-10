@@ -3,8 +3,13 @@ Time spent log
 Date  Time Started  Time Spent  Work Completed
 ----  ------------  ----------  --------------
 
-6/2      7:45pm     1hr 30min   Set up this directory, basic state, and entities
+7/2      7:45pm     1hr 30min   Set up this directory, basic state, and entities
 
-6/3      9:30am     2hr 30min   Set up physics engine and rendering system
+7/3      9:30am     2hr 30min   Set up physics engine and rendering system
          6:15m      2hr         Tune gravity for stable orbits
                                 Controls (and rendering) for turning/thrust
+
+7/4      1:00pm     4hr 30min   Implement sending/receiving actions to server
+                                Implement projectiles and historical paths (10hr 30min)
+
+7/9      6:50pm     2hr 30min   Implement barebones lobby with creating/joining games
