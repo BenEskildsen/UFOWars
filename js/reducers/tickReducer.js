@@ -1,7 +1,8 @@
 // @flow
 
-const {computeNextEntity} = require('../physics/gravity');
+const {computeNextEntity} = require('../utils/gravity');
 const {queueAdd} = require('../utils/queue');
+const {updateShip, updateProjectile} = require('../utils/updateEntities');
 const {config} = require('../config');
 const {sin, cos, abs, sqrt} = Math;
 
@@ -15,16 +16,8 @@ const tickReducer = (state: GameState): GameState => {
 
   const {sun} = state;
 
-  // update ships
   for (const id in state.ships) {
-    const ship: Ship = state.ships[id];
-    const history: Array<Entity> = ship.history;
-    queueAdd(history, ship, config.maxHistorySize);
-    state.ships[id] = {
-      ...ship,
-      ...computeNextEntity(sun, ship, ship.thrust),
-      history,
-    };
+    updateShip(state, id, 1 /* one tick */);
   }
 
   // update planets
@@ -38,16 +31,9 @@ const tickReducer = (state: GameState): GameState => {
     };
   });
 
-  // update projectiles
-  state.projectiles = state.projectiles.map(projectile => {
-    const history: Array<Entity> = projectile.history;
-    queueAdd(history, projectile, config.maxHistorySize);
-    return {
-      ...projectile,
-      ...computeNextEntity(sun, projectile),
-      history,
-    };
-  });
+  for (let i = 0; i < state.projectiles.length; i++) {
+    updateProjectile(state, i, 1 /* one tick */);
+  }
 
   // TODO update paths
 

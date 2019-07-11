@@ -26,8 +26,11 @@ eurecaServer.exports.dispatch = function (playerID, action) {
   let allClients = false;
   switch (action.type) {
     case 'CREATE_GAME':
+      games[action.gameID] = {id: action.gameID, players: []};
+      // fall through
     case 'JOIN_GAME':
       clientToGame[playerID] = action.gameID; // assign player to game
+      games[action.gameID].players.push(action.playerID);
       // fall through
     case 'SET_PLAYER_NAME':
       allClients = true;
@@ -46,6 +49,7 @@ const clientNames = {}; // PlayerID -> string
 
 const LOBBY_ID = 0;
 const clientToGame = {}; // PlayerID -> GameID
+const games = {}; // GameID -> {id: GameID, players: Array<PlayerID>}
 
 // ------------------------------------------------------------------------------
 // each time a client is connected we call
@@ -72,7 +76,22 @@ eurecaServer.onConnect(function (socket) {
     });
   }
   // update the just-connected client with other games that may exist
-  // TODO
+  for (const gameID in games) {
+    client.receiveAction({
+      type: 'CREATE_GAME',
+      playerID: games[gameID].players[0],
+      gameID: gameID,
+    });
+    if (games[gameID].players.length > 1) {
+      for (let i = 1; i < games[gameID].players.length; i++) {
+        client.receiveAction({
+          type: 'JOIN_GAME',
+          gameID: gameID,
+          playerID: games[gameID].players[i],
+        });
+      }
+    }
+  }
 
   // update the other clients that this one exists
   dispatchToOtherClients(nextPlayerID, {

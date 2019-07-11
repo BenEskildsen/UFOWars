@@ -2,14 +2,18 @@
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
-var _require = require('../physics/gravity'),
+var _require = require('../utils/gravity'),
     computeNextEntity = _require.computeNextEntity;
 
 var _require2 = require('../utils/queue'),
     queueAdd = _require2.queueAdd;
 
-var _require3 = require('../config'),
-    config = _require3.config;
+var _require3 = require('../utils/updateEntities'),
+    updateShip = _require3.updateShip,
+    updateProjectile = _require3.updateProjectile;
+
+var _require4 = require('../config'),
+    config = _require4.config;
 
 var sin = Math.sin,
     cos = Math.cos,
@@ -25,15 +29,9 @@ var tickReducer = function tickReducer(state) {
 
   var sun = state.sun;
 
-  // update ships
 
   for (var id in state.ships) {
-    var ship = state.ships[id];
-    var history = ship.history;
-    queueAdd(history, ship, config.maxHistorySize);
-    state.ships[id] = _extends({}, ship, computeNextEntity(sun, ship, ship.thrust), {
-      history: history
-    });
+    updateShip(state, id, 1 /* one tick */);
   }
 
   // update planets
@@ -45,14 +43,9 @@ var tickReducer = function tickReducer(state) {
     });
   });
 
-  // update projectiles
-  state.projectiles = state.projectiles.map(function (projectile) {
-    var history = projectile.history;
-    queueAdd(history, projectile, config.maxHistorySize);
-    return _extends({}, projectile, computeNextEntity(sun, projectile), {
-      history: history
-    });
-  });
+  for (var i = 0; i < state.projectiles.length; i++) {
+    updateProjectile(state, i, 1 /* one tick */);
+  }
 
   // TODO update paths
 

@@ -130,78 +130,7 @@ store.subscribe(function () {
 });
 
 ReactDOM.render(React.createElement(Game, { store: store }), document.getElementById('container'));
-},{"./reducers/rootReducer":9,"./systems/keyboardControlsSystem":14,"./systems/renderSystem":15,"./systems/tickSystem":16,"./ui/Game.react":19,"./utils/clientToServer":21,"react":48,"react-dom":43,"redux":56}],6:[function(require,module,exports){
-'use strict';
-
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-var sqrt = Math.sqrt,
-    atan2 = Math.atan2,
-    cos = Math.cos,
-    sin = Math.sin;
-
-var _require = require('../config'),
-    config = _require.config;
-
-var _require2 = require('../utils/vectors'),
-    add = _require2.add,
-    subtract = _require2.subtract;
-
-/*
- * given the masses of two bodies m1 and m2, and the distance between them
- * broken up by x and y components, compute the acceleration m1 will have
- * towards m2
- */
-var computeAccel = function computeAccel(m1, m2, dist) {
-  if (m1 == 0 || m2 == 0) {
-    return { x: 0, y: 0 };
-  }
-  var totalDist = sqrt(dist.x * dist.x + dist.y * dist.y);
-  var theta = atan2(dist.y, dist.x);
-  var f = config.G * m1 * m2 / (totalDist * totalDist);
-  var fx = f * cos(theta);
-  var fy = f * sin(theta);
-  return { x: fx / m1, y: fy / m1 };
-};
-
-/*
- * Create a new entity with physics computed forward by 1 step.
- * Pure function so that this can be used for calculating paths.
- * Optionally pass in a thrust vector that will affect acceleration
- */
-var computeNextEntity = function computeNextEntity(sun, entity, thrust) {
-  var thrustVal = thrust || 0;
-  var thrustVec = {
-    x: thrustVal * cos(entity.theta),
-    y: thrustVal * sin(entity.theta)
-  };
-
-  // get prev theta if no manual changes had been applied
-  var prevUncorrectedTheta = -1 * Math.atan2(entity.velocity.x, entity.velocity.y) + Math.PI / 2;
-
-  // sum acceleration due to the sun and acceleration due to thrust
-  var accel = add(computeAccel(entity.mass, sun.mass, subtract(sun.position, entity.position)), thrustVec);
-  var velocity = add(accel, entity.velocity);
-  var position = add(velocity, entity.position);
-
-  // compute next theta relative to current direction of travel
-  var nextUncorrectedTheta = -1 * Math.atan2(velocity.x, velocity.y) + Math.PI / 2;
-  var thetaDiff = nextUncorrectedTheta - prevUncorrectedTheta;
-  var theta = entity.theta + thetaDiff + entity.thetaSpeed;
-
-  return _extends({}, entity, {
-    accel: accel,
-    velocity: velocity,
-    position: position,
-    theta: theta
-  });
-};
-
-module.exports = {
-  computeAccel: computeAccel,
-  computeNextEntity: computeNextEntity
-};
-},{"../config":1,"../utils/vectors":24}],7:[function(require,module,exports){
+},{"./reducers/rootReducer":8,"./systems/keyboardControlsSystem":13,"./systems/renderSystem":14,"./systems/tickSystem":15,"./ui/Game.react":18,"./utils/clientToServer":20,"react":49,"react-dom":44,"redux":57}],6:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -240,7 +169,7 @@ var fireProjectileReducer = function fireProjectileReducer(state, action) {
 };
 
 module.exports = { fireProjectileReducer: fireProjectileReducer };
-},{"../config":1,"../entities/projectile":3,"../utils/queue":23,"../utils/vectors":24}],8:[function(require,module,exports){
+},{"../config":1,"../entities/projectile":3,"../utils/queue":23,"../utils/vectors":25}],7:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -256,31 +185,72 @@ var _require2 = require('./tickReducer'),
 var _require3 = require('./fireProjectileReducer'),
     fireProjectileReducer = _require3.fireProjectileReducer;
 
+var _require4 = require('../utils/updateEntities'),
+    updateShip = _require4.updateShip,
+    updateProjectile = _require4.updateProjectile;
+
 var gameReducer = function gameReducer(state, action) {
   switch (action.type) {
     case 'TICK':
       return tickReducer(state);
     case 'SET_TURN':
-      return _extends({}, state, {
-        ships: _extends({}, state.ships, _defineProperty({}, action.playerID, _extends({}, state.ships[action.playerID], {
-          thetaSpeed: action.thetaSpeed
-        })))
-      });
+      {
+        // re-sync if necessary
+        if (action.time < state.time) {
+          var timeDiff = state.time - action.time;
+          console.log(state.time, action.time, timeDiff);
+          // rewind history
+          var prevPos = null;
+          for (var i = 0; i < timeDiff; i++) {
+            prevPos = state.ships[action.playerID].history.pop();
+          }
+          state.ships[action.playerID] = _extends({}, state.ships[action.playerID], prevPos, {
+            thetaSpeed: action.thetaSpeed
+          });
+          updateShip(state, action.playerID, timeDiff);
+          return state;
+        } else {
+          return _extends({}, state, {
+            ships: _extends({}, state.ships, _defineProperty({}, action.playerID, _extends({}, state.ships[action.playerID], {
+              thetaSpeed: action.thetaSpeed
+            })))
+          });
+        }
+      }
     case 'SET_THRUST':
-      return _extends({}, state, {
-        ships: _extends({}, state.ships, _defineProperty({}, action.playerID, _extends({}, state.ships[action.playerID], {
-          thrust: action.thrust
-        })))
-      });
+      {
+        // re-sync if necessary
+        if (action.time < state.time) {
+          var _timeDiff = state.time - action.time;
+          // rewind history
+          var _prevPos = null;
+          for (var _i = 0; _i < _timeDiff; _i++) {
+            _prevPos = state.ships[action.playerID].history.pop();
+          }
+          state.ships[action.playerID] = _extends({}, state.ships[action.playerID], _prevPos, {
+            thrust: action.thrust
+          });
+          updateShip(state, action.playerID, _timeDiff);
+          return state;
+        } else {
+          return _extends({}, state, {
+            ships: _extends({}, state.ships, _defineProperty({}, action.playerID, _extends({}, state.ships[action.playerID], {
+              thrust: action.thrust
+            })))
+          });
+        }
+      }
     case 'FIRE_LASER':
-      return fireProjectileReducer(state, action);
+      {
+        return fireProjectileReducer(state, action);
+      }
   }
 
   return state;
 };
 
 module.exports = { gameReducer: gameReducer };
-},{"../config":1,"./fireProjectileReducer":7,"./tickReducer":10}],9:[function(require,module,exports){
+},{"../config":1,"../utils/updateEntities":24,"./fireProjectileReducer":6,"./tickReducer":9}],8:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -446,19 +416,23 @@ var rootReducer = function rootReducer(state, action) {
 };
 
 module.exports = { rootReducer: rootReducer };
-},{"../state/initGameState":12,"../state/initState":13,"./gameReducer":8}],10:[function(require,module,exports){
+},{"../state/initGameState":11,"../state/initState":12,"./gameReducer":7}],9:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
-var _require = require('../physics/gravity'),
+var _require = require('../utils/gravity'),
     computeNextEntity = _require.computeNextEntity;
 
 var _require2 = require('../utils/queue'),
     queueAdd = _require2.queueAdd;
 
-var _require3 = require('../config'),
-    config = _require3.config;
+var _require3 = require('../utils/updateEntities'),
+    updateShip = _require3.updateShip,
+    updateProjectile = _require3.updateProjectile;
+
+var _require4 = require('../config'),
+    config = _require4.config;
 
 var sin = Math.sin,
     cos = Math.cos,
@@ -474,15 +448,9 @@ var tickReducer = function tickReducer(state) {
 
   var sun = state.sun;
 
-  // update ships
 
   for (var id in state.ships) {
-    var ship = state.ships[id];
-    var history = ship.history;
-    queueAdd(history, ship, config.maxHistorySize);
-    state.ships[id] = _extends({}, ship, computeNextEntity(sun, ship, ship.thrust), {
-      history: history
-    });
+    updateShip(state, id, 1 /* one tick */);
   }
 
   // update planets
@@ -494,14 +462,9 @@ var tickReducer = function tickReducer(state) {
     });
   });
 
-  // update projectiles
-  state.projectiles = state.projectiles.map(function (projectile) {
-    var history = projectile.history;
-    queueAdd(history, projectile, config.maxHistorySize);
-    return _extends({}, projectile, computeNextEntity(sun, projectile), {
-      history: history
-    });
-  });
+  for (var i = 0; i < state.projectiles.length; i++) {
+    updateProjectile(state, i, 1 /* one tick */);
+  }
 
   // TODO update paths
 
@@ -509,7 +472,7 @@ var tickReducer = function tickReducer(state) {
 };
 
 module.exports = { tickReducer: tickReducer };
-},{"../config":1,"../physics/gravity":6,"../utils/queue":23}],11:[function(require,module,exports){
+},{"../config":1,"../utils/gravity":22,"../utils/queue":23,"../utils/updateEntities":24}],10:[function(require,module,exports){
 'use strict';
 
 var _require = require('../utils/errors'),
@@ -575,7 +538,7 @@ module.exports = {
   getClientGame: getClientGame,
   getNextGameID: getNextGameID
 };
-},{"../utils/errors":22}],12:[function(require,module,exports){
+},{"../utils/errors":21}],11:[function(require,module,exports){
 'use strict';
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -616,7 +579,7 @@ var initGameState = function initGameState(players) {
 };
 
 module.exports = { initGameState: initGameState };
-},{"../config":1,"../entities/entity":2,"../entities/ship":4}],13:[function(require,module,exports){
+},{"../config":1,"../entities/entity":2,"../entities/ship":4}],12:[function(require,module,exports){
 'use strict';
 
 var initState = function initState() {
@@ -628,7 +591,7 @@ var initState = function initState() {
 };
 
 module.exports = { initState: initState };
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 'use strict';
 
 var _require = require('../config'),
@@ -645,14 +608,20 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
 
   var state = store.getState();
   var playerID = getClientPlayerID(state);
-  var time = state.time;
-
 
   document.onkeydown = function (ev) {
+    var state = store.getState();
+    var _state$game = state.game,
+        time = _state$game.time,
+        ships = _state$game.ships;
+
     switch (ev.keyCode) {
       case 37:
         {
           // left
+          if (ships[playerID].thetaSpeed == -1 * config.ship.thetaSpeed) {
+            return; // don't dispatch redundantly
+          }
           var action = {
             type: 'SET_TURN', time: time, playerID: playerID, thetaSpeed: -1 * config.ship.thetaSpeed
           };
@@ -663,6 +632,9 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
       case 38:
         {
           // up
+          if (ships[playerID].thrust == config.ship.thrust) {
+            return; // don't dispatch redundantly
+          }
           var _action = { type: 'SET_THRUST', time: time, playerID: playerID, thrust: config.ship.thrust };
           dispatchToServer(playerID, _action);
           dispatch(_action);
@@ -671,6 +643,9 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
       case 39:
         {
           // right
+          if (ships[playerID].thetaSpeed == config.ship.thetaSpeed) {
+            return; // don't dispatch redundantly
+          }
           var _action2 = { type: 'SET_TURN', time: time, playerID: playerID, thetaSpeed: config.ship.thetaSpeed };
           dispatchToServer(playerID, _action2);
           dispatch(_action2);
@@ -680,6 +655,9 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
   };
 
   document.onkeyup = function (ev) {
+    var state = store.getState();
+    var time = state.game.time;
+
     switch (ev.keyCode) {
       case 37:
         {
@@ -718,7 +696,7 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
 };
 
 module.exports = { initKeyboardControlsSystem: initKeyboardControlsSystem };
-},{"../config":1,"../selectors/selectors":11,"../utils/clientToServer":21}],15:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":10,"../utils/clientToServer":20}],14:[function(require,module,exports){
 'use strict';
 
 var _require = require('../config'),
@@ -871,7 +849,7 @@ var initRenderSystem = function initRenderSystem(store) {
 };
 
 module.exports = { initRenderSystem: initRenderSystem };
-},{"../config":1}],16:[function(require,module,exports){
+},{"../config":1}],15:[function(require,module,exports){
 'use strict';
 
 var _require = require('../config'),
@@ -885,7 +863,7 @@ var initTickSystem = function initTickSystem(store) {
 };
 
 module.exports = { initTickSystem: initTickSystem };
-},{"../config":1}],17:[function(require,module,exports){
+},{"../config":1}],16:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -937,7 +915,7 @@ var Button = function (_React$Component) {
 }(React.Component);
 
 module.exports = Button;
-},{"React":27}],18:[function(require,module,exports){
+},{"React":28}],17:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -983,7 +961,7 @@ var Canvas = function (_React$Component) {
 ;
 
 module.exports = Canvas;
-},{"React":27}],19:[function(require,module,exports){
+},{"React":28}],18:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1059,7 +1037,7 @@ var Game = function (_React$Component) {
 ;
 
 module.exports = Game;
-},{"../config":1,"./Canvas.react":18,"./Lobby.react":20,"React":27}],20:[function(require,module,exports){
+},{"../config":1,"./Canvas.react":17,"./Lobby.react":19,"React":28}],19:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1235,7 +1213,7 @@ var Lobby = function (_React$Component) {
 }(React.Component);
 
 module.exports = Lobby;
-},{"../selectors/selectors":11,"../utils/clientToServer":21,"./Button.react":17,"React":27}],21:[function(require,module,exports){
+},{"../selectors/selectors":10,"../utils/clientToServer":20,"./Button.react":16,"React":28}],20:[function(require,module,exports){
 "use strict";
 
 /**
@@ -1247,7 +1225,6 @@ var setupClientToServer = function setupClientToServer(store) {
   var client = new Eureca.Client();
   // relay actions received from the server to this client's store
   client.exports.receiveAction = function (action) {
-    console.log(action);
     store.dispatch(action);
   };
   client.ready(function (serverProxy) {
@@ -1264,7 +1241,7 @@ module.exports = {
   setupClientToServer: setupClientToServer,
   dispatchToServer: dispatchToServer
 };
-},{}],22:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 
 var invariant = function invariant(condition, message) {
@@ -1274,7 +1251,78 @@ var invariant = function invariant(condition, message) {
 };
 
 module.exports = { invariant: invariant };
-},{}],23:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
+'use strict';
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var sqrt = Math.sqrt,
+    atan2 = Math.atan2,
+    cos = Math.cos,
+    sin = Math.sin;
+
+var _require = require('../config'),
+    config = _require.config;
+
+var _require2 = require('../utils/vectors'),
+    add = _require2.add,
+    subtract = _require2.subtract;
+
+/*
+ * given the masses of two bodies m1 and m2, and the distance between them
+ * broken up by x and y components, compute the acceleration m1 will have
+ * towards m2
+ */
+var computeAccel = function computeAccel(m1, m2, dist) {
+  if (m1 == 0 || m2 == 0) {
+    return { x: 0, y: 0 };
+  }
+  var totalDist = sqrt(dist.x * dist.x + dist.y * dist.y);
+  var theta = atan2(dist.y, dist.x);
+  var f = config.G * m1 * m2 / (totalDist * totalDist);
+  var fx = f * cos(theta);
+  var fy = f * sin(theta);
+  return { x: fx / m1, y: fy / m1 };
+};
+
+/*
+ * Create a new entity with physics computed forward by 1 step.
+ * Pure function so that this can be used for calculating paths.
+ * Optionally pass in a thrust vector that will affect acceleration
+ */
+var computeNextEntity = function computeNextEntity(sun, entity, thrust) {
+  var thrustVal = thrust || 0;
+  var thrustVec = {
+    x: thrustVal * cos(entity.theta),
+    y: thrustVal * sin(entity.theta)
+  };
+
+  // get prev theta if no manual changes had been applied
+  var prevUncorrectedTheta = -1 * Math.atan2(entity.velocity.x, entity.velocity.y) + Math.PI / 2;
+
+  // sum acceleration due to the sun and acceleration due to thrust
+  var accel = add(computeAccel(entity.mass, sun.mass, subtract(sun.position, entity.position)), thrustVec);
+  var velocity = add(accel, entity.velocity);
+  var position = add(velocity, entity.position);
+
+  // compute next theta relative to current direction of travel
+  var nextUncorrectedTheta = -1 * Math.atan2(velocity.x, velocity.y) + Math.PI / 2;
+  var thetaDiff = nextUncorrectedTheta - prevUncorrectedTheta;
+  var theta = entity.theta + thetaDiff + entity.thetaSpeed;
+
+  return _extends({}, entity, {
+    accel: accel,
+    velocity: velocity,
+    position: position,
+    theta: theta
+  });
+};
+
+module.exports = {
+  computeAccel: computeAccel,
+  computeNextEntity: computeNextEntity
+};
+},{"../config":1,"../utils/vectors":25}],23:[function(require,module,exports){
 "use strict";
 
 var queueAdd = function queueAdd(queue, item, maxLength) {
@@ -1286,6 +1334,50 @@ var queueAdd = function queueAdd(queue, item, maxLength) {
 
 module.exports = { queueAdd: queueAdd };
 },{}],24:[function(require,module,exports){
+'use strict';
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _require = require('../utils/gravity'),
+    computeNextEntity = _require.computeNextEntity;
+
+var _require2 = require('../utils/queue'),
+    queueAdd = _require2.queueAdd;
+
+var _require3 = require('../config'),
+    config = _require3.config;
+
+var updateShip = function updateShip(state, id, numTicks) {
+  var sun = state.sun;
+
+  for (var i = 0; i < numTicks; i++) {
+    var ship = state.ships[id];
+    var history = ship.history;
+    queueAdd(history, ship, config.maxHistorySize);
+    state.ships[id] = _extends({}, ship, computeNextEntity(sun, ship, ship.thrust), {
+      history: history
+    });
+  }
+};
+
+var updateProjectile = function updateProjectile(state, j, numTicks) {
+  var sun = state.sun;
+
+  for (var i = 0; i < numTicks; i++) {
+    var projectile = state.projectiles[j];
+    var history = projectile.history;
+    queueAdd(history, projectile, config.maxHistorySize);
+    state.projectiles[j] = _extends({}, projectile, computeNextEntity(sun, projectile), {
+      history: history
+    });
+  }
+};
+
+module.exports = {
+  updateShip: updateShip,
+  updateProjectile: updateProjectile
+};
+},{"../config":1,"../utils/gravity":22,"../utils/queue":23}],25:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1353,7 +1445,7 @@ module.exports = {
   subtract: subtract,
   makeVector: makeVector
 };
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 (function (process){
 /** @license React v16.8.6
  * react.development.js
@@ -3258,7 +3350,7 @@ module.exports = react;
 }
 
 }).call(this,require('_process'))
-},{"_process":66,"object-assign":40,"prop-types/checkPropTypes":28}],26:[function(require,module,exports){
+},{"_process":67,"object-assign":41,"prop-types/checkPropTypes":29}],27:[function(require,module,exports){
 /** @license React v16.8.6
  * react.production.min.js
  *
@@ -3285,7 +3377,7 @@ b,d){return W().useImperativeHandle(a,b,d)},useDebugValue:function(){},useLayout
 b){void 0!==b.ref&&(h=b.ref,f=J.current);void 0!==b.key&&(g=""+b.key);var l=void 0;a.type&&a.type.defaultProps&&(l=a.type.defaultProps);for(c in b)K.call(b,c)&&!L.hasOwnProperty(c)&&(e[c]=void 0===b[c]&&void 0!==l?l[c]:b[c])}c=arguments.length-2;if(1===c)e.children=d;else if(1<c){l=Array(c);for(var m=0;m<c;m++)l[m]=arguments[m+2];e.children=l}return{$$typeof:p,type:a.type,key:g,ref:h,props:e,_owner:f}},createFactory:function(a){var b=M.bind(null,a);b.type=a;return b},isValidElement:N,version:"16.8.6",
 unstable_ConcurrentMode:x,unstable_Profiler:u,__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{ReactCurrentDispatcher:I,ReactCurrentOwner:J,assign:k}},Y={default:X},Z=Y&&X||Y;module.exports=Z.default||Z;
 
-},{"object-assign":40}],27:[function(require,module,exports){
+},{"object-assign":41}],28:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -3296,7 +3388,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react.development.js":25,"./cjs/react.production.min.js":26,"_process":66}],28:[function(require,module,exports){
+},{"./cjs/react.development.js":26,"./cjs/react.production.min.js":27,"_process":67}],29:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -3402,7 +3494,7 @@ checkPropTypes.resetWarningCache = function() {
 module.exports = checkPropTypes;
 
 }).call(this,require('_process'))
-},{"./lib/ReactPropTypesSecret":29,"_process":66}],29:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":30,"_process":67}],30:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  *
@@ -3416,7 +3508,7 @@ var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 
 module.exports = ReactPropTypesSecret;
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 var root = require('./_root');
 
 /** Built-in value references. */
@@ -3424,7 +3516,7 @@ var Symbol = root.Symbol;
 
 module.exports = Symbol;
 
-},{"./_root":37}],31:[function(require,module,exports){
+},{"./_root":38}],32:[function(require,module,exports){
 var Symbol = require('./_Symbol'),
     getRawTag = require('./_getRawTag'),
     objectToString = require('./_objectToString');
@@ -3454,7 +3546,7 @@ function baseGetTag(value) {
 
 module.exports = baseGetTag;
 
-},{"./_Symbol":30,"./_getRawTag":34,"./_objectToString":35}],32:[function(require,module,exports){
+},{"./_Symbol":31,"./_getRawTag":35,"./_objectToString":36}],33:[function(require,module,exports){
 (function (global){
 /** Detect free variable `global` from Node.js. */
 var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
@@ -3462,7 +3554,7 @@ var freeGlobal = typeof global == 'object' && global && global.Object === Object
 module.exports = freeGlobal;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 var overArg = require('./_overArg');
 
 /** Built-in value references. */
@@ -3470,7 +3562,7 @@ var getPrototype = overArg(Object.getPrototypeOf, Object);
 
 module.exports = getPrototype;
 
-},{"./_overArg":36}],34:[function(require,module,exports){
+},{"./_overArg":37}],35:[function(require,module,exports){
 var Symbol = require('./_Symbol');
 
 /** Used for built-in method references. */
@@ -3518,7 +3610,7 @@ function getRawTag(value) {
 
 module.exports = getRawTag;
 
-},{"./_Symbol":30}],35:[function(require,module,exports){
+},{"./_Symbol":31}],36:[function(require,module,exports){
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
 
@@ -3542,7 +3634,7 @@ function objectToString(value) {
 
 module.exports = objectToString;
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 /**
  * Creates a unary function that invokes `func` with its argument transformed.
  *
@@ -3559,7 +3651,7 @@ function overArg(func, transform) {
 
 module.exports = overArg;
 
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 var freeGlobal = require('./_freeGlobal');
 
 /** Detect free variable `self`. */
@@ -3570,7 +3662,7 @@ var root = freeGlobal || freeSelf || Function('return this')();
 
 module.exports = root;
 
-},{"./_freeGlobal":32}],38:[function(require,module,exports){
+},{"./_freeGlobal":33}],39:[function(require,module,exports){
 /**
  * Checks if `value` is object-like. A value is object-like if it's not `null`
  * and has a `typeof` result of "object".
@@ -3601,7 +3693,7 @@ function isObjectLike(value) {
 
 module.exports = isObjectLike;
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 var baseGetTag = require('./_baseGetTag'),
     getPrototype = require('./_getPrototype'),
     isObjectLike = require('./isObjectLike');
@@ -3665,7 +3757,7 @@ function isPlainObject(value) {
 
 module.exports = isPlainObject;
 
-},{"./_baseGetTag":31,"./_getPrototype":33,"./isObjectLike":38}],40:[function(require,module,exports){
+},{"./_baseGetTag":32,"./_getPrototype":34,"./isObjectLike":39}],41:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -3757,7 +3849,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 (function (process){
 /** @license React v16.8.6
  * react-dom.development.js
@@ -25039,7 +25131,7 @@ module.exports = reactDom;
 }
 
 }).call(this,require('_process'))
-},{"_process":66,"object-assign":40,"prop-types/checkPropTypes":44,"react":48,"scheduler":62,"scheduler/tracing":63}],42:[function(require,module,exports){
+},{"_process":67,"object-assign":41,"prop-types/checkPropTypes":45,"react":49,"scheduler":63,"scheduler/tracing":64}],43:[function(require,module,exports){
 /** @license React v16.8.6
  * react-dom.production.min.js
  *
@@ -25310,7 +25402,7 @@ x("38"):void 0;return Si(a,b,c,!1,d)},unmountComponentAtNode:function(a){Qi(a)?v
 X;X=!0;try{ki(a)}finally{(X=b)||W||Yh(1073741823,!1)}},__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{Events:[Ia,Ja,Ka,Ba.injectEventPluginsByName,pa,Qa,function(a){ya(a,Pa)},Eb,Fb,Dd,Da]}};function Ui(a,b){Qi(a)?void 0:x("299","unstable_createRoot");return new Pi(a,!0,null!=b&&!0===b.hydrate)}
 (function(a){var b=a.findFiberByHostInstance;return Te(n({},a,{overrideProps:null,currentDispatcherRef:Tb.ReactCurrentDispatcher,findHostInstanceByFiber:function(a){a=hd(a);return null===a?null:a.stateNode},findFiberByHostInstance:function(a){return b?b(a):null}}))})({findFiberByHostInstance:Ha,bundleType:0,version:"16.8.6",rendererPackageName:"react-dom"});var Wi={default:Vi},Xi=Wi&&Vi||Wi;module.exports=Xi.default||Xi;
 
-},{"object-assign":40,"react":48,"scheduler":62}],43:[function(require,module,exports){
+},{"object-assign":41,"react":49,"scheduler":63}],44:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -25352,21 +25444,21 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":41,"./cjs/react-dom.production.min.js":42,"_process":66}],44:[function(require,module,exports){
-arguments[4][28][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":45,"_process":66,"dup":28}],45:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":42,"./cjs/react-dom.production.min.js":43,"_process":67}],45:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"dup":29}],46:[function(require,module,exports){
-arguments[4][25][0].apply(exports,arguments)
-},{"_process":66,"dup":25,"object-assign":40,"prop-types/checkPropTypes":49}],47:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":46,"_process":67,"dup":29}],46:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"dup":30}],47:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"dup":26,"object-assign":40}],48:[function(require,module,exports){
+},{"_process":67,"dup":26,"object-assign":41,"prop-types/checkPropTypes":50}],48:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"./cjs/react.development.js":46,"./cjs/react.production.min.js":47,"_process":66,"dup":27}],49:[function(require,module,exports){
+},{"dup":27,"object-assign":41}],49:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":50,"_process":66,"dup":28}],50:[function(require,module,exports){
+},{"./cjs/react.development.js":47,"./cjs/react.production.min.js":48,"_process":67,"dup":28}],50:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"dup":29}],51:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":51,"_process":67,"dup":29}],51:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"dup":30}],52:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -25425,7 +25517,7 @@ function applyMiddleware() {
     };
   };
 }
-},{"./compose":54}],52:[function(require,module,exports){
+},{"./compose":55}],53:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -25477,7 +25569,7 @@ function bindActionCreators(actionCreators, dispatch) {
   }
   return boundActionCreators;
 }
-},{}],53:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -25623,7 +25715,7 @@ function combineReducers(reducers) {
   };
 }
 }).call(this,require('_process'))
-},{"./createStore":55,"./utils/warning":57,"_process":66,"lodash/isPlainObject":39}],54:[function(require,module,exports){
+},{"./createStore":56,"./utils/warning":58,"_process":67,"lodash/isPlainObject":40}],55:[function(require,module,exports){
 "use strict";
 
 exports.__esModule = true;
@@ -25660,7 +25752,7 @@ function compose() {
     };
   });
 }
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -25922,7 +26014,7 @@ var ActionTypes = exports.ActionTypes = {
     replaceReducer: replaceReducer
   }, _ref2[_symbolObservable2['default']] = observable, _ref2;
 }
-},{"lodash/isPlainObject":39,"symbol-observable":64}],56:[function(require,module,exports){
+},{"lodash/isPlainObject":40,"symbol-observable":65}],57:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -25971,7 +26063,7 @@ exports.bindActionCreators = _bindActionCreators2['default'];
 exports.applyMiddleware = _applyMiddleware2['default'];
 exports.compose = _compose2['default'];
 }).call(this,require('_process'))
-},{"./applyMiddleware":51,"./bindActionCreators":52,"./combineReducers":53,"./compose":54,"./createStore":55,"./utils/warning":57,"_process":66}],57:[function(require,module,exports){
+},{"./applyMiddleware":52,"./bindActionCreators":53,"./combineReducers":54,"./compose":55,"./createStore":56,"./utils/warning":58,"_process":67}],58:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -25997,7 +26089,7 @@ function warning(message) {
   } catch (e) {}
   /* eslint-enable no-empty */
 }
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 (function (process){
 /** @license React v0.13.6
  * scheduler-tracing.development.js
@@ -26424,7 +26516,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 }
 
 }).call(this,require('_process'))
-},{"_process":66}],59:[function(require,module,exports){
+},{"_process":67}],60:[function(require,module,exports){
 /** @license React v0.13.6
  * scheduler-tracing.production.min.js
  *
@@ -26436,7 +26528,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 
 'use strict';Object.defineProperty(exports,"__esModule",{value:!0});var b=0;exports.__interactionsRef=null;exports.__subscriberRef=null;exports.unstable_clear=function(a){return a()};exports.unstable_getCurrent=function(){return null};exports.unstable_getThreadID=function(){return++b};exports.unstable_trace=function(a,d,c){return c()};exports.unstable_wrap=function(a){return a};exports.unstable_subscribe=function(){};exports.unstable_unsubscribe=function(){};
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 (function (process,global){
 /** @license React v0.13.6
  * scheduler.development.js
@@ -27139,7 +27231,7 @@ exports.unstable_getFirstCallbackNode = unstable_getFirstCallbackNode;
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":66}],61:[function(require,module,exports){
+},{"_process":67}],62:[function(require,module,exports){
 (function (global){
 /** @license React v0.13.6
  * scheduler.production.min.js
@@ -27164,7 +27256,7 @@ b=c.previous;b.next=c.previous=a;a.next=c;a.previous=b}return a};exports.unstabl
 exports.unstable_shouldYield=function(){return!e&&(null!==d&&d.expirationTime<l||w())};exports.unstable_continueExecution=function(){null!==d&&p()};exports.unstable_pauseExecution=function(){};exports.unstable_getFirstCallbackNode=function(){return d};
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -27175,7 +27267,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":60,"./cjs/scheduler.production.min.js":61,"_process":66}],63:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":61,"./cjs/scheduler.production.min.js":62,"_process":67}],64:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -27186,7 +27278,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler-tracing.development.js":58,"./cjs/scheduler-tracing.production.min.js":59,"_process":66}],64:[function(require,module,exports){
+},{"./cjs/scheduler-tracing.development.js":59,"./cjs/scheduler-tracing.production.min.js":60,"_process":67}],65:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -27218,7 +27310,7 @@ if (typeof self !== 'undefined') {
 var result = (0, _ponyfill2['default'])(root);
 exports['default'] = result;
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./ponyfill.js":65}],65:[function(require,module,exports){
+},{"./ponyfill.js":66}],66:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -27242,7 +27334,7 @@ function symbolObservablePonyfill(root) {
 
 	return result;
 };
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 

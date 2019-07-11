@@ -14,14 +14,20 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
 
   var state = store.getState();
   var playerID = getClientPlayerID(state);
-  var time = state.time;
-
 
   document.onkeydown = function (ev) {
+    var state = store.getState();
+    var _state$game = state.game,
+        time = _state$game.time,
+        ships = _state$game.ships;
+
     switch (ev.keyCode) {
       case 37:
         {
           // left
+          if (ships[playerID].thetaSpeed == -1 * config.ship.thetaSpeed) {
+            return; // don't dispatch redundantly
+          }
           var action = {
             type: 'SET_TURN', time: time, playerID: playerID, thetaSpeed: -1 * config.ship.thetaSpeed
           };
@@ -32,6 +38,9 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
       case 38:
         {
           // up
+          if (ships[playerID].thrust == config.ship.thrust) {
+            return; // don't dispatch redundantly
+          }
           var _action = { type: 'SET_THRUST', time: time, playerID: playerID, thrust: config.ship.thrust };
           dispatchToServer(playerID, _action);
           dispatch(_action);
@@ -40,6 +49,9 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
       case 39:
         {
           // right
+          if (ships[playerID].thetaSpeed == config.ship.thetaSpeed) {
+            return; // don't dispatch redundantly
+          }
           var _action2 = { type: 'SET_TURN', time: time, playerID: playerID, thetaSpeed: config.ship.thetaSpeed };
           dispatchToServer(playerID, _action2);
           dispatch(_action2);
@@ -49,6 +61,9 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
   };
 
   document.onkeyup = function (ev) {
+    var state = store.getState();
+    var time = state.game.time;
+
     switch (ev.keyCode) {
       case 37:
         {

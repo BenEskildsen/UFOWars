@@ -1,8 +1,7 @@
 
  - - - - - - TODO - - - - - -
  - synchronize the clients so they start at the same time (using setTimeout now...)
- - add time to player actions, and recompute positions based on them
- - need to track game metadata on the server to update new players
+ - compute locations of projectiles based on timestamp
 
 
  - - - - - - NEXT - - - - - -
@@ -56,3 +55,7 @@
  - implement projectiles and shooting
 
  - implement lobby with creatable/joinable games
+
+ - need to track game metadata on the server to update new players
+ - add time to player actions, and recompute positions based on them
+ - basic syncing algorithm for the clients

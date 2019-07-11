@@ -13,24 +13,65 @@ var _require2 = require('./tickReducer'),
 var _require3 = require('./fireProjectileReducer'),
     fireProjectileReducer = _require3.fireProjectileReducer;
 
+var _require4 = require('../utils/updateEntities'),
+    updateShip = _require4.updateShip,
+    updateProjectile = _require4.updateProjectile;
+
 var gameReducer = function gameReducer(state, action) {
   switch (action.type) {
     case 'TICK':
       return tickReducer(state);
     case 'SET_TURN':
-      return _extends({}, state, {
-        ships: _extends({}, state.ships, _defineProperty({}, action.playerID, _extends({}, state.ships[action.playerID], {
-          thetaSpeed: action.thetaSpeed
-        })))
-      });
+      {
+        // re-sync if necessary
+        if (action.time < state.time) {
+          var timeDiff = state.time - action.time;
+          console.log(state.time, action.time, timeDiff);
+          // rewind history
+          var prevPos = null;
+          for (var i = 0; i < timeDiff; i++) {
+            prevPos = state.ships[action.playerID].history.pop();
+          }
+          state.ships[action.playerID] = _extends({}, state.ships[action.playerID], prevPos, {
+            thetaSpeed: action.thetaSpeed
+          });
+          updateShip(state, action.playerID, timeDiff);
+          return state;
+        } else {
+          return _extends({}, state, {
+            ships: _extends({}, state.ships, _defineProperty({}, action.playerID, _extends({}, state.ships[action.playerID], {
+              thetaSpeed: action.thetaSpeed
+            })))
+          });
+        }
+      }
     case 'SET_THRUST':
-      return _extends({}, state, {
-        ships: _extends({}, state.ships, _defineProperty({}, action.playerID, _extends({}, state.ships[action.playerID], {
-          thrust: action.thrust
-        })))
-      });
+      {
+        // re-sync if necessary
+        if (action.time < state.time) {
+          var _timeDiff = state.time - action.time;
+          // rewind history
+          var _prevPos = null;
+          for (var _i = 0; _i < _timeDiff; _i++) {
+            _prevPos = state.ships[action.playerID].history.pop();
+          }
+          state.ships[action.playerID] = _extends({}, state.ships[action.playerID], _prevPos, {
+            thrust: action.thrust
+          });
+          updateShip(state, action.playerID, _timeDiff);
+          return state;
+        } else {
+          return _extends({}, state, {
+            ships: _extends({}, state.ships, _defineProperty({}, action.playerID, _extends({}, state.ships[action.playerID], {
+              thrust: action.thrust
+            })))
+          });
+        }
+      }
     case 'FIRE_LASER':
-      return fireProjectileReducer(state, action);
+      {
+        return fireProjectileReducer(state, action);
+      }
   }
 
   return state;

@@ -13,3 +13,6 @@ Date  Time Started  Time Spent  Work Completed
                                 Implement projectiles and historical paths (10hr 30min)
 
 7/9      6:50pm     2hr 30min   Implement barebones lobby with creating/joining games
+
+7/10     3:00pm     1hr 45min   Store game metadata on server to update new clients
+                                Algorithm for syncing clients by timestamp
