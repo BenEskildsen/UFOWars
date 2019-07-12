@@ -33,7 +33,9 @@ var initGameState = function initGameState(players) {
     sun: makeEntity(sun.mass, sun.radius, { x: width / 2, y: width / 2 }),
     planets: [],
     projectiles: [],
-    paths: []
+    paths: [],
+
+    actionQueue: []
   };
 };
 

@@ -20,6 +20,8 @@ var sin = Math.sin,
     abs = Math.abs,
     sqrt = Math.sqrt;
 
+var _require5 = require('./gameReducer'),
+    gameReducer = _require5.gameReducer;
 
 /**
  * Updates the gamestate in place for performance/laziness
@@ -49,7 +51,41 @@ var tickReducer = function tickReducer(state) {
 
   // TODO update paths
 
-  return state;
+  // check on queued actions
+  var nextState = state;
+  var nextActionQueue = [];
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = state.actionQueue[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var action = _step.value;
+
+      if (action.time == state.time) {
+        nextState = gameReducer(nextState, action);
+      } else {
+        nextActionQueue.push(action);
+      }
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  return _extends({}, nextState, {
+    actionQueue: nextActionQueue
+  });
 };
 
 module.exports = { tickReducer: tickReducer };

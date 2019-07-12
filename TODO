@@ -1,6 +1,5 @@
 
  - - - - - - TODO - - - - - -
- - synchronize the clients so they start at the same time (using setTimeout now...)
  - compute locations of projectiles based on timestamp
 
 
@@ -11,6 +10,7 @@
  - implement thrust using fuel
  - implement collisions
  - implement win/lose/restart
+ - server should track players disconnecting and clean up games
 
 
  - - - - - - LATER - - - - - -
@@ -59,3 +59,5 @@
  - need to track game metadata on the server to update new players
  - add time to player actions, and recompute positions based on them
  - basic syncing algorithm for the clients
+
+ - synchronize the clients so they start at the same time (using setTimeout now...)

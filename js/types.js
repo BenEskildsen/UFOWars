@@ -69,6 +69,8 @@ export type GameState = {
   planets: Array<Entity>,
   sun: Entity,
   projectiles: Array<Projectile>,
+
+  actionQueue: Array<Action>, // Actions time-stamped to the future wait here
 };
 
 export type Entity = {
@@ -115,6 +117,7 @@ export type Action =
     playerID: PlayerID, name: string, isThisClient: boolean, gameID: GameID
   } |
   {type: 'START', gameID: GameID} |
+  {type: 'READY', gameID: GameID} | // sent to server, server will send back serverID
   {type: 'SET_TURN', playerID: PlayerID, thetaSpeed: Radians, time: number} |
   {type: 'SET_THRUST', playerID: PlayerID, thrust: number, time: number} |
   {type: 'FIRE_LASER', playerID: PlayerID, time: number} |

@@ -25,6 +25,14 @@ eurecaServer.exports.dispatch = function (playerID, action) {
   // some actions need to be sent to ALL clients, not just those in this player's game:
   let allClients = false;
   switch (action.type) {
+    case 'READY':
+      dispatchToOtherClients(
+        playerID,
+        {type: 'START', gameID: action.gameID},
+        false, // not all other clients
+        true // dispatch to self
+      );
+      break; // this is kinda hacky *shrug emoji*
     case 'CREATE_GAME':
       games[action.gameID] = {id: action.gameID, players: []};
       // fall through
@@ -113,12 +121,12 @@ eurecaServer.onConnect(function (socket) {
 // helpers
 // ------------------------------------------------------------------------------
 
-function dispatchToOtherClients(playerID, action, allClients) {
+function dispatchToOtherClients(playerID, action, allClients, alsoSelf) {
   const clientsToSendTo = allClients
     ? eurecaClients
     : clientsInGame(clientToGame[playerID]);
   for (const clientID in clientsToSendTo) {
-    if (clientID != playerID) {
+    if (clientID != playerID || alsoSelf) {
       eurecaClients[clientID].receiveAction(action);
     }
   }

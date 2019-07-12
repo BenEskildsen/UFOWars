@@ -30,6 +30,8 @@ const initGameState = (players: Array<PlayerID>): GameState => {
     planets: [],
     projectiles: [],
     paths: [],
+
+    actionQueue: [],
   };
 }
 

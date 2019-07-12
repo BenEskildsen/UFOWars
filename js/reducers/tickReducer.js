@@ -5,6 +5,7 @@ const {queueAdd} = require('../utils/queue');
 const {updateShip, updateProjectile} = require('../utils/updateEntities');
 const {config} = require('../config');
 const {sin, cos, abs, sqrt} = Math;
+const {gameReducer} = require('./gameReducer');
 
 import type {Ship, GameState, Entity} from '../types';
 
@@ -37,7 +38,21 @@ const tickReducer = (state: GameState): GameState => {
 
   // TODO update paths
 
-  return state;
+  // check on queued actions
+  let nextState = state;
+  const nextActionQueue = [];
+  for (const action of state.actionQueue) {
+    if (action.time == state.time) {
+      nextState = gameReducer(nextState, action);
+    } else {
+      nextActionQueue.push(action);
+    }
+  }
+
+  return {
+    ...nextState,
+    actionQueue: nextActionQueue,
+  };
 }
 
 module.exports = {tickReducer};
