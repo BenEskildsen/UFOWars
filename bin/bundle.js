@@ -18,11 +18,12 @@ var config = {
     mass: 10000
   },
   G: 1, // gravitational constant
-  maxHistorySize: 100,
+  maxHistorySize: 200,
   laserSize: 4,
-  laserSpeed: 10,
+  laserSpeed: 20,
   maxProjectiles: 100,
-  c: 10 // speed of light, in pixels per tick
+  c: 20, // speed of light, in pixels per tick
+  renderGroundTruth: false
 };
 
 module.exports = { config: config };
@@ -797,15 +798,14 @@ var initRenderSystem = function initRenderSystem(store) {
     var game = state.game;
 
     var referencePosition = game.ships[getClientPlayerID(state)].position;
-    render(game, ctx, referencePosition, 0);
     render(game, ctx, referencePosition, config.c);
+    if (config.renderGroundTruth) {
+      render(game, ctx, referencePosition, float('inf'));
+    }
   });
 };
 
 var tickDifference = function tickDifference(position, otherPosition, c) {
-  if (c == 0) {
-    return 0;
-  }
   var dx = position.x - otherPosition.x;
   var dy = position.y - otherPosition.y;
   return round(sqrt(dx * dx + dy * dy) / c);
@@ -815,6 +815,7 @@ var render = function render(game, ctx, referencePosition, c) {
   // TODO abstract away rendering
   // render ships
   var colorIndex = 0;
+  var playerTickDiffs = {};
   for (var id in game.ships) {
     var currentShip = game.ships[id];
     var position = currentShip.position,
@@ -822,57 +823,56 @@ var render = function render(game, ctx, referencePosition, c) {
 
     var tickDiff = tickDifference(referencePosition, position, c);
     var idx = history.length - 1 - tickDiff;
+    playerTickDiffs[id] = tickDiff;
 
-    if (idx < 0) {
-      continue;
-    }
+    if (idx >= 0) {
+      var ship = history[idx];
 
-    var ship = history[idx];
-
-    ctx.save();
-    ctx.fillStyle = ['blue', 'red'][colorIndex];
-    ctx.beginPath();
-    ctx.translate(ship.position.x, ship.position.y);
-    ctx.rotate(ship.theta);
-    ctx.moveTo(ship.radius, 0);
-    ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
-    ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
-    ctx.closePath();
-    ctx.fill();
-
-    if (ship.thrust > 0) {
-      ctx.fillStyle = 'orange';
+      ctx.save();
+      ctx.fillStyle = ['blue', 'red'][colorIndex];
       ctx.beginPath();
-      ctx.moveTo(-1 * ship.radius / 1.25, 0);
-      ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 3);
-      ctx.lineTo(-1 * ship.radius / 2, ship.radius / 3);
+      ctx.translate(ship.position.x, ship.position.y);
+      ctx.rotate(ship.theta);
+      ctx.moveTo(ship.radius, 0);
+      ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
+      ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
       ctx.closePath();
       ctx.fill();
-    }
-    ctx.restore();
 
-    var _iteratorNormalCompletion = true;
-    var _didIteratorError = false;
-    var _iteratorError = undefined;
-
-    try {
-      for (var _iterator = ship.history[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-        var pastShip = _step.value;
-
-        ctx.fillStyle = ['blue', 'red'][colorIndex];
-        ctx.fillRect(pastShip.position.x, pastShip.position.y, 2, 2);
+      if (ship.thrust > 0) {
+        ctx.fillStyle = 'orange';
+        ctx.beginPath();
+        ctx.moveTo(-1 * ship.radius / 1.25, 0);
+        ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 3);
+        ctx.lineTo(-1 * ship.radius / 2, ship.radius / 3);
+        ctx.closePath();
+        ctx.fill();
       }
-    } catch (err) {
-      _didIteratorError = true;
-      _iteratorError = err;
-    } finally {
+      ctx.restore();
+
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
       try {
-        if (!_iteratorNormalCompletion && _iterator.return) {
-          _iterator.return();
+        for (var _iterator = ship.history[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var pastShip = _step.value;
+
+          ctx.fillStyle = ['blue', 'red'][colorIndex];
+          ctx.fillRect(pastShip.position.x, pastShip.position.y, 2, 2);
         }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
       } finally {
-        if (_didIteratorError) {
-          throw _iteratorError;
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
         }
       }
     }
@@ -892,35 +892,37 @@ var render = function render(game, ctx, referencePosition, c) {
           history = currentProjectile.history;
 
       var _tickDiff = tickDifference(referencePosition, position, c);
+
+      // Compute tick difference based on projectile's player:
+      // const tickDiff = playerTickDiffs[currentProjectile.playerID];
+
       var _idx = history.length - 1 - _tickDiff;
 
-      if (_idx < 0) {
-        continue;
-      }
+      if (_idx >= 0) {
+        var projectile = history[_idx];
 
-      var projectile = history[_idx];
-
-      ctx.save();
-      var color = 'white';
-      var length = 50;
-      var width = 50;
-      if (projectile.type == 'laser') {
-        color = 'lime';
-        length = config.laserSize * 6;
-        width = config.laserSize;
+        ctx.save();
+        var color = 'white';
+        var length = 50;
+        var width = 50;
+        if (projectile.type == 'laser') {
+          color = 'lime';
+          length = config.laserSize * 6;
+          width = config.laserSize;
+        }
+        // TODO track colors better
+        // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
+        ctx.lineWidth = 1;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.translate(projectile.position.x, projectile.position.y);
+        ctx.rotate(projectile.theta);
+        ctx.rect(0, 0, length, width);
+        ctx.fill();
+        // ctx.stroke();
+        ctx.closePath();
+        ctx.restore();
       }
-      // TODO track colors better
-      // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
-      ctx.lineWidth = 1;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.translate(projectile.position.x, projectile.position.y);
-      ctx.rotate(projectile.theta);
-      ctx.rect(0, 0, length, width);
-      ctx.fill();
-      // ctx.stroke();
-      ctx.closePath();
-      ctx.restore();
     }
 
     // render sun

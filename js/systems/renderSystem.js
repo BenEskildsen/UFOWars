@@ -33,15 +33,14 @@ const initRenderSystem = (store: Store): void => {
     
     const {game} = state;
     const referencePosition = game.ships[getClientPlayerID(state)].position;
-    render(game, ctx, referencePosition, 0);
     render(game, ctx, referencePosition, config.c);
+    if (config.renderGroundTruth) {
+      render(game, ctx, referencePosition, float('inf'));
+    }
   });
 }
 
 const tickDifference = (position: Vector, otherPosition: Vector, c: number): number => {
-  if (c == 0) {
-    return 0;
-  }
   const dx = (position.x - otherPosition.x);
   const dy = (position.y - otherPosition.y);
   return round(sqrt(dx*dx + dy*dy) / c);
@@ -51,11 +50,13 @@ const render = (game: Game, ctx: any, referencePosition: Vector, c: number): voi
   // TODO abstract away rendering
   // render ships
   let colorIndex = 0;
+  let playerTickDiffs = {};
   for (const id in game.ships) {
     const currentShip = game.ships[id];
     const {position, history} = currentShip;
     const tickDiff = tickDifference(referencePosition, position, c);
     const idx = history.length - 1 - tickDiff;
+    playerTickDiffs[id] = tickDiff;
     
     if (idx >= 0) {
       const ship = history[idx];
@@ -95,6 +96,10 @@ const render = (game: Game, ctx: any, referencePosition: Vector, c: number): voi
   for (const currentProjectile of game.projectiles) {
     const {position, history} = currentProjectile;
     const tickDiff = tickDifference(referencePosition, position, c);
+
+    // Compute tick difference based on projectile's player:
+    // const tickDiff = playerTickDiffs[currentProjectile.playerID];
+
     const idx = history.length - 1 - tickDiff;
 
     if (idx >= 0) {
