@@ -20,7 +20,8 @@ var config = {
   maxHistorySize: 100,
   laserSize: 4,
   laserSpeed: 30,
-  maxProjectiles: 100
+  maxProjectiles: 100,
+  c: 1 // speed of information, in pixels per tick
 };
 
 module.exports = { config: config };
