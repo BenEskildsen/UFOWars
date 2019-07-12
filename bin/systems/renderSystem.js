@@ -42,7 +42,7 @@ var initRenderSystem = function initRenderSystem(store) {
 
     var referencePosition = game.ships[getClientPlayerID(state)].position;
     render(game, ctx, referencePosition, 0);
-    render(game, ctx, referencePosition, 20);
+    render(game, ctx, referencePosition, config.c);
   });
 };
 
@@ -65,8 +65,13 @@ var render = function render(game, ctx, referencePosition, c) {
         history = currentShip.history;
 
     var tickDiff = tickDifference(referencePosition, position, c);
+    var idx = history.length - 1 - tickDiff;
 
-    var ship = history[max(0, history.length - 1 - tickDiff)];
+    if (idx < 0) {
+      continue;
+    }
+
+    var ship = history[idx];
 
     ctx.save();
     ctx.fillStyle = ['blue', 'red'][colorIndex];
@@ -126,7 +131,18 @@ var render = function render(game, ctx, referencePosition, c) {
 
   try {
     for (var _iterator2 = game.projectiles[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-      var projectile = _step2.value;
+      var currentProjectile = _step2.value;
+      var position = currentProjectile.position,
+          history = currentProjectile.history;
+
+      var _tickDiff = tickDifference(referencePosition, position, c);
+      var _idx = history.length - 1 - _tickDiff;
+
+      if (_idx < 0) {
+        continue;
+      }
+
+      var projectile = history[_idx];
 
       ctx.save();
       var color = 'white';

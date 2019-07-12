@@ -34,7 +34,7 @@ const initRenderSystem = (store: Store): void => {
     const {game} = state;
     const referencePosition = game.ships[getClientPlayerID(state)].position;
     render(game, ctx, referencePosition, 0);
-    render(game, ctx, referencePosition, 20);
+    render(game, ctx, referencePosition, config.c);
   });
 }
 
@@ -55,61 +55,73 @@ const render = (game: Game, ctx: any, referencePosition: Vector, c: number): voi
     const currentShip = game.ships[id];
     const {position, history} = currentShip;
     const tickDiff = tickDifference(referencePosition, position, c);
+    const idx = history.length - 1 - tickDiff;
+    
+    if (idx >= 0) {
+      const ship = history[idx];
 
-    const ship = history[max(0, history.length - 1 - tickDiff)];
-
-    ctx.save();
-    ctx.fillStyle = ['blue', 'red'][colorIndex];
-    ctx.beginPath();
-    ctx.translate(ship.position.x, ship.position.y);
-    ctx.rotate(ship.theta);
-    ctx.moveTo(ship.radius, 0);
-    ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
-    ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
-    ctx.closePath();
-    ctx.fill();
-
-    if (ship.thrust > 0) {
-      ctx.fillStyle = 'orange';
+      ctx.save();
+      ctx.fillStyle = ['blue', 'red'][colorIndex];
       ctx.beginPath();
-      ctx.moveTo(-1 * ship.radius / 1.25, 0);
-      ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 3);
-      ctx.lineTo(-1 * ship.radius / 2, ship.radius / 3);
+      ctx.translate(ship.position.x, ship.position.y);
+      ctx.rotate(ship.theta);
+      ctx.moveTo(ship.radius, 0);
+      ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
+      ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
       ctx.closePath();
       ctx.fill();
-    }
-    ctx.restore();
 
-    for (const pastShip of ship.history) {
-      ctx.fillStyle = ['blue', 'red'][colorIndex];
-      ctx.fillRect(pastShip.position.x, pastShip.position.y, 2, 2);
+      if (ship.thrust > 0) {
+        ctx.fillStyle = 'orange';
+        ctx.beginPath();
+        ctx.moveTo(-1 * ship.radius / 1.25, 0);
+        ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 3);
+        ctx.lineTo(-1 * ship.radius / 2, ship.radius / 3);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+
+      for (const pastShip of ship.history) {
+        ctx.fillStyle = ['blue', 'red'][colorIndex];
+        ctx.fillRect(pastShip.position.x, pastShip.position.y, 2, 2);
+      }
     }
+
     colorIndex++;
   }
 
   // render projectiles
-  for (const projectile of game.projectiles) {
-    ctx.save();
-    let color = 'white';
-    let length = 50;
-    let width = 50;
-    if (projectile.type == 'laser') {
-      color = 'lime';
-      length = config.laserSize * 6;
-      width = config.laserSize;
+  for (const currentProjectile of game.projectiles) {
+    const {position, history} = currentProjectile;
+    const tickDiff = tickDifference(referencePosition, position, c);
+    const idx = history.length - 1 - tickDiff;
+
+    if (idx >= 0) {
+      const projectile = history[idx];
+
+      ctx.save();
+      let color = 'white';
+      let length = 50;
+      let width = 50;
+      if (projectile.type == 'laser') {
+        color = 'lime';
+        length = config.laserSize * 6;
+        width = config.laserSize;
+      }
+      // TODO track colors better
+      // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
+      ctx.lineWidth = 1;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.translate(projectile.position.x, projectile.position.y);
+      ctx.rotate(projectile.theta);
+      ctx.rect(0, 0, length, width);
+      ctx.fill();
+      // ctx.stroke();
+      ctx.closePath();
+      ctx.restore();
     }
-    // TODO track colors better
-    // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
-    ctx.lineWidth = 1;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.translate(projectile.position.x, projectile.position.y);
-    ctx.rotate(projectile.theta);
-    ctx.rect(0, 0, length, width);
-    ctx.fill();
-    // ctx.stroke();
-    ctx.closePath();
-    ctx.restore();
   }
 
   // render sun

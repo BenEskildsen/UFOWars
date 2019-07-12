@@ -19,9 +19,9 @@ var config = {
   G: 1, // gravitational constant
   maxHistorySize: 100,
   laserSize: 4,
-  laserSpeed: 30,
+  laserSpeed: 10,
   maxProjectiles: 100,
-  c: 1 // speed of information, in pixels per tick
+  c: 10 // speed of light, in pixels per tick
 };
 
 module.exports = { config: config };
