@@ -1,14 +1,12 @@
 
  - - - - - - TODO - - - - - -
- - compute locations of projectiles based on timestamp
-
+ - implement configurable speed of light delay
+ - implement future/projected paths
+ - implement collisions
 
  - - - - - - NEXT - - - - - -
  - ask the client what they want their name to be and track on the server
- - how will state track what is shown vs actuals?
- - implement future/projected paths
  - implement thrust using fuel
- - implement collisions
  - implement win/lose/restart
  - server should track players disconnecting and clean up games
 
@@ -61,3 +59,4 @@
  - basic syncing algorithm for the clients
 
  - synchronize the clients so they start at the same time (using setTimeout now...)
+ - compute locations of projectiles based on timestamp
