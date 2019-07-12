@@ -16,3 +16,7 @@ Date  Time Started  Time Spent  Work Completed
 
 7/10     3:00pm     1hr 45min   Store game metadata on server to update new clients
                                 Algorithm for syncing clients by timestamp
+
+7/11     9:00pm     1hr         Implement true syncing between clients
+                                Sync projectiles
+                                Speed of light delay
