@@ -11,6 +11,7 @@
  - implement thrust using fuel
  - implement collisions
  - implement win/lose/restart
+ - server should track players disconnecting and clean up games
 
 
  - - - - - - LATER - - - - - -

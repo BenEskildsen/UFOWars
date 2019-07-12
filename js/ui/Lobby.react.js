@@ -83,9 +83,8 @@ class Lobby extends React.Component {
       <Button
         label="Start Game"
         onClick={() => {
-          const startAction = {type: 'START', gameID: clientGame.id};
+          const startAction = {type: 'READY', gameID: clientGame.id};
           dispatchToServer(playerID, startAction);
-          setTimeout(() => dispatch(startAction), 300); // TODO
         }}
         disabled={!gameReady}
       />

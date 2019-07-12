@@ -115,6 +115,7 @@ export type Action =
     playerID: PlayerID, name: string, isThisClient: boolean, gameID: GameID
   } |
   {type: 'START', gameID: GameID} |
+  {type: 'READY', gameID: GameID} | // sent to server, server will send back serverID
   {type: 'SET_TURN', playerID: PlayerID, thetaSpeed: Radians, time: number} |
   {type: 'SET_THRUST', playerID: PlayerID, thrust: number, time: number} |
   {type: 'FIRE_LASER', playerID: PlayerID, time: number} |

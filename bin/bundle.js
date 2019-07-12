@@ -1164,11 +1164,8 @@ var Lobby = function (_React$Component) {
       return React.createElement(Button, {
         label: 'Start Game',
         onClick: function onClick() {
-          var startAction = { type: 'START', gameID: clientGame.id };
+          var startAction = { type: 'READY', gameID: clientGame.id };
           dispatchToServer(playerID, startAction);
-          setTimeout(function () {
-            return dispatch(startAction);
-          }, 300); // TODO
         },
         disabled: !gameReady
       });
