@@ -57,6 +57,11 @@ const gameReducer = (state: GameState, action: Action): GameState => {
         }
         updateShip(state, action.playerID, timeDiff);
         return state;
+      } else if (action.time > state.time) {
+        return {
+          ...state,
+          actionQueue: [...state.actionQueue, action],
+        };
       } else {
         return {
           ...state,

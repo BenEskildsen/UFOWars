@@ -69,6 +69,8 @@ export type GameState = {
   planets: Array<Entity>,
   sun: Entity,
   projectiles: Array<Projectile>,
+
+  actionQueue: Array<Action>, // Actions time-stamped to the future wait here
 };
 
 export type Entity = {
