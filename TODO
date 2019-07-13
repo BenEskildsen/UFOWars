@@ -24,7 +24,6 @@
  - server side code should live in its own directory?
  - abstract away rendering into something neater
  - separate pixels and distances
- - remove node_modules and bin from git repo
  - make systems flow-checked
 
 
@@ -60,3 +59,5 @@
 
  - synchronize the clients so they start at the same time (using setTimeout now...)
  - compute locations of projectiles based on timestamp
+
+ - remove node_modules and bin from git repo

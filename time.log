@@ -20,3 +20,5 @@ Date  Time Started  Time Spent  Work Completed
 7/11     9:00pm     1hr         Implement true syncing between clients
                                 Sync projectiles
                                 Speed of light delay
+
+7/13     2:30pm                 Stop tracking node_modules and bin/*

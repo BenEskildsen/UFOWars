@@ -4,7 +4,7 @@ const {config} = require('../config');
 const {fireProjectileReducer} = require('./fireProjectileReducer');
 const {updateShip, updateProjectile} = require('../utils/updateEntities');
 
-import type {State, GameState, Action} from '../types';
+import type {State, GameState, Ship, Action} from '../types';
 
 const gameReducer = (state: GameState, action: Action): GameState => {
   switch (action.type) {
@@ -12,14 +12,14 @@ const gameReducer = (state: GameState, action: Action): GameState => {
       // re-sync if necessary
       if (action.time < state.time) {
         const timeDiff = state.time - action.time;
-        console.log(state.time, action.time, timeDiff);
         // rewind history
         let prevPos = null;
         for (let i = 0; i < timeDiff; i++) {
           prevPos = state.ships[action.playerID].history.pop();
         }
+        const ship: Ship = state.ships[action.playerID];
         state.ships[action.playerID] = {
-          ...state.ships[action.playerID],
+          ...ship,
           ...prevPos,
           thetaSpeed: action.thetaSpeed,
         };
@@ -52,8 +52,9 @@ const gameReducer = (state: GameState, action: Action): GameState => {
         for (let i = 0; i < timeDiff; i++) {
           prevPos = state.ships[action.playerID].history.pop();
         }
+        const ship: Ship = state.ships[action.playerID];
         state.ships[action.playerID] = {
-          ...state.ships[action.playerID],
+          ...ship,
           ...prevPos,
           thrust: action.thrust,
         }

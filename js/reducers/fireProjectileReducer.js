@@ -8,12 +8,12 @@ const {makeLaserProjectile} = require('../entities/projectile');
 import type {State, GameState, Action} from '../types';
 
 const fireProjectileReducer = (state: GameState, action: Action): GameState => {
-  const {playerID} = action;
-  const {projectiles, ships} = state;
-  let shipPosition = ships[playerID].position;
-  let shipTheta = ships[playerID].theta;
   switch (action.type) {
-    case 'FIRE_LASER':
+    case 'FIRE_LASER': {
+      const {playerID} = action;
+      const {projectiles, ships} = state;
+      let shipPosition = ships[playerID].position;
+      let shipTheta = ships[playerID].theta;
       if (action.time < state.time) {
         const timeDiff = state.time - action.time;
         // rewind history
@@ -33,6 +33,7 @@ const fireProjectileReducer = (state: GameState, action: Action): GameState => {
         ...state,
         projectiles,
       };
+    }
   }
 
   return state;

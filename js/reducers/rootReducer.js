@@ -3,6 +3,7 @@
 const {gameReducer} = require('./gameReducer');
 const {initState} = require('../state/initState');
 const {initGameState} = require('../state/initGameState');
+const {tickReducer} = require('./tickReducer');
 
 import type {State, Action} from '../types';
 
@@ -83,7 +84,7 @@ const rootReducer = (state: State, action: Action): State => {
       }
       return {
         ...state,
-        game: tickReducer(state),
+        game: tickReducer(state.game),
       };
     case 'SET_TURN':
     case 'SET_THRUST':
