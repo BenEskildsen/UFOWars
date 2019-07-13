@@ -1,6 +1,8 @@
 const {config} = require('../config');
+const {getClientPlayerID} = require('../selectors/selectors');
+const {max, round, sqrt} = Math;
 
-import type {Store} from '../types';
+import type {Store, Game} from '../types';
 
 /**
  * Render things into the canvas
@@ -28,15 +30,39 @@ const initRenderSystem = (store: Store): void => {
     // clear
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, config.width, config.height);
-
-    // TODO abstract away rendering
-    // render ships
+    
     const {game} = state;
-    let colorIndex = 0;
-    for (const id in game.ships) {
+    const referencePosition = game.ships[getClientPlayerID(state)].position;
+    render(game, ctx, referencePosition, config.c);
+    if (config.renderGroundTruth) {
+      render(game, ctx, referencePosition, float('inf'));
+    }
+  });
+}
+
+const tickDifference = (position: Vector, otherPosition: Vector, c: number): number => {
+  const dx = (position.x - otherPosition.x);
+  const dy = (position.y - otherPosition.y);
+  return round(sqrt(dx*dx + dy*dy) / c);
+}
+
+const render = (game: Game, ctx: any, referencePosition: Vector, c: number): void => {
+  // TODO abstract away rendering
+  // render ships
+  let colorIndex = 0;
+  let playerTickDiffs = {};
+  for (const id in game.ships) {
+    const currentShip = game.ships[id];
+    const {position, history} = currentShip;
+    const tickDiff = tickDifference(referencePosition, position, c);
+    const idx = history.length - 1 - tickDiff;
+    playerTickDiffs[id] = tickDiff;
+    
+    if (idx >= 0) {
+      const ship = history[idx];
+
       ctx.save();
       ctx.fillStyle = ['blue', 'red'][colorIndex];
-      const ship = game.ships[id];
       ctx.beginPath();
       ctx.translate(ship.position.x, ship.position.y);
       ctx.rotate(ship.theta);
@@ -58,14 +84,27 @@ const initRenderSystem = (store: Store): void => {
       ctx.restore();
 
       for (const pastShip of ship.history) {
-      ctx.fillStyle = ['blue', 'red'][colorIndex];
+        ctx.fillStyle = ['blue', 'red'][colorIndex];
         ctx.fillRect(pastShip.position.x, pastShip.position.y, 2, 2);
       }
-      colorIndex++;
     }
 
-    // render projectiles
-    for (const projectile of game.projectiles) {
+    colorIndex++;
+  }
+
+  // render projectiles
+  for (const currentProjectile of game.projectiles) {
+    const {position, history} = currentProjectile;
+    const tickDiff = tickDifference(referencePosition, position, c);
+
+    // Compute tick difference based on projectile's player:
+    // const tickDiff = playerTickDiffs[currentProjectile.playerID];
+
+    const idx = history.length - 1 - tickDiff;
+
+    if (idx >= 0) {
+      const projectile = history[idx];
+
       ctx.save();
       let color = 'white';
       let length = 50;
@@ -88,21 +127,21 @@ const initRenderSystem = (store: Store): void => {
       ctx.closePath();
       ctx.restore();
     }
+  }
 
-    // render sun
-    const {sun} = game;
-    ctx.fillStyle = 'yellow';
-    ctx.beginPath();
-    ctx.arc(
-      sun.position.x, sun.position.y,
-      sun.radius, 0, Math.PI * 2,
-    );
-    ctx.closePath();
-    ctx.fill();
+  // render sun
+  const {sun} = game;
+  ctx.fillStyle = 'yellow';
+  ctx.beginPath();
+  ctx.arc(
+    sun.position.x, sun.position.y,
+    sun.radius, 0, Math.PI * 2,
+  );
+  ctx.closePath();
+  ctx.fill();
 
-    // render planets
-    // TODO
-  });
+  // render planets
+  // TODO
 }
 
 module.exports = {initRenderSystem};

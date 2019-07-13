@@ -3,6 +3,14 @@
 var _require = require('../config'),
     config = _require.config;
 
+var _require2 = require('../selectors/selectors'),
+    getClientPlayerID = _require2.getClientPlayerID;
+
+var max = Math.max,
+    round = Math.round,
+    sqrt = Math.sqrt;
+
+
 /**
  * Render things into the canvas
  */
@@ -30,15 +38,41 @@ var initRenderSystem = function initRenderSystem(store) {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, config.width, config.height);
 
-    // TODO abstract away rendering
-    // render ships
     var game = state.game;
 
-    var colorIndex = 0;
-    for (var id in game.ships) {
+    var referencePosition = game.ships[getClientPlayerID(state)].position;
+    render(game, ctx, referencePosition, config.c);
+    if (config.renderGroundTruth) {
+      render(game, ctx, referencePosition, float('inf'));
+    }
+  });
+};
+
+var tickDifference = function tickDifference(position, otherPosition, c) {
+  var dx = position.x - otherPosition.x;
+  var dy = position.y - otherPosition.y;
+  return round(sqrt(dx * dx + dy * dy) / c);
+};
+
+var render = function render(game, ctx, referencePosition, c) {
+  // TODO abstract away rendering
+  // render ships
+  var colorIndex = 0;
+  var playerTickDiffs = {};
+  for (var id in game.ships) {
+    var currentShip = game.ships[id];
+    var position = currentShip.position,
+        history = currentShip.history;
+
+    var tickDiff = tickDifference(referencePosition, position, c);
+    var idx = history.length - 1 - tickDiff;
+    playerTickDiffs[id] = tickDiff;
+
+    if (idx >= 0) {
+      var ship = history[idx];
+
       ctx.save();
       ctx.fillStyle = ['blue', 'red'][colorIndex];
-      var ship = game.ships[id];
       ctx.beginPath();
       ctx.translate(ship.position.x, ship.position.y);
       ctx.rotate(ship.theta);
@@ -84,18 +118,31 @@ var initRenderSystem = function initRenderSystem(store) {
           }
         }
       }
-
-      colorIndex++;
     }
 
-    // render projectiles
-    var _iteratorNormalCompletion2 = true;
-    var _didIteratorError2 = false;
-    var _iteratorError2 = undefined;
+    colorIndex++;
+  }
 
-    try {
-      for (var _iterator2 = game.projectiles[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-        var projectile = _step2.value;
+  // render projectiles
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
+
+  try {
+    for (var _iterator2 = game.projectiles[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var currentProjectile = _step2.value;
+      var position = currentProjectile.position,
+          history = currentProjectile.history;
+
+      var _tickDiff = tickDifference(referencePosition, position, c);
+
+      // Compute tick difference based on projectile's player:
+      // const tickDiff = playerTickDiffs[currentProjectile.playerID];
+
+      var _idx = history.length - 1 - _tickDiff;
+
+      if (_idx >= 0) {
+        var projectile = history[_idx];
 
         ctx.save();
         var color = 'white';
@@ -119,34 +166,34 @@ var initRenderSystem = function initRenderSystem(store) {
         ctx.closePath();
         ctx.restore();
       }
-
-      // render sun
-    } catch (err) {
-      _didIteratorError2 = true;
-      _iteratorError2 = err;
-    } finally {
-      try {
-        if (!_iteratorNormalCompletion2 && _iterator2.return) {
-          _iterator2.return();
-        }
-      } finally {
-        if (_didIteratorError2) {
-          throw _iteratorError2;
-        }
-      }
     }
 
-    var sun = game.sun;
+    // render sun
+  } catch (err) {
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion2 && _iterator2.return) {
+        _iterator2.return();
+      }
+    } finally {
+      if (_didIteratorError2) {
+        throw _iteratorError2;
+      }
+    }
+  }
 
-    ctx.fillStyle = 'yellow';
-    ctx.beginPath();
-    ctx.arc(sun.position.x, sun.position.y, sun.radius, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.fill();
+  var sun = game.sun;
 
-    // render planets
-    // TODO
-  });
+  ctx.fillStyle = 'yellow';
+  ctx.beginPath();
+  ctx.arc(sun.position.x, sun.position.y, sun.radius, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // render planets
+  // TODO
 };
 
 module.exports = { initRenderSystem: initRenderSystem };
