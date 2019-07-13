@@ -1,7 +1,6 @@
 // @flow
 
 const {config} = require('../config');
-const {tickReducer} = require('./tickReducer');
 const {fireProjectileReducer} = require('./fireProjectileReducer');
 const {updateShip, updateProjectile} = require('../utils/updateEntities');
 
@@ -9,8 +8,6 @@ import type {State, GameState, Action} from '../types';
 
 const gameReducer = (state: GameState, action: Action): GameState => {
   switch (action.type) {
-    case 'TICK':
-      return tickReducer(state);
     case 'SET_TURN': {
       // re-sync if necessary
       if (action.time < state.time) {
