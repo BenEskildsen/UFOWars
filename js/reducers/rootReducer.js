@@ -78,6 +78,13 @@ const rootReducer = (state: State, action: Action): State => {
       // TODO: restart systems if necessary
       return initState();
     case 'TICK':
+      if (!state.game) {
+        return state;
+      }
+      return {
+        ...state,
+        game: tickReducer(state),
+      };
     case 'SET_TURN':
     case 'SET_THRUST':
     case 'FIRE_LASER':
