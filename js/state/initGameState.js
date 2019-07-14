@@ -11,6 +11,7 @@ const initGameState = (players: Array<PlayerID>): GameState => {
   return {
     gamePlayers: players,
     time: 0,
+    tickInterval: null,
     ships: {
       [players[0]]: makeShip(
         players[0], // playerID

@@ -15,7 +15,7 @@ const initRenderSystem = (store: Store): void => {
   store.subscribe(() => {
     const state = store.getState();
     // only check on a new tick
-    if (state.game.time == time) {
+    if (state.game.time == time && state.game.tickInterval != null) {
       return;
     }
     // import to do track time this way so this only happens once per tick

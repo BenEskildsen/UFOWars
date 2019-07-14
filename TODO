@@ -1,28 +1,28 @@
 
  - - - - - - TODO - - - - - -
- - implement collisions
  - implement thrust using fuel
- - implement win/lose/restart
 
  - - - - - - NEXT - - - - - -
  - server should track players disconnecting and clean up games
+ - sync game loss scenarios so both players always agree
  - ask the client what they want their name to be and track on the server
+ - deploy to heroku
+ - implement UI sidebar
+ - handle overflow in the lobby, without losing scroll lock on game itself
 
 
  - - - - - - LATER - - - - - -
- - implement UI sidebar
  - styling and fancy UI for lobby
  - set up deploy script
- - set up transition between lobby and game itself
- - implement ending games and cleaning them up off the server when players disc
+ - implement bullets and missile weapons
+ - explosion animation
 
 
  - - - - - - REFACTOR - - - - - -
+ - separate pixels and distances
  - how should unique gameIDs be assigned to newly-created games?
  - server side code should live in its own directory?
  - abstract away rendering into something neater
- - separate pixels and distances
- - make systems flow-checked
 
 
  - - - - - - BUGS - - - - - -
@@ -51,6 +51,7 @@
  - implement projectiles and shooting
 
  - implement lobby with creatable/joinable games
+ - set up transition between lobby and game itself
 
  - need to track game metadata on the server to update new players
  - add time to player actions, and recompute positions based on them
@@ -61,3 +62,6 @@
 
  - remove node_modules and bin from git repo
  - implement future/projected paths
+
+ - implement collisions
+ - implement win/lose/restart

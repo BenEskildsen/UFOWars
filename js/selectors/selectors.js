@@ -21,6 +21,15 @@ const getClientGame = (state: State): Game => {
   return state.games[getClientPlayer(state).gameID];
 };
 
+const getPlayerByID = (state: State, playerID: PlayerID): Player => {
+  for (const player of state.players) {
+    if (player.id == playerID) {
+      return player;
+    }
+  }
+  invariant(false, 'no player with id ' + playerID);
+};
+
 /**
  *  Since the client should know about all games that exist, it can compute this?
  *  TODO this is insanely dangerous though
@@ -40,5 +49,6 @@ module.exports = {
   getClientPlayerID,
   getClientPlayer,
   getClientGame,
+  getPlayerByID,
   getNextGameID,
 };

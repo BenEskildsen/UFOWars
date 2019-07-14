@@ -1,8 +1,10 @@
 // @flow
 
+const Button = require('./ui/Button.react');
+
 // -------------------------------------------------------------------------------
 // Generic Types
-// -------------------------------------------------------------------------------\
+// -------------------------------------------------------------------------------
 
 export type Vector = {x: number, y: number};
 export type Mass = number;
@@ -39,6 +41,11 @@ export type State = {
   players: Array<Player>, // all players in any game
   games: {[id: GameID]: Game}, // all games that exist, for showing in the lobby
   game: ?GameState,
+  modal: ?{
+    title: string,
+    text: string,
+    buttons: Array<Button>
+  },
 };
 
 export type Game = {
@@ -63,6 +70,7 @@ export type Player = {
 export type GameState = {
   gamePlayers: Array<PlayerID>, // the players participating in this game
   time: number,
+  tickInterval: any, // when running, this is set
 
   // entities
   ships: {[id: PlayerID]: Ship},
@@ -123,5 +131,8 @@ export type Action =
   {type: 'SET_THRUST', playerID: PlayerID, thrust: number, time: number} |
   {type: 'FIRE_LASER', playerID: PlayerID, time: number} |
   {type: 'SET_PLAYER_NAME', playerID: PlayerID, name: string} |
+  {type: 'SET_PLAYER_SCORE', playerID: PlayerID, score: number} |
+  {type: 'SET_MODAL', text: string, title: string, buttons: Array<Button>} |
+  {type: 'DISMISS_MODAL'} |
+  {type: 'STOP_TICK'} |
   {type: 'TICK'};
-

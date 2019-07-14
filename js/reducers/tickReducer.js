@@ -7,12 +7,33 @@ const {config} = require('../config');
 const {sin, cos, abs, sqrt} = Math;
 const {gameReducer} = require('./gameReducer');
 
-import type {Ship, GameState, Entity} from '../types';
+import type {Ship, GameState, Entity, Action} from '../types';
+
+const tickReducer = (state: GameState, action: Action): GameState => {
+  switch (action.type) {
+    case 'START_TICK':
+      // this behavior bundled into START
+      // if (!state.tickInterval) {
+      //   state.tickInterval = setInterval(
+      //     () => store.dispatch({type: 'TICK'}),
+      //     config.msPerTick,
+      //   );
+      // }
+      return state;
+    case 'STOP_TICK':
+      clearInterval(state.tickInterval);
+      state.tickInterval = null;
+      return state;
+    case 'TICK':
+      return handleTick(state);
+  }
+  return state;
+};
 
 /**
  * Updates the gamestate in place for performance/laziness
  */
-const tickReducer = (state: GameState): GameState => {
+const handleTick = (state: GameState): GameState => {
   state.time = state.time + 1;
 
   const {sun} = state;

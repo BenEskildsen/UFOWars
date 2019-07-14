@@ -20,3 +20,17 @@ body {
   background-color: white;
 }
 
+.modal {
+  position: absolute;
+  background-color: whitesmoke;
+  border: 1px solid black;
+  padding: 4px;
+  box-shadow: 2px 2px #666666;
+  border-radius: 3px;
+  color: #46403a;
+  text-align: center;
+}
+
+h3 {
+  margin-top: 0;
+}

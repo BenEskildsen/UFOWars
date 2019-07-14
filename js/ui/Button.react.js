@@ -13,7 +13,7 @@ class Button extends React.Component {
     const id = props.id || props.label;
     return (
       <button type="button"
-        key={id}
+        key={id || label}
         className={props.disabled ? 'buttonDisable' : ''}
         id={id.toUpperCase() + '_button'}
         onClick={props.disabled ? () => {} : props.onClick}

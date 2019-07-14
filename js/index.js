@@ -7,10 +7,10 @@ const ReactDOM = require('react-dom');
 const {rootReducer} = require('./reducers/rootReducer');
 const {setupClientToServer} = require('./utils/clientToServer');
 
-const {initTickSystem} = require('./systems/tickSystem');
 const {initRenderSystem} = require('./systems/renderSystem');
 const {initKeyboardControlsSystem} = require('./systems/keyboardControlsSystem');
 const {initCollisionSystem} = require('./systems/collisionSystem');
+const {initPlayerReadySystem} = require('./systems/playerReadySystem');
 
 const store = createStore(rootReducer);
 window.store = store; // useful for debugging
@@ -20,16 +20,17 @@ const client = setupClientToServer(store);
 
 // TODO there's probably a better way to set up the systems when the game starts
 let started = false;
+initPlayerReadySystem(store);
 store.subscribe(() => {
   if (started) {
     return;
   }
   const state = store.getState();
+  // happens in response to "START" action
   if (!state.game || state.players.length == 0) {
     return;
   }
   started = true;
-  initTickSystem(store);
   initRenderSystem(store);
   initKeyboardControlsSystem(store);
   initCollisionSystem(store);

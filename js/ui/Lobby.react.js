@@ -83,8 +83,12 @@ class Lobby extends React.Component {
       <Button
         label="Start Game"
         onClick={() => {
-          const startAction = {type: 'READY', gameID: clientGame.id};
-          dispatchToServer(playerID, startAction);
+          // NEVER dispatch START to yourself!
+          const readyAction = {type: 'SET_PLAYER_READY', playerID, ready: true};
+          dispatchToServer(playerID, readyAction);
+          dispatch(readyAction);
+          // const startAction = {type: 'START', gameID: clientGame.id};
+          // dispatchToServer(playerID, startAction);
         }}
         disabled={!gameReady}
       />
@@ -119,6 +123,10 @@ class Lobby extends React.Component {
           const joinAction = {type: 'JOIN_GAME', playerID, gameID};
           dispatchToServer(playerID, joinAction);
           dispatch(joinAction);
+
+          const readyAction = {type: 'SET_PLAYER_READY', playerID, ready: true};
+          dispatchToServer(playerID, readyAction);
+          dispatch(readyAction);
         }}
         disabled={disabled}
       />

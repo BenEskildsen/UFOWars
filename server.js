@@ -25,14 +25,22 @@ eurecaServer.exports.dispatch = function (playerID, action) {
   // some actions need to be sent to ALL clients, not just those in this player's game:
   let allClients = false;
   switch (action.type) {
-    case 'READY':
+    case 'START':
       dispatchToOtherClients(
         playerID,
         {type: 'START', gameID: action.gameID},
         false, // not all other clients
         true // dispatch to self
       );
-      break; // this is kinda hacky *shrug emoji*
+      return; // this is kinda hacky *shrug emoji*
+    case 'START_TICK':
+      dispatchToOtherClients(
+        playerID,
+        {type: 'START_TICK'},
+        false, // not all other clients
+        true // dispatch to self
+      );
+      return; // this is kinda hacky *shrug emoji*
     case 'CREATE_GAME':
       games[action.gameID] = {id: action.gameID, players: []};
       // fall through
@@ -67,7 +75,7 @@ eurecaServer.onConnect(function (socket) {
 
   client.receiveAction({
     type: 'CREATE_PLAYER',
-    playerID: nextPlayerID,
+    playerID: String(nextPlayerID),
     isThisClient: true,
     name: nextPlayerID, // default name
     gameID: LOBBY_ID
@@ -77,7 +85,7 @@ eurecaServer.onConnect(function (socket) {
   for (const clientID in eurecaClients) {
     client.receiveAction({
       type: 'CREATE_PLAYER',
-      playerID: clientID,
+      playerID: String(clientID),
       isThisClient: false,
       name: clientNames[clientID] || clientID,
       gameID: clientToGame[clientID] || LOBBY_ID
@@ -87,7 +95,7 @@ eurecaServer.onConnect(function (socket) {
   for (const gameID in games) {
     client.receiveAction({
       type: 'CREATE_GAME',
-      playerID: games[gameID].players[0],
+      playerID: String(games[gameID].players[0]),
       gameID: gameID,
     });
     if (games[gameID].players.length > 1) {
@@ -95,7 +103,7 @@ eurecaServer.onConnect(function (socket) {
         client.receiveAction({
           type: 'JOIN_GAME',
           gameID: gameID,
-          playerID: games[gameID].players[i],
+          playerID: String(games[gameID].players[i]),
         });
       }
     }
@@ -104,7 +112,7 @@ eurecaServer.onConnect(function (socket) {
   // update the other clients that this one exists
   dispatchToOtherClients(nextPlayerID, {
     type: 'CREATE_PLAYER',
-    playerID: nextPlayerID,
+    playerID: String(nextPlayerID),
     isThisClient: false,
     name: nextPlayerID, // default name
     gameID: LOBBY_ID

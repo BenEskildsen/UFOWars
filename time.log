@@ -23,3 +23,9 @@ Date  Time Started  Time Spent  Work Completed
 
 7/13     2:30pm     1hr         Stop tracking node_modules and bin/*
                                 future paths, collision with sun
+
+7/14     8:25am     3hr         Refactor rootReducer into multiple reducers
+                                Add support for modals. Finish implementing collisions
+                                Refactor away tickSystem into reducer.
+                                Stop ticking on game over
+                                Pop modals and restart when both players are ready

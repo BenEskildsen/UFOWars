@@ -39,6 +39,29 @@ class Game extends React.Component {
     return (
       <div className="background">
         {content}
+        {this.getModal()}
+      </div>
+    );
+  }
+
+  getModal() {
+    if (!this.state.modal) {
+      return null;
+    }
+    const {title, text, buttons} = this.state.modal;
+    const rect = document.getElementById('container').getBoundingClientRect();
+    return (
+      <div className="modal"
+        style={{
+          width: 300,
+          top: (rect.height - 200) / 2,
+          left: (rect.width - 300) / 2,
+        }}>
+        <h3><b>{title}</b></h3>
+        {text}
+        <div className="modalButtons">
+          {buttons}
+        </div>
       </div>
     );
   }
