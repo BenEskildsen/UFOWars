@@ -10,6 +10,7 @@ const {setupClientToServer} = require('./utils/clientToServer');
 const {initTickSystem} = require('./systems/tickSystem');
 const {initRenderSystem} = require('./systems/renderSystem');
 const {initKeyboardControlsSystem} = require('./systems/keyboardControlsSystem');
+const {initCollisionSystem} = require('./systems/collisionSystem');
 
 const store = createStore(rootReducer);
 window.store = store; // useful for debugging
@@ -31,6 +32,7 @@ store.subscribe(() => {
   initTickSystem(store);
   initRenderSystem(store);
   initKeyboardControlsSystem(store);
+  initCollisionSystem(store);
 });
 
 ReactDOM.render(

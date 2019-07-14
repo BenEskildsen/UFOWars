@@ -28,8 +28,14 @@ const makeVector = (theta: Radians, speed: number): Vector => {
   return {x, y};
 }
 
+const distance = (vector: Vector): number => {
+  const {x, y} = vector;
+  return Math.sqrt(x * x + y * y);
+}
+
 module.exports = {
   add,
   subtract,
   makeVector,
+  distance,
 };

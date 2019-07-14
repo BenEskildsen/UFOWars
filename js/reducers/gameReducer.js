@@ -57,6 +57,7 @@ const gameReducer = (state: GameState, action: Action): GameState => {
           ...ship,
           ...prevPos,
           thrust: action.thrust,
+          future: [],
         }
         updateShip(state, action.playerID, timeDiff);
         return state;
@@ -73,6 +74,7 @@ const gameReducer = (state: GameState, action: Action): GameState => {
             [action.playerID]: {
               ...state.ships[action.playerID],
               thrust: action.thrust,
+              future: [],
             },
           },
         };

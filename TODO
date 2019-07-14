@@ -1,14 +1,12 @@
 
  - - - - - - TODO - - - - - -
- - implement configurable speed of light delay
- - implement future/projected paths
  - implement collisions
-
- - - - - - - NEXT - - - - - -
- - ask the client what they want their name to be and track on the server
  - implement thrust using fuel
  - implement win/lose/restart
+
+ - - - - - - NEXT - - - - - -
  - server should track players disconnecting and clean up games
+ - ask the client what they want their name to be and track on the server
 
 
  - - - - - - LATER - - - - - -
@@ -31,6 +29,7 @@
 
 
  - - - - - - WISH - - - - - -
+ - actually implement configurable speed of light delay
 
 
 
@@ -61,3 +60,4 @@
  - compute locations of projectiles based on timestamp
 
  - remove node_modules and bin from git repo
+ - implement future/projected paths

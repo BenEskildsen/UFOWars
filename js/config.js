@@ -17,11 +17,12 @@ const config = {
     mass: 10000,
   },
   G: 1, // gravitational constant
-  maxHistorySize: 200,
-  laserSize: 4,
-  laserSpeed: 5,
+  maxHistorySize: 75,
+  maxFutureSize: 75,
+  laserSize: 4, // deprecated in favor of laserSpeed
+  laserSpeed: 20,
   maxProjectiles: 100,
-  c: 20, // speed of light, in pixels per tick
+  c: Infinity, // speed of light, in pixels per tick
   renderGroundTruth: false,
 };
 

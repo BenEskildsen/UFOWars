@@ -30,7 +30,7 @@ const initRenderSystem = (store: Store): void => {
     // clear
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, config.width, config.height);
-    
+
     const {game} = state;
     const referencePosition = game.ships[getClientPlayerID(state)].position;
     render(game, ctx, referencePosition, config.c);
@@ -57,7 +57,7 @@ const render = (game: Game, ctx: any, referencePosition: Vector, c: number): voi
     const tickDiff = tickDifference(referencePosition, position, c);
     const idx = history.length - 1 - tickDiff;
     playerTickDiffs[id] = tickDiff;
-    
+
     if (idx >= 0) {
       const ship = history[idx];
 
@@ -83,9 +83,19 @@ const render = (game: Game, ctx: any, referencePosition: Vector, c: number): voi
       }
       ctx.restore();
 
+      ctx.beginPath();
+      ctx.strokeStyle = ['blue', 'red'][colorIndex];
+      if (ship.history.length > 0) {
+        ctx.moveTo(ship.history[0].position.x, ship.history[0].position.y);
+      }
       for (const pastShip of ship.history) {
-        ctx.fillStyle = ['blue', 'red'][colorIndex];
-        ctx.fillRect(pastShip.position.x, pastShip.position.y, 2, 2);
+        ctx.lineTo(pastShip.position.x, pastShip.position.y);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = ['blue', 'red'][colorIndex];
+      for (const futureShip of ship.future) {
+        ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
       }
     }
 
@@ -111,8 +121,8 @@ const render = (game: Game, ctx: any, referencePosition: Vector, c: number): voi
       let width = 50;
       if (projectile.type == 'laser') {
         color = 'lime';
-        length = config.laserSize * 6;
-        width = config.laserSize;
+        length = config.laserSpeed;
+        width = 2;
       }
       // TODO track colors better
       // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];

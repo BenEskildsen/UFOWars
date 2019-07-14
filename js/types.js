@@ -85,6 +85,7 @@ export type Entity = {
   thetaSpeed: Radians, // how theta changes over time
 
   history: Array<Entity>,
+  future: Array<Entity>,
 };
 
 export type Ship = Entity & {

@@ -18,6 +18,7 @@ const makeEntity = (
     theta: theta || 0,
     thetaSpeed: 0,
     history: [],
+    future: [],
   };
 };
 

@@ -19,6 +19,13 @@ const tickReducer = (state: GameState): GameState => {
 
   for (const id in state.ships) {
     updateShip(state, id, 1 /* one tick */);
+    const ship: Ship = state.ships[id];
+    ship.future = [];
+    let futureShip = {...ship};
+    while (ship.future.length < config.maxFutureSize) {
+      futureShip = {...computeNextEntity(sun, futureShip)};
+      ship.future.push(futureShip);
+    }
   }
 
   // update planets
@@ -35,8 +42,6 @@ const tickReducer = (state: GameState): GameState => {
   for (let i = 0; i < state.projectiles.length; i++) {
     updateProjectile(state, i, 1 /* one tick */);
   }
-
-  // TODO update paths
 
   // check on queued actions
   let nextState = state;

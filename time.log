@@ -21,4 +21,5 @@ Date  Time Started  Time Spent  Work Completed
                                 Sync projectiles
                                 Speed of light delay
 
-7/13     2:30pm                 Stop tracking node_modules and bin/*
+7/13     2:30pm     1hr         Stop tracking node_modules and bin/*
+                                future paths, collision with sun
