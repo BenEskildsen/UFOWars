@@ -93,7 +93,9 @@ var lobbyReducer = function lobbyReducer(state, action) {
 
         return _extends({}, state, {
           game: _extends({}, initGameState(players), {
-            tickInterval: setInterval(function () {
+            tickInterval: setInterval(
+            // HACK: store is only available via window
+            function () {
               return store.dispatch({ type: 'TICK' });
             }, config.msPerTick)
           }),
@@ -101,6 +103,7 @@ var lobbyReducer = function lobbyReducer(state, action) {
         });
       }
   }
+  return state;
 };
 
 module.exports = { lobbyReducer: lobbyReducer };

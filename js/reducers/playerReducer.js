@@ -42,6 +42,7 @@ const playerReducer = (state: State, action: Action): State=> {
       return state;
     }
   }
+  return state;
 };
 
 module.exports = {playerReducer};

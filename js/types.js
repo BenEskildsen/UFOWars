@@ -132,7 +132,12 @@ export type Action =
   {type: 'FIRE_LASER', playerID: PlayerID, time: number} |
   {type: 'SET_PLAYER_NAME', playerID: PlayerID, name: string} |
   {type: 'SET_PLAYER_SCORE', playerID: PlayerID, score: number} |
-  {type: 'SET_MODAL', text: string, title: string, buttons: Array<Button>} |
+  {
+    type: 'SET_MODAL',
+    text: string,
+    title: string,
+    buttons: Array<{label: string, onClick: () => void}>
+  } |
   {type: 'DISMISS_MODAL'} |
   {type: 'STOP_TICK'} |
   {type: 'TICK'};

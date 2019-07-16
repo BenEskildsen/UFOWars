@@ -377,7 +377,9 @@ var lobbyReducer = function lobbyReducer(state, action) {
 
         return _extends({}, state, {
           game: _extends({}, initGameState(players), {
-            tickInterval: setInterval(function () {
+            tickInterval: setInterval(
+            // HACK: store is only available via window
+            function () {
               return store.dispatch({ type: 'TICK' });
             }, config.msPerTick)
           }),
@@ -385,6 +387,7 @@ var lobbyReducer = function lobbyReducer(state, action) {
         });
       }
   }
+  return state;
 };
 
 module.exports = { lobbyReducer: lobbyReducer };
@@ -395,6 +398,12 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
+var _require = require('../utils/clientToServer'),
+    dispatchToServer = _require.dispatchToServer;
+
+var _require2 = require('../selectors/selectors'),
+    getClientPlayerID = _require2.getClientPlayerID;
+
 var modalReducer = function modalReducer(state, action) {
   switch (action.type) {
     case 'DISMISS_MODAL':
@@ -402,18 +411,45 @@ var modalReducer = function modalReducer(state, action) {
         modal: null
       });
     case 'SET_MODAL':
-      return _extends({}, state, {
-        modal: {
-          title: action.title,
-          text: action.text,
-          buttons: [].concat(_toConsumableArray(action.buttons))
+      {
+        if (action.name != 'gameover') {
+          return _extends({}, state, {
+            modal: {
+              title: action.title,
+              text: action.text,
+              buttons: [].concat(_toConsumableArray(action.buttons))
+            }
+          });
+        } else {
+          var thisClientID = getClientPlayerID(state);
+          return _extends({}, state, {
+            modal: {
+              title: action.title,
+              text: action.text,
+              buttons: [{
+                label: 'Play Again',
+                onClick: function onClick() {
+                  // HACK store is only available through window
+                  store.dispatch({ type: 'DISMISS_MODAL' });
+                  var setReadyAction = {
+                    type: 'SET_PLAYER_READY',
+                    playerID: thisClientID,
+                    ready: true
+                  };
+                  dispatchToServer(thisClientID, setReadyAction);
+                  store.dispatch(setReadyAction);
+                }
+              }]
+            }
+          });
         }
-      });
+      }
   }
+  return state;
 };
 
 module.exports = { modalReducer: modalReducer };
-},{}],10:[function(require,module,exports){
+},{"../selectors/selectors":13,"../utils/clientToServer":24}],10:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -533,6 +569,7 @@ var playerReducer = function playerReducer(state, action) {
         return state;
       }
   }
+  return state;
 };
 
 module.exports = { playerReducer: playerReducer };
@@ -955,39 +992,36 @@ var initCollisionSystem = function initCollisionSystem(store) {
       }
     }
 
-    if (gameOver) {
+    var thisClientID = getClientPlayerID(state);
+    if (gameOver && loserID == thisClientID) {
       console.log('gameover', message);
-      var thisClientID = getClientPlayerID(state);
       // stop game
       var readyAction = { type: 'SET_PLAYER_READY', playerID: thisClientID, ready: false };
       dispatchToServer(thisClientID, readyAction);
       dispatch(readyAction);
-      dispatch({ type: 'STOP_TICK' });
+      var stopAction = { type: 'STOP_TICK' };
+      dispatch(stopAction);
+      dispatchToServer(thisClientID, stopAction);
       // update scores
       for (var _id2 in state.game.ships) {
         var player = getPlayerByID(state, _id2);
         if (player.id != loserID) {
-          dispatch({ type: 'SET_PLAYER_SCORE', playerID: player.id, score: player.score + 1 });
+          var scoreAction = {
+            type: 'SET_PLAYER_SCORE',
+            playerID: player.id,
+            score: player.score + 1
+          };
+          dispatch(scoreAction);
+          dispatchToServer(thisClientID, scoreAction);
         }
       }
       // dispatch modal with message
       var winOrLose = thisClientID == loserID ? 'You Lose!' : 'You Win!';
-      dispatch({
-        type: 'SET_MODAL', title: winOrLose, text: message,
-        buttons: [React.createElement(Button, {
-          label: 'Play Again',
-          onClick: function onClick() {
-            dispatch({ type: 'DISMISS_MODAL' });
-            var setReadyAction = {
-              type: 'SET_PLAYER_READY',
-              playerID: thisClientID,
-              ready: true
-            };
-            dispatchToServer(thisClientID, setReadyAction);
-            dispatch(setReadyAction);
-          }
-        })]
-      });
+      var modalAction = {
+        type: 'SET_MODAL', title: winOrLose, text: message, name: 'gameover'
+      };
+      dispatch(modalAction);
+      dispatchToServer(thisClientID, modalAction);
     }
   });
 };
@@ -1508,6 +1542,7 @@ var _require = require('../config'),
 
 var Canvas = require('./Canvas.react');
 var Lobby = require('./Lobby.react');
+var Button = require('./Button.react');
 
 /**
  * props: {store}
@@ -1569,6 +1604,9 @@ var Game = function (_React$Component) {
           buttons = _state$modal.buttons;
 
       var rect = document.getElementById('container').getBoundingClientRect();
+      var buttonHTML = buttons.map(function (button) {
+        return React.createElement(Button, { label: button.label, onClick: button.onClick });
+      });
       return React.createElement(
         'div',
         { className: 'modal',
@@ -1590,7 +1628,7 @@ var Game = function (_React$Component) {
         React.createElement(
           'div',
           { className: 'modalButtons' },
-          buttons
+          buttonHTML
         )
       );
     }
@@ -1602,7 +1640,7 @@ var Game = function (_React$Component) {
 ;
 
 module.exports = Game;
-},{"../config":1,"./Canvas.react":21,"./Lobby.react":23,"React":32}],23:[function(require,module,exports){
+},{"../config":1,"./Button.react":20,"./Canvas.react":21,"./Lobby.react":23,"React":32}],23:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1795,7 +1833,6 @@ var setupClientToServer = function setupClientToServer(store) {
   var client = new Eureca.Client();
   // relay actions received from the server to this client's store
   client.exports.receiveAction = function (action) {
-    console.log(action);
     store.dispatch(action);
   };
   client.ready(function (serverProxy) {

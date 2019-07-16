@@ -48,6 +48,7 @@ const lobbyReducer = (state: State, action: Action): State=> {
         game: {
           ...initGameState(players),
           tickInterval: setInterval(
+            // HACK: store is only available via window
             () => store.dispatch({type: 'TICK'}),
             config.msPerTick,
           ),
@@ -59,6 +60,7 @@ const lobbyReducer = (state: State, action: Action): State=> {
       };
     }
   }
+  return state;
 }
 
 module.exports = {lobbyReducer};

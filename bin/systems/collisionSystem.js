@@ -85,39 +85,36 @@ var initCollisionSystem = function initCollisionSystem(store) {
       }
     }
 
-    if (gameOver) {
+    var thisClientID = getClientPlayerID(state);
+    if (gameOver && loserID == thisClientID) {
       console.log('gameover', message);
-      var thisClientID = getClientPlayerID(state);
       // stop game
       var readyAction = { type: 'SET_PLAYER_READY', playerID: thisClientID, ready: false };
       dispatchToServer(thisClientID, readyAction);
       dispatch(readyAction);
-      dispatch({ type: 'STOP_TICK' });
+      var stopAction = { type: 'STOP_TICK' };
+      dispatch(stopAction);
+      dispatchToServer(thisClientID, stopAction);
       // update scores
       for (var _id2 in state.game.ships) {
         var player = getPlayerByID(state, _id2);
         if (player.id != loserID) {
-          dispatch({ type: 'SET_PLAYER_SCORE', playerID: player.id, score: player.score + 1 });
+          var scoreAction = {
+            type: 'SET_PLAYER_SCORE',
+            playerID: player.id,
+            score: player.score + 1
+          };
+          dispatch(scoreAction);
+          dispatchToServer(thisClientID, scoreAction);
         }
       }
       // dispatch modal with message
       var winOrLose = thisClientID == loserID ? 'You Lose!' : 'You Win!';
-      dispatch({
-        type: 'SET_MODAL', title: winOrLose, text: message,
-        buttons: [React.createElement(Button, {
-          label: 'Play Again',
-          onClick: function onClick() {
-            dispatch({ type: 'DISMISS_MODAL' });
-            var setReadyAction = {
-              type: 'SET_PLAYER_READY',
-              playerID: thisClientID,
-              ready: true
-            };
-            dispatchToServer(thisClientID, setReadyAction);
-            dispatch(setReadyAction);
-          }
-        })]
-      });
+      var modalAction = {
+        type: 'SET_MODAL', title: winOrLose, text: message, name: 'gameover'
+      };
+      dispatch(modalAction);
+      dispatchToServer(thisClientID, modalAction);
     }
   });
 };

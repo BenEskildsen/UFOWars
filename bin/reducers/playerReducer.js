@@ -117,6 +117,7 @@ var playerReducer = function playerReducer(state, action) {
         return state;
       }
   }
+  return state;
 };
 
 module.exports = { playerReducer: playerReducer };

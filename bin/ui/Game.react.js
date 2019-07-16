@@ -17,6 +17,7 @@ var _require = require('../config'),
 
 var Canvas = require('./Canvas.react');
 var Lobby = require('./Lobby.react');
+var Button = require('./Button.react');
 
 /**
  * props: {store}
@@ -78,6 +79,9 @@ var Game = function (_React$Component) {
           buttons = _state$modal.buttons;
 
       var rect = document.getElementById('container').getBoundingClientRect();
+      var buttonHTML = buttons.map(function (button) {
+        return React.createElement(Button, { label: button.label, onClick: button.onClick });
+      });
       return React.createElement(
         'div',
         { className: 'modal',
@@ -99,7 +103,7 @@ var Game = function (_React$Component) {
         React.createElement(
           'div',
           { className: 'modalButtons' },
-          buttons
+          buttonHTML
         )
       );
     }

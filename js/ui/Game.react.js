@@ -3,6 +3,7 @@ const React = require('React');
 const {config} = require('../config');
 const Canvas = require('./Canvas.react');
 const Lobby = require('./Lobby.react');
+const Button = require('./Button.react');
 
 /**
  * props: {store}
@@ -50,6 +51,9 @@ class Game extends React.Component {
     }
     const {title, text, buttons} = this.state.modal;
     const rect = document.getElementById('container').getBoundingClientRect();
+    const buttonHTML = buttons.map(button => {
+      return <Button label={button.label} onClick={button.onClick} />;
+    });
     return (
       <div className="modal"
         style={{
@@ -60,7 +64,7 @@ class Game extends React.Component {
         <h3><b>{title}</b></h3>
         {text}
         <div className="modalButtons">
-          {buttons}
+          {buttonHTML}
         </div>
       </div>
     );

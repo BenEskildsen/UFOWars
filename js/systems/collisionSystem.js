@@ -54,41 +54,36 @@ const initCollisionSystem = (store: Store): void => {
       }
     }
 
-    if (gameOver) {
+    const thisClientID = getClientPlayerID(state);
+    if (gameOver && loserID == thisClientID) {
       console.log('gameover', message);
-      const thisClientID = getClientPlayerID(state);
       // stop game
       const readyAction = {type: 'SET_PLAYER_READY', playerID: thisClientID, ready: false};
       dispatchToServer(thisClientID, readyAction);
       dispatch(readyAction);
-      dispatch({type: 'STOP_TICK'});
+      const stopAction = {type: 'STOP_TICK'};
+      dispatch(stopAction);
+      dispatchToServer(thisClientID, stopAction);
       // update scores
       for (const id in state.game.ships) {
         const player = getPlayerByID(state, id);
         if (player.id != loserID) {
-          dispatch({type: 'SET_PLAYER_SCORE', playerID: player.id, score: player.score + 1});
+          const scoreAction = {
+            type: 'SET_PLAYER_SCORE',
+            playerID: player.id,
+            score: player.score + 1,
+          };
+          dispatch(scoreAction);
+          dispatchToServer(thisClientID, scoreAction);
         }
       }
       // dispatch modal with message
       const winOrLose = thisClientID == loserID ? 'You Lose!' : 'You Win!';
-      dispatch({
-        type: 'SET_MODAL', title: winOrLose, text: message,
-        buttons: [
-          <Button
-            label="Play Again"
-            onClick={() => {
-              dispatch({type: 'DISMISS_MODAL'});
-              const setReadyAction = {
-                type: 'SET_PLAYER_READY',
-                playerID: thisClientID,
-                ready: true,
-              };
-              dispatchToServer(thisClientID, setReadyAction);
-              dispatch(setReadyAction);
-            }}
-          />,
-        ],
-      });
+      const modalAction = {
+        type: 'SET_MODAL', title: winOrLose, text: message, name: 'gameover',
+      };
+      dispatch(modalAction);
+      dispatchToServer(thisClientID, modalAction);
     }
   });
 }

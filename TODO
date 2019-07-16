@@ -1,10 +1,10 @@
 
  - - - - - - TODO - - - - - -
  - implement thrust using fuel
+ - sync game loss scenarios so both players always agree
 
  - - - - - - NEXT - - - - - -
  - server should track players disconnecting and clean up games
- - sync game loss scenarios so both players always agree
  - ask the client what they want their name to be and track on the server
  - deploy to heroku
  - implement UI sidebar

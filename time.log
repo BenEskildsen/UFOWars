@@ -29,3 +29,5 @@ Date  Time Started  Time Spent  Work Completed
                                 Refactor away tickSystem into reducer.
                                 Stop ticking on game over
                                 Pop modals and restart when both players are ready
+
+7/15     8:50am
