@@ -8,11 +8,14 @@
  - server should track players disconnecting and clean up games
 
 
- - - - - - - UI - - - - -
+ - - - - - -  UI  - - - - - -
  - implement UI sidebar
- - ask the client what they want their name to be and track on the server
+
+
+ - - - - - - LOBBY - - - - -
  - styling and fancy UI for lobby
  - handle overflow in the lobby, without losing scroll lock on game itself
+ - add chat room to lobby
 
 
  - - - - - - REFACTOR - - - - - -
@@ -20,6 +23,7 @@
  - how should unique gameIDs be assigned to newly-created games?
  - server side code should live in its own directory?
  - abstract away rendering into something neater
+ - dispatchToServer shouldn't need to take in clientID
 
 
  - - - - - - BUGS - - - - - -
@@ -68,3 +72,5 @@
  - fix readiness between games
  - projectiles destroyed if they hit the sun
  - implement missile weapons
+
+ - ask the client what they want their name to be and track on the server
