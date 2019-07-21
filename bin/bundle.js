@@ -169,7 +169,7 @@ store.subscribe(function () {
 });
 
 ReactDOM.render(React.createElement(Game, { store: store }), document.getElementById('container'));
-},{"./reducers/rootReducer":11,"./systems/collisionSystem":16,"./systems/keyboardControlsSystem":17,"./systems/playerReadySystem":18,"./systems/renderSystem":19,"./ui/Game.react":22,"./utils/clientToServer":24,"react":53,"react-dom":48,"redux":61}],6:[function(require,module,exports){
+},{"./reducers/rootReducer":11,"./systems/collisionSystem":16,"./systems/keyboardControlsSystem":17,"./systems/playerReadySystem":18,"./systems/renderSystem":19,"./ui/Game.react":22,"./utils/clientToServer":24,"react":51,"react-dom":48,"redux":57}],6:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1381,114 +1381,93 @@ var initRenderSystem = function initRenderSystem(store) {
 
     var game = state.game;
 
-    var referencePosition = game.ships[getClientPlayerID(state)].position;
-    render(game, ctx, referencePosition, config.c);
-    if (config.renderGroundTruth) {
-      render(game, ctx, referencePosition, float('inf'));
-    }
+    render(game, ctx);
   });
 };
 
-var tickDifference = function tickDifference(position, otherPosition, c) {
-  var dx = position.x - otherPosition.x;
-  var dy = position.y - otherPosition.y;
-  return round(sqrt(dx * dx + dy * dy) / c);
-};
-
-var render = function render(game, ctx, referencePosition, c) {
+var render = function render(game, ctx) {
   // TODO abstract away rendering
   // render ships
   var colorIndex = 0;
-  var playerTickDiffs = {};
   for (var id in game.ships) {
-    var currentShip = game.ships[id];
-    var position = currentShip.position,
-        history = currentShip.history;
+    var ship = game.ships[id];
 
-    var tickDiff = tickDifference(referencePosition, position, c);
-    var idx = history.length - 1 - tickDiff;
-    playerTickDiffs[id] = tickDiff;
+    ctx.save();
+    ctx.fillStyle = ['blue', 'red'][colorIndex];
+    ctx.beginPath();
+    ctx.translate(ship.position.x, ship.position.y);
+    ctx.rotate(ship.theta);
+    ctx.moveTo(ship.radius, 0);
+    ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
+    ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
+    ctx.closePath();
+    ctx.fill();
 
-    if (idx >= 0) {
-      var ship = history[idx];
-
-      ctx.save();
-      ctx.fillStyle = ['blue', 'red'][colorIndex];
+    if (ship.thrust > 0) {
+      ctx.fillStyle = 'orange';
       ctx.beginPath();
-      ctx.translate(ship.position.x, ship.position.y);
-      ctx.rotate(ship.theta);
-      ctx.moveTo(ship.radius, 0);
-      ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
-      ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
+      ctx.moveTo(-1 * ship.radius / 1.25, 0);
+      ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 3);
+      ctx.lineTo(-1 * ship.radius / 2, ship.radius / 3);
       ctx.closePath();
       ctx.fill();
+    }
+    ctx.restore();
 
-      if (ship.thrust > 0) {
-        ctx.fillStyle = 'orange';
-        ctx.beginPath();
-        ctx.moveTo(-1 * ship.radius / 1.25, 0);
-        ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 3);
-        ctx.lineTo(-1 * ship.radius / 2, ship.radius / 3);
-        ctx.closePath();
-        ctx.fill();
+    ctx.beginPath();
+    ctx.strokeStyle = ['blue', 'red'][colorIndex];
+    if (ship.history.length > 0) {
+      ctx.moveTo(ship.history[0].position.x, ship.history[0].position.y);
+    }
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+      for (var _iterator = ship.history[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var pastShip = _step.value;
+
+        ctx.lineTo(pastShip.position.x, pastShip.position.y);
       }
-      ctx.restore();
-
-      ctx.beginPath();
-      ctx.strokeStyle = ['blue', 'red'][colorIndex];
-      if (ship.history.length > 0) {
-        ctx.moveTo(ship.history[0].position.x, ship.history[0].position.y);
-      }
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
-
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
       try {
-        for (var _iterator = ship.history[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var pastShip = _step.value;
-
-          ctx.lineTo(pastShip.position.x, pastShip.position.y);
+        if (!_iteratorNormalCompletion && _iterator.return) {
+          _iterator.return();
         }
-      } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
       } finally {
-        try {
-          if (!_iteratorNormalCompletion && _iterator.return) {
-            _iterator.return();
-          }
-        } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
-          }
+        if (_didIteratorError) {
+          throw _iteratorError;
         }
       }
+    }
 
-      ctx.stroke();
+    ctx.stroke();
 
-      ctx.fillStyle = ['blue', 'red'][colorIndex];
-      var _iteratorNormalCompletion2 = true;
-      var _didIteratorError2 = false;
-      var _iteratorError2 = undefined;
+    ctx.fillStyle = ['blue', 'red'][colorIndex];
+    var _iteratorNormalCompletion2 = true;
+    var _didIteratorError2 = false;
+    var _iteratorError2 = undefined;
 
+    try {
+      for (var _iterator2 = ship.future[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+        var futureShip = _step2.value;
+
+        ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
+      }
+    } catch (err) {
+      _didIteratorError2 = true;
+      _iteratorError2 = err;
+    } finally {
       try {
-        for (var _iterator2 = ship.future[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-          var futureShip = _step2.value;
-
-          ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
+        if (!_iteratorNormalCompletion2 && _iterator2.return) {
+          _iterator2.return();
         }
-      } catch (err) {
-        _didIteratorError2 = true;
-        _iteratorError2 = err;
       } finally {
-        try {
-          if (!_iteratorNormalCompletion2 && _iterator2.return) {
-            _iterator2.return();
-          }
-        } finally {
-          if (_didIteratorError2) {
-            throw _iteratorError2;
-          }
+        if (_didIteratorError2) {
+          throw _iteratorError2;
         }
       }
     }
@@ -1503,47 +1482,33 @@ var render = function render(game, ctx, referencePosition, c) {
 
   try {
     for (var _iterator3 = game.projectiles[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-      var currentProjectile = _step3.value;
-      var position = currentProjectile.position,
-          history = currentProjectile.history,
-          type = currentProjectile.type;
+      var projectile = _step3.value;
 
-      if (type == 'missile') {
-        renderMissile(ctx, currentProjectile, referencePosition);
+      if (projectile.type == 'missile') {
+        renderMissile(ctx, projectile);
         continue;
       }
-      var _tickDiff = tickDifference(referencePosition, position, c);
-
-      // Compute tick difference based on projectile's player:
-      // const tickDiff = playerTickDiffs[currentProjectile.playerID];
-
-      var _idx = history.length - 1 - _tickDiff;
-
-      if (_idx >= 0) {
-        var projectile = history[_idx];
-
-        ctx.save();
-        var color = 'white';
-        var length = 50;
-        var width = 50;
-        if (projectile.type == 'laser') {
-          color = 'lime';
-          length = config.laserSpeed;
-          width = 2;
-        }
-        // TODO track colors better
-        // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
-        ctx.lineWidth = 1;
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.translate(projectile.position.x, projectile.position.y);
-        ctx.rotate(projectile.theta);
-        ctx.rect(0, 0, length, width);
-        ctx.fill();
-        // ctx.stroke();
-        ctx.closePath();
-        ctx.restore();
+      ctx.save();
+      var color = 'white';
+      var length = 50;
+      var width = 50;
+      if (projectile.type == 'laser') {
+        color = 'lime';
+        length = config.laserSpeed;
+        width = 2;
       }
+      // TODO track colors better
+      // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
+      ctx.lineWidth = 1;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.translate(projectile.position.x, projectile.position.y);
+      ctx.rotate(projectile.theta);
+      ctx.rect(0, 0, length, width);
+      ctx.fill();
+      // ctx.stroke();
+      ctx.closePath();
+      ctx.restore();
     }
 
     // render sun
@@ -1574,55 +1539,45 @@ var render = function render(game, ctx, referencePosition, c) {
   // TODO
 };
 
-var renderMissile = function renderMissile(ctx, projectile, referencePosition) {
-  var history = projectile.history,
-      position = projectile.position;
+var renderMissile = function renderMissile(ctx, missile) {
+  ctx.save();
+  // TODO track colors better
+  // ctx.fillStyle = ['blue', 'red'][colorIndex];
+  ctx.fillStyle = 'green';
+  ctx.beginPath();
+  ctx.translate(missile.position.x, missile.position.y);
+  ctx.rotate(missile.theta);
+  ctx.moveTo(missile.radius, 0);
+  ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 2);
+  ctx.lineTo(-1 * missile.radius / 2, missile.radius / 2);
+  ctx.closePath();
+  ctx.fill();
 
-  var tickDiff = tickDifference(referencePosition, position, config.c);
-  var idx = history.length - 1 - tickDiff;
-
-  if (idx >= 0) {
-    var missile = history[idx];
-
-    ctx.save();
-    // TODO track colors better
-    // ctx.fillStyle = ['blue', 'red'][colorIndex];
-    ctx.fillStyle = 'green';
+  if (missile.thrust > 0) {
+    ctx.fillStyle = 'orange';
     ctx.beginPath();
-    ctx.translate(missile.position.x, missile.position.y);
-    ctx.rotate(missile.theta);
-    ctx.moveTo(missile.radius, 0);
-    ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 2);
-    ctx.lineTo(-1 * missile.radius / 2, missile.radius / 2);
+    ctx.moveTo(-1 * missile.radius / 1.25, 0);
+    ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 3);
+    ctx.lineTo(-1 * missile.radius / 2, missile.radius / 3);
     ctx.closePath();
     ctx.fill();
-
-    if (missile.thrust > 0) {
-      ctx.fillStyle = 'orange';
-      ctx.beginPath();
-      ctx.moveTo(-1 * missile.radius / 1.25, 0);
-      ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 3);
-      ctx.lineTo(-1 * missile.radius / 2, missile.radius / 3);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.restore();
-
-    // ctx.beginPath();
-    // ctx.strokeStyle = ['blue', 'red'][colorIndex];
-    // if (missile.history.length > 0) {
-    //   ctx.moveTo(missile.history[0].position.x, missile.history[0].position.y);
-    // }
-    // for (const pastShip of missile.history) {
-    //   ctx.lineTo(pastShip.position.x, pastShip.position.y);
-    // }
-    // ctx.stroke();
-    //
-    // ctx.fillStyle = ['blue', 'red'][colorIndex];
-    // for (const futureShip of missile.future) {
-    //   ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
-    // }
   }
+  ctx.restore();
+
+  // ctx.beginPath();
+  // ctx.strokeStyle = ['blue', 'red'][colorIndex];
+  // if (missile.history.length > 0) {
+  //   ctx.moveTo(missile.history[0].position.x, missile.history[0].position.y);
+  // }
+  // for (const pastShip of missile.history) {
+  //   ctx.lineTo(pastShip.position.x, pastShip.position.y);
+  // }
+  // ctx.stroke();
+  //
+  // ctx.fillStyle = ['blue', 'red'][colorIndex];
+  // for (const futureShip of missile.future) {
+  //   ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
+  // }
 };
 
 module.exports = { initRenderSystem: initRenderSystem };
@@ -4171,7 +4126,7 @@ module.exports = react;
 }
 
 }).call(this,require('_process'))
-},{"_process":71,"object-assign":45,"prop-types/checkPropTypes":33}],31:[function(require,module,exports){
+},{"_process":67,"object-assign":43,"prop-types/checkPropTypes":44}],31:[function(require,module,exports){
 /** @license React v16.8.6
  * react.production.min.js
  *
@@ -4198,7 +4153,7 @@ b,d){return W().useImperativeHandle(a,b,d)},useDebugValue:function(){},useLayout
 b){void 0!==b.ref&&(h=b.ref,f=J.current);void 0!==b.key&&(g=""+b.key);var l=void 0;a.type&&a.type.defaultProps&&(l=a.type.defaultProps);for(c in b)K.call(b,c)&&!L.hasOwnProperty(c)&&(e[c]=void 0===b[c]&&void 0!==l?l[c]:b[c])}c=arguments.length-2;if(1===c)e.children=d;else if(1<c){l=Array(c);for(var m=0;m<c;m++)l[m]=arguments[m+2];e.children=l}return{$$typeof:p,type:a.type,key:g,ref:h,props:e,_owner:f}},createFactory:function(a){var b=M.bind(null,a);b.type=a;return b},isValidElement:N,version:"16.8.6",
 unstable_ConcurrentMode:x,unstable_Profiler:u,__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{ReactCurrentDispatcher:I,ReactCurrentOwner:J,assign:k}},Y={default:X},Z=Y&&X||Y;module.exports=Z.default||Z;
 
-},{"object-assign":45}],32:[function(require,module,exports){
+},{"object-assign":43}],32:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -4209,7 +4164,348 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react.development.js":30,"./cjs/react.production.min.js":31,"_process":71}],33:[function(require,module,exports){
+},{"./cjs/react.development.js":30,"./cjs/react.production.min.js":31,"_process":67}],33:[function(require,module,exports){
+var root = require('./_root');
+
+/** Built-in value references. */
+var Symbol = root.Symbol;
+
+module.exports = Symbol;
+
+},{"./_root":40}],34:[function(require,module,exports){
+var Symbol = require('./_Symbol'),
+    getRawTag = require('./_getRawTag'),
+    objectToString = require('./_objectToString');
+
+/** `Object#toString` result references. */
+var nullTag = '[object Null]',
+    undefinedTag = '[object Undefined]';
+
+/** Built-in value references. */
+var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+
+/**
+ * The base implementation of `getTag` without fallbacks for buggy environments.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the `toStringTag`.
+ */
+function baseGetTag(value) {
+  if (value == null) {
+    return value === undefined ? undefinedTag : nullTag;
+  }
+  return (symToStringTag && symToStringTag in Object(value))
+    ? getRawTag(value)
+    : objectToString(value);
+}
+
+module.exports = baseGetTag;
+
+},{"./_Symbol":33,"./_getRawTag":37,"./_objectToString":38}],35:[function(require,module,exports){
+(function (global){
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
+
+module.exports = freeGlobal;
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],36:[function(require,module,exports){
+var overArg = require('./_overArg');
+
+/** Built-in value references. */
+var getPrototype = overArg(Object.getPrototypeOf, Object);
+
+module.exports = getPrototype;
+
+},{"./_overArg":39}],37:[function(require,module,exports){
+var Symbol = require('./_Symbol');
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString = objectProto.toString;
+
+/** Built-in value references. */
+var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+
+/**
+ * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the raw `toStringTag`.
+ */
+function getRawTag(value) {
+  var isOwn = hasOwnProperty.call(value, symToStringTag),
+      tag = value[symToStringTag];
+
+  try {
+    value[symToStringTag] = undefined;
+    var unmasked = true;
+  } catch (e) {}
+
+  var result = nativeObjectToString.call(value);
+  if (unmasked) {
+    if (isOwn) {
+      value[symToStringTag] = tag;
+    } else {
+      delete value[symToStringTag];
+    }
+  }
+  return result;
+}
+
+module.exports = getRawTag;
+
+},{"./_Symbol":33}],38:[function(require,module,exports){
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString = objectProto.toString;
+
+/**
+ * Converts `value` to a string using `Object.prototype.toString`.
+ *
+ * @private
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ */
+function objectToString(value) {
+  return nativeObjectToString.call(value);
+}
+
+module.exports = objectToString;
+
+},{}],39:[function(require,module,exports){
+/**
+ * Creates a unary function that invokes `func` with its argument transformed.
+ *
+ * @private
+ * @param {Function} func The function to wrap.
+ * @param {Function} transform The argument transform.
+ * @returns {Function} Returns the new function.
+ */
+function overArg(func, transform) {
+  return function(arg) {
+    return func(transform(arg));
+  };
+}
+
+module.exports = overArg;
+
+},{}],40:[function(require,module,exports){
+var freeGlobal = require('./_freeGlobal');
+
+/** Detect free variable `self`. */
+var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+
+/** Used as a reference to the global object. */
+var root = freeGlobal || freeSelf || Function('return this')();
+
+module.exports = root;
+
+},{"./_freeGlobal":35}],41:[function(require,module,exports){
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return value != null && typeof value == 'object';
+}
+
+module.exports = isObjectLike;
+
+},{}],42:[function(require,module,exports){
+var baseGetTag = require('./_baseGetTag'),
+    getPrototype = require('./_getPrototype'),
+    isObjectLike = require('./isObjectLike');
+
+/** `Object#toString` result references. */
+var objectTag = '[object Object]';
+
+/** Used for built-in method references. */
+var funcProto = Function.prototype,
+    objectProto = Object.prototype;
+
+/** Used to resolve the decompiled source of functions. */
+var funcToString = funcProto.toString;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/** Used to infer the `Object` constructor. */
+var objectCtorString = funcToString.call(Object);
+
+/**
+ * Checks if `value` is a plain object, that is, an object created by the
+ * `Object` constructor or one with a `[[Prototype]]` of `null`.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.8.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a plain object, else `false`.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ * }
+ *
+ * _.isPlainObject(new Foo);
+ * // => false
+ *
+ * _.isPlainObject([1, 2, 3]);
+ * // => false
+ *
+ * _.isPlainObject({ 'x': 0, 'y': 0 });
+ * // => true
+ *
+ * _.isPlainObject(Object.create(null));
+ * // => true
+ */
+function isPlainObject(value) {
+  if (!isObjectLike(value) || baseGetTag(value) != objectTag) {
+    return false;
+  }
+  var proto = getPrototype(value);
+  if (proto === null) {
+    return true;
+  }
+  var Ctor = hasOwnProperty.call(proto, 'constructor') && proto.constructor;
+  return typeof Ctor == 'function' && Ctor instanceof Ctor &&
+    funcToString.call(Ctor) == objectCtorString;
+}
+
+module.exports = isPlainObject;
+
+},{"./_baseGetTag":34,"./_getPrototype":36,"./isObjectLike":41}],43:[function(require,module,exports){
+/*
+object-assign
+(c) Sindre Sorhus
+@license MIT
+*/
+
+'use strict';
+/* eslint-disable no-unused-vars */
+var getOwnPropertySymbols = Object.getOwnPropertySymbols;
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var propIsEnumerable = Object.prototype.propertyIsEnumerable;
+
+function toObject(val) {
+	if (val === null || val === undefined) {
+		throw new TypeError('Object.assign cannot be called with null or undefined');
+	}
+
+	return Object(val);
+}
+
+function shouldUseNative() {
+	try {
+		if (!Object.assign) {
+			return false;
+		}
+
+		// Detect buggy property enumeration order in older V8 versions.
+
+		// https://bugs.chromium.org/p/v8/issues/detail?id=4118
+		var test1 = new String('abc');  // eslint-disable-line no-new-wrappers
+		test1[5] = 'de';
+		if (Object.getOwnPropertyNames(test1)[0] === '5') {
+			return false;
+		}
+
+		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
+		var test2 = {};
+		for (var i = 0; i < 10; i++) {
+			test2['_' + String.fromCharCode(i)] = i;
+		}
+		var order2 = Object.getOwnPropertyNames(test2).map(function (n) {
+			return test2[n];
+		});
+		if (order2.join('') !== '0123456789') {
+			return false;
+		}
+
+		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
+		var test3 = {};
+		'abcdefghijklmnopqrst'.split('').forEach(function (letter) {
+			test3[letter] = letter;
+		});
+		if (Object.keys(Object.assign({}, test3)).join('') !==
+				'abcdefghijklmnopqrst') {
+			return false;
+		}
+
+		return true;
+	} catch (err) {
+		// We don't expect any of the above to throw, but better to be safe.
+		return false;
+	}
+}
+
+module.exports = shouldUseNative() ? Object.assign : function (target, source) {
+	var from;
+	var to = toObject(target);
+	var symbols;
+
+	for (var s = 1; s < arguments.length; s++) {
+		from = Object(arguments[s]);
+
+		for (var key in from) {
+			if (hasOwnProperty.call(from, key)) {
+				to[key] = from[key];
+			}
+		}
+
+		if (getOwnPropertySymbols) {
+			symbols = getOwnPropertySymbols(from);
+			for (var i = 0; i < symbols.length; i++) {
+				if (propIsEnumerable.call(from, symbols[i])) {
+					to[symbols[i]] = from[symbols[i]];
+				}
+			}
+		}
+	}
+
+	return to;
+};
+
+},{}],44:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -4315,7 +4611,7 @@ checkPropTypes.resetWarningCache = function() {
 module.exports = checkPropTypes;
 
 }).call(this,require('_process'))
-},{"./lib/ReactPropTypesSecret":34,"_process":71}],34:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":45,"_process":67}],45:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  *
@@ -4328,347 +4624,6 @@ module.exports = checkPropTypes;
 var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 
 module.exports = ReactPropTypesSecret;
-
-},{}],35:[function(require,module,exports){
-var root = require('./_root');
-
-/** Built-in value references. */
-var Symbol = root.Symbol;
-
-module.exports = Symbol;
-
-},{"./_root":42}],36:[function(require,module,exports){
-var Symbol = require('./_Symbol'),
-    getRawTag = require('./_getRawTag'),
-    objectToString = require('./_objectToString');
-
-/** `Object#toString` result references. */
-var nullTag = '[object Null]',
-    undefinedTag = '[object Undefined]';
-
-/** Built-in value references. */
-var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
-
-/**
- * The base implementation of `getTag` without fallbacks for buggy environments.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the `toStringTag`.
- */
-function baseGetTag(value) {
-  if (value == null) {
-    return value === undefined ? undefinedTag : nullTag;
-  }
-  return (symToStringTag && symToStringTag in Object(value))
-    ? getRawTag(value)
-    : objectToString(value);
-}
-
-module.exports = baseGetTag;
-
-},{"./_Symbol":35,"./_getRawTag":39,"./_objectToString":40}],37:[function(require,module,exports){
-(function (global){
-/** Detect free variable `global` from Node.js. */
-var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
-
-module.exports = freeGlobal;
-
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],38:[function(require,module,exports){
-var overArg = require('./_overArg');
-
-/** Built-in value references. */
-var getPrototype = overArg(Object.getPrototypeOf, Object);
-
-module.exports = getPrototype;
-
-},{"./_overArg":41}],39:[function(require,module,exports){
-var Symbol = require('./_Symbol');
-
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var nativeObjectToString = objectProto.toString;
-
-/** Built-in value references. */
-var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
-
-/**
- * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the raw `toStringTag`.
- */
-function getRawTag(value) {
-  var isOwn = hasOwnProperty.call(value, symToStringTag),
-      tag = value[symToStringTag];
-
-  try {
-    value[symToStringTag] = undefined;
-    var unmasked = true;
-  } catch (e) {}
-
-  var result = nativeObjectToString.call(value);
-  if (unmasked) {
-    if (isOwn) {
-      value[symToStringTag] = tag;
-    } else {
-      delete value[symToStringTag];
-    }
-  }
-  return result;
-}
-
-module.exports = getRawTag;
-
-},{"./_Symbol":35}],40:[function(require,module,exports){
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var nativeObjectToString = objectProto.toString;
-
-/**
- * Converts `value` to a string using `Object.prototype.toString`.
- *
- * @private
- * @param {*} value The value to convert.
- * @returns {string} Returns the converted string.
- */
-function objectToString(value) {
-  return nativeObjectToString.call(value);
-}
-
-module.exports = objectToString;
-
-},{}],41:[function(require,module,exports){
-/**
- * Creates a unary function that invokes `func` with its argument transformed.
- *
- * @private
- * @param {Function} func The function to wrap.
- * @param {Function} transform The argument transform.
- * @returns {Function} Returns the new function.
- */
-function overArg(func, transform) {
-  return function(arg) {
-    return func(transform(arg));
-  };
-}
-
-module.exports = overArg;
-
-},{}],42:[function(require,module,exports){
-var freeGlobal = require('./_freeGlobal');
-
-/** Detect free variable `self`. */
-var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
-
-/** Used as a reference to the global object. */
-var root = freeGlobal || freeSelf || Function('return this')();
-
-module.exports = root;
-
-},{"./_freeGlobal":37}],43:[function(require,module,exports){
-/**
- * Checks if `value` is object-like. A value is object-like if it's not `null`
- * and has a `typeof` result of "object".
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
- * @example
- *
- * _.isObjectLike({});
- * // => true
- *
- * _.isObjectLike([1, 2, 3]);
- * // => true
- *
- * _.isObjectLike(_.noop);
- * // => false
- *
- * _.isObjectLike(null);
- * // => false
- */
-function isObjectLike(value) {
-  return value != null && typeof value == 'object';
-}
-
-module.exports = isObjectLike;
-
-},{}],44:[function(require,module,exports){
-var baseGetTag = require('./_baseGetTag'),
-    getPrototype = require('./_getPrototype'),
-    isObjectLike = require('./isObjectLike');
-
-/** `Object#toString` result references. */
-var objectTag = '[object Object]';
-
-/** Used for built-in method references. */
-var funcProto = Function.prototype,
-    objectProto = Object.prototype;
-
-/** Used to resolve the decompiled source of functions. */
-var funcToString = funcProto.toString;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/** Used to infer the `Object` constructor. */
-var objectCtorString = funcToString.call(Object);
-
-/**
- * Checks if `value` is a plain object, that is, an object created by the
- * `Object` constructor or one with a `[[Prototype]]` of `null`.
- *
- * @static
- * @memberOf _
- * @since 0.8.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a plain object, else `false`.
- * @example
- *
- * function Foo() {
- *   this.a = 1;
- * }
- *
- * _.isPlainObject(new Foo);
- * // => false
- *
- * _.isPlainObject([1, 2, 3]);
- * // => false
- *
- * _.isPlainObject({ 'x': 0, 'y': 0 });
- * // => true
- *
- * _.isPlainObject(Object.create(null));
- * // => true
- */
-function isPlainObject(value) {
-  if (!isObjectLike(value) || baseGetTag(value) != objectTag) {
-    return false;
-  }
-  var proto = getPrototype(value);
-  if (proto === null) {
-    return true;
-  }
-  var Ctor = hasOwnProperty.call(proto, 'constructor') && proto.constructor;
-  return typeof Ctor == 'function' && Ctor instanceof Ctor &&
-    funcToString.call(Ctor) == objectCtorString;
-}
-
-module.exports = isPlainObject;
-
-},{"./_baseGetTag":36,"./_getPrototype":38,"./isObjectLike":43}],45:[function(require,module,exports){
-/*
-object-assign
-(c) Sindre Sorhus
-@license MIT
-*/
-
-'use strict';
-/* eslint-disable no-unused-vars */
-var getOwnPropertySymbols = Object.getOwnPropertySymbols;
-var hasOwnProperty = Object.prototype.hasOwnProperty;
-var propIsEnumerable = Object.prototype.propertyIsEnumerable;
-
-function toObject(val) {
-	if (val === null || val === undefined) {
-		throw new TypeError('Object.assign cannot be called with null or undefined');
-	}
-
-	return Object(val);
-}
-
-function shouldUseNative() {
-	try {
-		if (!Object.assign) {
-			return false;
-		}
-
-		// Detect buggy property enumeration order in older V8 versions.
-
-		// https://bugs.chromium.org/p/v8/issues/detail?id=4118
-		var test1 = new String('abc');  // eslint-disable-line no-new-wrappers
-		test1[5] = 'de';
-		if (Object.getOwnPropertyNames(test1)[0] === '5') {
-			return false;
-		}
-
-		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
-		var test2 = {};
-		for (var i = 0; i < 10; i++) {
-			test2['_' + String.fromCharCode(i)] = i;
-		}
-		var order2 = Object.getOwnPropertyNames(test2).map(function (n) {
-			return test2[n];
-		});
-		if (order2.join('') !== '0123456789') {
-			return false;
-		}
-
-		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
-		var test3 = {};
-		'abcdefghijklmnopqrst'.split('').forEach(function (letter) {
-			test3[letter] = letter;
-		});
-		if (Object.keys(Object.assign({}, test3)).join('') !==
-				'abcdefghijklmnopqrst') {
-			return false;
-		}
-
-		return true;
-	} catch (err) {
-		// We don't expect any of the above to throw, but better to be safe.
-		return false;
-	}
-}
-
-module.exports = shouldUseNative() ? Object.assign : function (target, source) {
-	var from;
-	var to = toObject(target);
-	var symbols;
-
-	for (var s = 1; s < arguments.length; s++) {
-		from = Object(arguments[s]);
-
-		for (var key in from) {
-			if (hasOwnProperty.call(from, key)) {
-				to[key] = from[key];
-			}
-		}
-
-		if (getOwnPropertySymbols) {
-			symbols = getOwnPropertySymbols(from);
-			for (var i = 0; i < symbols.length; i++) {
-				if (propIsEnumerable.call(from, symbols[i])) {
-					to[symbols[i]] = from[symbols[i]];
-				}
-			}
-		}
-	}
-
-	return to;
-};
 
 },{}],46:[function(require,module,exports){
 (function (process){
@@ -25952,7 +25907,7 @@ module.exports = reactDom;
 }
 
 }).call(this,require('_process'))
-},{"_process":71,"object-assign":45,"prop-types/checkPropTypes":49,"react":53,"scheduler":67,"scheduler/tracing":68}],47:[function(require,module,exports){
+},{"_process":67,"object-assign":43,"prop-types/checkPropTypes":44,"react":51,"scheduler":63,"scheduler/tracing":64}],47:[function(require,module,exports){
 /** @license React v16.8.6
  * react-dom.production.min.js
  *
@@ -26223,7 +26178,7 @@ x("38"):void 0;return Si(a,b,c,!1,d)},unmountComponentAtNode:function(a){Qi(a)?v
 X;X=!0;try{ki(a)}finally{(X=b)||W||Yh(1073741823,!1)}},__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{Events:[Ia,Ja,Ka,Ba.injectEventPluginsByName,pa,Qa,function(a){ya(a,Pa)},Eb,Fb,Dd,Da]}};function Ui(a,b){Qi(a)?void 0:x("299","unstable_createRoot");return new Pi(a,!0,null!=b&&!0===b.hydrate)}
 (function(a){var b=a.findFiberByHostInstance;return Te(n({},a,{overrideProps:null,currentDispatcherRef:Tb.ReactCurrentDispatcher,findHostInstanceByFiber:function(a){a=hd(a);return null===a?null:a.stateNode},findFiberByHostInstance:function(a){return b?b(a):null}}))})({findFiberByHostInstance:Ha,bundleType:0,version:"16.8.6",rendererPackageName:"react-dom"});var Wi={default:Vi},Xi=Wi&&Vi||Wi;module.exports=Xi.default||Xi;
 
-},{"object-assign":45,"react":53,"scheduler":67}],48:[function(require,module,exports){
+},{"object-assign":43,"react":51,"scheduler":63}],48:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -26265,21 +26220,13 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":46,"./cjs/react-dom.production.min.js":47,"_process":71}],49:[function(require,module,exports){
-arguments[4][33][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":50,"_process":71,"dup":33}],50:[function(require,module,exports){
-arguments[4][34][0].apply(exports,arguments)
-},{"dup":34}],51:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":46,"./cjs/react-dom.production.min.js":47,"_process":67}],49:[function(require,module,exports){
 arguments[4][30][0].apply(exports,arguments)
-},{"_process":71,"dup":30,"object-assign":45,"prop-types/checkPropTypes":54}],52:[function(require,module,exports){
+},{"_process":67,"dup":30,"object-assign":43,"prop-types/checkPropTypes":44}],50:[function(require,module,exports){
 arguments[4][31][0].apply(exports,arguments)
-},{"dup":31,"object-assign":45}],53:[function(require,module,exports){
+},{"dup":31,"object-assign":43}],51:[function(require,module,exports){
 arguments[4][32][0].apply(exports,arguments)
-},{"./cjs/react.development.js":51,"./cjs/react.production.min.js":52,"_process":71,"dup":32}],54:[function(require,module,exports){
-arguments[4][33][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":55,"_process":71,"dup":33}],55:[function(require,module,exports){
-arguments[4][34][0].apply(exports,arguments)
-},{"dup":34}],56:[function(require,module,exports){
+},{"./cjs/react.development.js":49,"./cjs/react.production.min.js":50,"_process":67,"dup":32}],52:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -26338,7 +26285,7 @@ function applyMiddleware() {
     };
   };
 }
-},{"./compose":59}],57:[function(require,module,exports){
+},{"./compose":55}],53:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -26390,7 +26337,7 @@ function bindActionCreators(actionCreators, dispatch) {
   }
   return boundActionCreators;
 }
-},{}],58:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -26536,7 +26483,7 @@ function combineReducers(reducers) {
   };
 }
 }).call(this,require('_process'))
-},{"./createStore":60,"./utils/warning":62,"_process":71,"lodash/isPlainObject":44}],59:[function(require,module,exports){
+},{"./createStore":56,"./utils/warning":58,"_process":67,"lodash/isPlainObject":42}],55:[function(require,module,exports){
 "use strict";
 
 exports.__esModule = true;
@@ -26573,7 +26520,7 @@ function compose() {
     };
   });
 }
-},{}],60:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -26835,7 +26782,7 @@ var ActionTypes = exports.ActionTypes = {
     replaceReducer: replaceReducer
   }, _ref2[_symbolObservable2['default']] = observable, _ref2;
 }
-},{"lodash/isPlainObject":44,"symbol-observable":69}],61:[function(require,module,exports){
+},{"lodash/isPlainObject":42,"symbol-observable":65}],57:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -26884,7 +26831,7 @@ exports.bindActionCreators = _bindActionCreators2['default'];
 exports.applyMiddleware = _applyMiddleware2['default'];
 exports.compose = _compose2['default'];
 }).call(this,require('_process'))
-},{"./applyMiddleware":56,"./bindActionCreators":57,"./combineReducers":58,"./compose":59,"./createStore":60,"./utils/warning":62,"_process":71}],62:[function(require,module,exports){
+},{"./applyMiddleware":52,"./bindActionCreators":53,"./combineReducers":54,"./compose":55,"./createStore":56,"./utils/warning":58,"_process":67}],58:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -26910,7 +26857,7 @@ function warning(message) {
   } catch (e) {}
   /* eslint-enable no-empty */
 }
-},{}],63:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 (function (process){
 /** @license React v0.13.6
  * scheduler-tracing.development.js
@@ -27337,7 +27284,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 }
 
 }).call(this,require('_process'))
-},{"_process":71}],64:[function(require,module,exports){
+},{"_process":67}],60:[function(require,module,exports){
 /** @license React v0.13.6
  * scheduler-tracing.production.min.js
  *
@@ -27349,7 +27296,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 
 'use strict';Object.defineProperty(exports,"__esModule",{value:!0});var b=0;exports.__interactionsRef=null;exports.__subscriberRef=null;exports.unstable_clear=function(a){return a()};exports.unstable_getCurrent=function(){return null};exports.unstable_getThreadID=function(){return++b};exports.unstable_trace=function(a,d,c){return c()};exports.unstable_wrap=function(a){return a};exports.unstable_subscribe=function(){};exports.unstable_unsubscribe=function(){};
 
-},{}],65:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 (function (process,global){
 /** @license React v0.13.6
  * scheduler.development.js
@@ -28052,7 +27999,7 @@ exports.unstable_getFirstCallbackNode = unstable_getFirstCallbackNode;
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":71}],66:[function(require,module,exports){
+},{"_process":67}],62:[function(require,module,exports){
 (function (global){
 /** @license React v0.13.6
  * scheduler.production.min.js
@@ -28077,7 +28024,7 @@ b=c.previous;b.next=c.previous=a;a.next=c;a.previous=b}return a};exports.unstabl
 exports.unstable_shouldYield=function(){return!e&&(null!==d&&d.expirationTime<l||w())};exports.unstable_continueExecution=function(){null!==d&&p()};exports.unstable_pauseExecution=function(){};exports.unstable_getFirstCallbackNode=function(){return d};
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],67:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -28088,7 +28035,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":65,"./cjs/scheduler.production.min.js":66,"_process":71}],68:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":61,"./cjs/scheduler.production.min.js":62,"_process":67}],64:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -28099,7 +28046,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler-tracing.development.js":63,"./cjs/scheduler-tracing.production.min.js":64,"_process":71}],69:[function(require,module,exports){
+},{"./cjs/scheduler-tracing.development.js":59,"./cjs/scheduler-tracing.production.min.js":60,"_process":67}],65:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -28131,7 +28078,7 @@ if (typeof self !== 'undefined') {
 var result = (0, _ponyfill2['default'])(root);
 exports['default'] = result;
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./ponyfill.js":70}],70:[function(require,module,exports){
+},{"./ponyfill.js":66}],66:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -28155,7 +28102,7 @@ function symbolObservablePonyfill(root) {
 
 	return result;
 };
-},{}],71:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
