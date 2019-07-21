@@ -92,7 +92,7 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
       case 32:
         {
           // space
-          var _action5 = { type: 'FIRE_LASER', time: time, playerID: playerID };
+          var _action5 = { type: 'FIRE_MISSILE', time: time, playerID: playerID };
           dispatchToServer(playerID, _action5);
           dispatch(_action5);
           break;

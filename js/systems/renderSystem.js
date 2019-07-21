@@ -18,7 +18,7 @@ const initRenderSystem = (store: Store): void => {
     if (state.game.time == time && state.game.tickInterval != null) {
       return;
     }
-    // import to do track time this way so this only happens once per tick
+    // important to track time this way so this only happens once per tick
     time = state.game.time;
 
     if (!canvas) {
@@ -104,7 +104,11 @@ const render = (game: Game, ctx: any, referencePosition: Vector, c: number): voi
 
   // render projectiles
   for (const currentProjectile of game.projectiles) {
-    const {position, history} = currentProjectile;
+    const {position, history, type} = currentProjectile;
+    if (type == 'missile') {
+      renderMissile(ctx, currentProjectile, referencePosition);
+      continue;
+    }
     const tickDiff = tickDifference(referencePosition, position, c);
 
     // Compute tick difference based on projectile's player:
@@ -153,5 +157,54 @@ const render = (game: Game, ctx: any, referencePosition: Vector, c: number): voi
   // render planets
   // TODO
 }
+
+const renderMissile = (ctx, projectile, referencePosition) => {
+  const {history, position} = projectile;
+  const tickDiff = tickDifference(referencePosition, position, config.c);
+  const idx = history.length - 1 - tickDiff;
+
+  if (idx >= 0) {
+    const missile = history[idx];
+
+    ctx.save();
+    // TODO track colors better
+    // ctx.fillStyle = ['blue', 'red'][colorIndex];
+    ctx.fillStyle = 'green';
+    ctx.beginPath();
+    ctx.translate(missile.position.x, missile.position.y);
+    ctx.rotate(missile.theta);
+    ctx.moveTo(missile.radius, 0);
+    ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 2);
+    ctx.lineTo(-1 * missile.radius / 2, missile.radius / 2);
+    ctx.closePath();
+    ctx.fill();
+
+    if (missile.thrust > 0) {
+      ctx.fillStyle = 'orange';
+      ctx.beginPath();
+      ctx.moveTo(-1 * missile.radius / 1.25, 0);
+      ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 3);
+      ctx.lineTo(-1 * missile.radius / 2, missile.radius / 3);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // ctx.beginPath();
+    // ctx.strokeStyle = ['blue', 'red'][colorIndex];
+    // if (missile.history.length > 0) {
+    //   ctx.moveTo(missile.history[0].position.x, missile.history[0].position.y);
+    // }
+    // for (const pastShip of missile.history) {
+    //   ctx.lineTo(pastShip.position.x, pastShip.position.y);
+    // }
+    // ctx.stroke();
+    //
+    // ctx.fillStyle = ['blue', 'red'][colorIndex];
+    // for (const futureShip of missile.future) {
+    //   ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
+    // }
+  }
+};
 
 module.exports = {initRenderSystem};

@@ -33,14 +33,6 @@ eurecaServer.exports.dispatch = function (playerID, action) {
         true // dispatch to self
       );
       return; // this is kinda hacky *shrug emoji*
-    case 'START_TICK':
-      dispatchToOtherClients(
-        playerID,
-        {type: 'START_TICK'},
-        false, // not all other clients
-        true // dispatch to self
-      );
-      return; // this is kinda hacky *shrug emoji*
     case 'CREATE_GAME':
       games[action.gameID] = {id: action.gameID, players: []};
       // fall through

@@ -31,7 +31,7 @@ var updateProjectile = function updateProjectile(state, j, numTicks) {
     var projectile = state.projectiles[j];
     var history = projectile.history;
     queueAdd(history, projectile, config.maxHistorySize);
-    state.projectiles[j] = _extends({}, projectile, computeNextEntity(sun, projectile), {
+    state.projectiles[j] = _extends({}, projectile, computeNextEntity(sun, projectile, projectile.thrust || 0, true /*no smart theta*/), {
       history: history
     });
   }

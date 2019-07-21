@@ -21,6 +21,17 @@ const getClientGame = (state: State): Game => {
   return state.games[getClientPlayer(state).gameID];
 };
 
+const getOtherPlayerID = (state: State): PlayerID => {
+  const game = getClientGame(state);
+  const clientPlayerID = getClientPlayerID(state);
+
+  for (const id of game.players) {
+    if (id !== clientPlayerID) {
+      return id;
+    }
+  }
+};
+
 const getPlayerByID = (state: State, playerID: PlayerID): Player => {
   for (const player of state.players) {
     if (player.id == playerID) {
@@ -47,6 +58,7 @@ const getNextGameID = (state: State): GameID => {
 
 module.exports = {
   getClientPlayerID,
+  getOtherPlayerID,
   getClientPlayer,
   getClientGame,
   getPlayerByID,

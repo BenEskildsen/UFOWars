@@ -8,20 +8,27 @@ var _require = require('../utils/gravity'),
 var _require2 = require('../utils/queue'),
     queueAdd = _require2.queueAdd;
 
-var _require3 = require('../utils/updateEntities'),
-    updateShip = _require3.updateShip,
-    updateProjectile = _require3.updateProjectile;
+var _require3 = require('../utils/vectors'),
+    subtract = _require3.subtract,
+    distance = _require3.distance;
 
-var _require4 = require('../config'),
-    config = _require4.config;
+var _require4 = require('../utils/updateEntities'),
+    updateShip = _require4.updateShip,
+    updateProjectile = _require4.updateProjectile;
+
+var _require5 = require('../config'),
+    config = _require5.config;
 
 var sin = Math.sin,
     cos = Math.cos,
     abs = Math.abs,
     sqrt = Math.sqrt;
 
-var _require5 = require('./gameReducer'),
-    gameReducer = _require5.gameReducer;
+var _require6 = require('./gameReducer'),
+    gameReducer = _require6.gameReducer;
+
+var _require7 = require('../utils/errors'),
+    invariant = _require7.invariant;
 
 var tickReducer = function tickReducer(state, action) {
   switch (action.type) {
@@ -73,7 +80,32 @@ var handleTick = function handleTick(state) {
     });
   });
 
+  // update projectiles
+  var missile = config.missile;
+
   for (var i = 0; i < state.projectiles.length; i++) {
+    // handle missiles
+    var projectile = state.projectiles[i];
+    projectile.age += 1;
+    if (projectile.target == 'Ship') {
+      var targetShip = null;
+      for (var _id in state.ships) {
+        if (_id != projectile.playerID) {
+          targetShip = state.ships[_id];
+          break;
+        }
+      }
+      invariant(targetShip != null, 'Missile has no target ship');
+      var dist = subtract(targetShip.position, projectile.position);
+      projectile.theta = Math.atan2(dist.y, dist.x);
+    } else if (projectile.target == 'Missile') {
+      // TODO
+    }
+    if (projectile.age > missile.thrustAt && projectile.fuel.cur > 0) {
+      projectile.fuel.cur -= 1;
+      projectile.thrust = missile.thrust;
+    }
+
     updateProjectile(state, i, 1 /* one tick */);
   }
 
@@ -94,6 +126,8 @@ var handleTick = function handleTick(state) {
         nextActionQueue.push(action);
       }
     }
+
+    // projectiles colliding with sun
   } catch (err) {
     _didIteratorError = true;
     _iteratorError = err;
@@ -109,7 +143,17 @@ var handleTick = function handleTick(state) {
     }
   }
 
+  var nextProjectiles = state.projectiles.filter(function (projectile) {
+    var dist = distance(subtract(projectile.position, sun.position));
+    return dist > sun.radius;
+  });
+  // clean up old missiles
+  nextProjectiles = nextProjectiles.filter(function (projectile) {
+    return !(projectile.type == 'missile' && projectile.age > missile.maxAge);
+  });
+
   return _extends({}, nextState, {
+    projectiles: nextProjectiles,
     actionQueue: nextActionQueue
   });
 };

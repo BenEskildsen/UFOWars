@@ -10,6 +10,7 @@ var _require2 = require('../config'),
     config = _require2.config;
 
 var _require3 = require('../selectors/selectors'),
+    getOtherPlayerID = _require3.getOtherPlayerID,
     getPlayerByID = _require3.getPlayerByID,
     getClientPlayerID = _require3.getClientPlayerID;
 
@@ -32,12 +33,16 @@ var initCollisionSystem = function initCollisionSystem(store) {
     }
     time = state.game.time;
 
+    var sun = state.game.sun;
+
+    // projectile collides with sun
+    // implemented in tickReducer
+
     // ship collides with sun
+
     var gameOver = false;
     var message = '';
     var loserID = null;
-    var sun = state.game.sun;
-
     for (var id in state.game.ships) {
       var ship = state.game.ships[id];
       var distVec = subtract(ship.position, sun.position);
@@ -63,7 +68,7 @@ var initCollisionSystem = function initCollisionSystem(store) {
           var _distVec = subtract(_ship.position, projectile.position);
           var _dist = distance(_distVec);
           // don't get hit by your own laser you just fired
-          if (_dist < config.laserSpeed && !(projectile.playerID == _id && projectile.history.length < 5)) {
+          if (_dist < _ship.radius + projectile.radius && !(projectile.playerID == _id && projectile.history.length < 10)) {
             gameOver = true;
             message = getPlayerByID(state, _id).name + ' was hit by a ' + projectile.type + '!';
             loserID = _id;
@@ -87,14 +92,23 @@ var initCollisionSystem = function initCollisionSystem(store) {
 
     var thisClientID = getClientPlayerID(state);
     if (gameOver && loserID == thisClientID) {
-      console.log('gameover', message);
-      // stop game
+      var otherPlayerID = getOtherPlayerID(state);
+
+      // set ready state for both players
       var readyAction = { type: 'SET_PLAYER_READY', playerID: thisClientID, ready: false };
       dispatchToServer(thisClientID, readyAction);
       dispatch(readyAction);
+      var otherReadyAction = {
+        type: 'SET_PLAYER_READY', playerID: otherPlayerID, ready: false
+      };
+      dispatchToServer(thisClientID, otherReadyAction);
+      dispatch(otherReadyAction);
+
+      // stop game
       var stopAction = { type: 'STOP_TICK' };
       dispatch(stopAction);
       dispatchToServer(thisClientID, stopAction);
+
       // update scores
       for (var _id2 in state.game.ships) {
         var player = getPlayerByID(state, _id2);
@@ -108,13 +122,13 @@ var initCollisionSystem = function initCollisionSystem(store) {
           dispatchToServer(thisClientID, scoreAction);
         }
       }
-      // dispatch modal with message
-      var winOrLose = thisClientID == loserID ? 'You Lose!' : 'You Win!';
-      var modalAction = {
-        type: 'SET_MODAL', title: winOrLose, text: message, name: 'gameover'
-      };
-      dispatch(modalAction);
-      dispatchToServer(thisClientID, modalAction);
+      // dispatch modals with messages
+      dispatch({
+        type: 'SET_MODAL', title: 'You Lose!', text: message, name: 'gameover'
+      });
+      dispatchToServer(thisClientID, {
+        type: 'SET_MODAL', title: 'You Win!', text: message, name: 'gameover'
+      });
     }
   });
 };

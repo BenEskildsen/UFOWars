@@ -2,10 +2,12 @@
 
 const {computeNextEntity} = require('../utils/gravity');
 const {queueAdd} = require('../utils/queue');
+const {subtract, distance} = require('../utils/vectors');
 const {updateShip, updateProjectile} = require('../utils/updateEntities');
 const {config} = require('../config');
 const {sin, cos, abs, sqrt} = Math;
 const {gameReducer} = require('./gameReducer');
+const {invariant} = require('../utils/errors');
 
 import type {Ship, GameState, Entity, Action} from '../types';
 
@@ -60,7 +62,31 @@ const handleTick = (state: GameState): GameState => {
     };
   });
 
+  // update projectiles
+  const {missile} = config;
   for (let i = 0; i < state.projectiles.length; i++) {
+    // handle missiles
+    const projectile = state.projectiles[i];
+    projectile.age += 1;
+    if (projectile.target == 'Ship') {
+      let targetShip = null;
+      for (const id in state.ships) {
+        if (id != projectile.playerID) {
+          targetShip = state.ships[id];
+          break;
+        }
+      }
+      invariant(targetShip != null, 'Missile has no target ship');
+      const dist = subtract(targetShip.position, projectile.position);
+      projectile.theta = Math.atan2(dist.y, dist.x);
+    } else if (projectile.target == 'Missile') {
+      // TODO
+    }
+    if (projectile.age > missile.thrustAt && projectile.fuel.cur > 0) {
+      projectile.fuel.cur -= 1;
+      projectile.thrust = missile.thrust;
+    }
+
     updateProjectile(state, i, 1 /* one tick */);
   }
 
@@ -75,8 +101,19 @@ const handleTick = (state: GameState): GameState => {
     }
   }
 
+  // projectiles colliding with sun
+  let nextProjectiles = state.projectiles.filter(projectile => {
+    const dist = distance(subtract(projectile.position, sun.position));
+    return dist > sun.radius;
+  });
+  // clean up old missiles
+  nextProjectiles = nextProjectiles.filter(projectile => {
+    return !(projectile.type == 'missile' && projectile.age > missile.maxAge)
+  });
+
   return {
     ...nextState,
+    projectiles: nextProjectiles,
     actionQueue: nextActionQueue,
   };
 }

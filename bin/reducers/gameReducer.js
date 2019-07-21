@@ -76,10 +76,9 @@ var gameReducer = function gameReducer(state, action) {
           });
         }
       }
+    case 'FIRE_MISSILE':
     case 'FIRE_LASER':
-      {
-        return fireProjectileReducer(state, action);
-      }
+      return fireProjectileReducer(state, action);
   }
 
   return state;

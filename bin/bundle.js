@@ -17,6 +17,15 @@ var config = {
     radius: 50,
     mass: 10000
   },
+  missile: {
+    thrust: 1,
+    radius: 10,
+    mass: 5,
+    maxFuel: 30,
+    thrustAt: 10,
+    maxAge: 50,
+    speed: 12
+  },
   G: 1, // gravitational constant
   maxHistorySize: 75,
   maxFutureSize: 75,
@@ -54,15 +63,36 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 var _require = require('./entity'),
     makeEntity = _require.makeEntity;
 
-var makeLaserProjectile = function makeLaserProjectile(playerID, position, velocity, theta) {
+var _require2 = require('../config'),
+    config = _require2.config;
+
+var _require3 = require('../utils/vectors'),
+    makeVector = _require3.makeVector;
+
+var makeLaserProjectile = function makeLaserProjectile(playerID, position, theta) {
+  var velocity = makeVector(theta, config.laserSpeed);
   return _extends({}, makeEntity(0 /* mass */, 0 /* radius */, position, velocity, theta), {
     playerID: playerID,
     type: 'laser'
   });
 };
 
-module.exports = { makeLaserProjectile: makeLaserProjectile };
-},{"./entity":2}],4:[function(require,module,exports){
+var makeMissileProjectile = function makeMissileProjectile(playerID, position, theta, target) {
+  var projectile = _extends({}, makeLaserProjectile(playerID, position, theta), {
+    type: 'missile',
+    mass: config.missile.mass,
+    radius: config.missile.radius,
+    velocity: makeVector(theta, config.missile.speed),
+    target: target,
+    age: 0,
+    thrust: 0,
+    fuel: { cur: config.missile.maxFuel, max: config.missile.maxFuel }
+  });
+  return projectile;
+};
+
+module.exports = { makeLaserProjectile: makeLaserProjectile, makeMissileProjectile: makeMissileProjectile };
+},{"../config":1,"../utils/vectors":29,"./entity":2}],4:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -156,7 +186,8 @@ var _require3 = require('../utils/vectors'),
     makeVector = _require3.makeVector;
 
 var _require4 = require('../entities/projectile'),
-    makeLaserProjectile = _require4.makeLaserProjectile;
+    makeLaserProjectile = _require4.makeLaserProjectile,
+    makeMissileProjectile = _require4.makeMissileProjectile;
 
 var fireProjectileReducer = function fireProjectileReducer(state, action) {
   switch (action.type) {
@@ -179,11 +210,35 @@ var fireProjectileReducer = function fireProjectileReducer(state, action) {
             actionQueue: [].concat(_toConsumableArray(state.actionQueue), [action])
           });
         }
-        var velocity = makeVector(shipTheta, config.laserSpeed);
-        var projectile = makeLaserProjectile(playerID, shipPosition, velocity, shipTheta);
+        var projectile = makeLaserProjectile(playerID, shipPosition, shipTheta);
         queueAdd(projectiles, projectile, config.maxProjectiles);
         return _extends({}, state, {
           projectiles: projectiles
+        });
+      }
+    case 'FIRE_MISSILE':
+      {
+        var _playerID = action.playerID;
+        var _projectiles = state.projectiles,
+            _ships = state.ships;
+
+        var _shipPosition = _ships[_playerID].position;
+        var _shipTheta = _ships[_playerID].theta;
+        if (action.time < state.time) {
+          var _timeDiff = state.time - action.time;
+          // rewind history
+          var _prevPos = _ships[_playerID].history[_ships[_playerID].history.length - _timeDiff - 1];
+          _shipPosition = _prevPos.position;
+          _shipTheta = _prevPos.theta;
+        } else if (action.time > state.time) {
+          return _extends({}, state, {
+            actionQueue: [].concat(_toConsumableArray(state.actionQueue), [action])
+          });
+        }
+        var _projectile = makeMissileProjectile(_playerID, _shipPosition, _shipTheta, 'Ship');
+        queueAdd(_projectiles, _projectile, config.maxProjectiles);
+        return _extends({}, state, {
+          projectiles: _projectiles
         });
       }
   }
@@ -271,10 +326,9 @@ var gameReducer = function gameReducer(state, action) {
           });
         }
       }
+    case 'FIRE_MISSILE':
     case 'FIRE_LASER':
-      {
-        return fireProjectileReducer(state, action);
-      }
+      return fireProjectileReducer(state, action);
   }
 
   return state;
@@ -622,6 +676,7 @@ var rootReducer = function rootReducer(state, action) {
     case 'SET_TURN':
     case 'SET_THRUST':
     case 'FIRE_LASER':
+    case 'FIRE_MISSILE':
       if (!state.game) return state;
       return _extends({}, state, {
         game: gameReducer(state.game, action)
@@ -642,20 +697,27 @@ var _require = require('../utils/gravity'),
 var _require2 = require('../utils/queue'),
     queueAdd = _require2.queueAdd;
 
-var _require3 = require('../utils/updateEntities'),
-    updateShip = _require3.updateShip,
-    updateProjectile = _require3.updateProjectile;
+var _require3 = require('../utils/vectors'),
+    subtract = _require3.subtract,
+    distance = _require3.distance;
 
-var _require4 = require('../config'),
-    config = _require4.config;
+var _require4 = require('../utils/updateEntities'),
+    updateShip = _require4.updateShip,
+    updateProjectile = _require4.updateProjectile;
+
+var _require5 = require('../config'),
+    config = _require5.config;
 
 var sin = Math.sin,
     cos = Math.cos,
     abs = Math.abs,
     sqrt = Math.sqrt;
 
-var _require5 = require('./gameReducer'),
-    gameReducer = _require5.gameReducer;
+var _require6 = require('./gameReducer'),
+    gameReducer = _require6.gameReducer;
+
+var _require7 = require('../utils/errors'),
+    invariant = _require7.invariant;
 
 var tickReducer = function tickReducer(state, action) {
   switch (action.type) {
@@ -707,7 +769,32 @@ var handleTick = function handleTick(state) {
     });
   });
 
+  // update projectiles
+  var missile = config.missile;
+
   for (var i = 0; i < state.projectiles.length; i++) {
+    // handle missiles
+    var projectile = state.projectiles[i];
+    projectile.age += 1;
+    if (projectile.target == 'Ship') {
+      var targetShip = null;
+      for (var _id in state.ships) {
+        if (_id != projectile.playerID) {
+          targetShip = state.ships[_id];
+          break;
+        }
+      }
+      invariant(targetShip != null, 'Missile has no target ship');
+      var dist = subtract(targetShip.position, projectile.position);
+      projectile.theta = Math.atan2(dist.y, dist.x);
+    } else if (projectile.target == 'Missile') {
+      // TODO
+    }
+    if (projectile.age > missile.thrustAt && projectile.fuel.cur > 0) {
+      projectile.fuel.cur -= 1;
+      projectile.thrust = missile.thrust;
+    }
+
     updateProjectile(state, i, 1 /* one tick */);
   }
 
@@ -728,6 +815,8 @@ var handleTick = function handleTick(state) {
         nextActionQueue.push(action);
       }
     }
+
+    // projectiles colliding with sun
   } catch (err) {
     _didIteratorError = true;
     _iteratorError = err;
@@ -743,13 +832,23 @@ var handleTick = function handleTick(state) {
     }
   }
 
+  var nextProjectiles = state.projectiles.filter(function (projectile) {
+    var dist = distance(subtract(projectile.position, sun.position));
+    return dist > sun.radius;
+  });
+  // clean up old missiles
+  nextProjectiles = nextProjectiles.filter(function (projectile) {
+    return !(projectile.type == 'missile' && projectile.age > missile.maxAge);
+  });
+
   return _extends({}, nextState, {
+    projectiles: nextProjectiles,
     actionQueue: nextActionQueue
   });
 };
 
 module.exports = { tickReducer: tickReducer };
-},{"../config":1,"../utils/gravity":26,"../utils/queue":27,"../utils/updateEntities":28,"./gameReducer":7}],13:[function(require,module,exports){
+},{"../config":1,"../utils/errors":25,"../utils/gravity":26,"../utils/queue":27,"../utils/updateEntities":28,"../utils/vectors":29,"./gameReducer":7}],13:[function(require,module,exports){
 'use strict';
 
 var _require = require('../utils/errors'),
@@ -794,17 +893,20 @@ var getClientGame = function getClientGame(state) {
   return state.games[getClientPlayer(state).gameID];
 };
 
-var getPlayerByID = function getPlayerByID(state, playerID) {
+var getOtherPlayerID = function getOtherPlayerID(state) {
+  var game = getClientGame(state);
+  var clientPlayerID = getClientPlayerID(state);
+
   var _iteratorNormalCompletion2 = true;
   var _didIteratorError2 = false;
   var _iteratorError2 = undefined;
 
   try {
-    for (var _iterator2 = state.players[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-      var player = _step2.value;
+    for (var _iterator2 = game.players[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var id = _step2.value;
 
-      if (player.id == playerID) {
-        return player;
+      if (id !== clientPlayerID) {
+        return id;
       }
     }
   } catch (err) {
@@ -818,6 +920,35 @@ var getPlayerByID = function getPlayerByID(state, playerID) {
     } finally {
       if (_didIteratorError2) {
         throw _iteratorError2;
+      }
+    }
+  }
+};
+
+var getPlayerByID = function getPlayerByID(state, playerID) {
+  var _iteratorNormalCompletion3 = true;
+  var _didIteratorError3 = false;
+  var _iteratorError3 = undefined;
+
+  try {
+    for (var _iterator3 = state.players[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+      var player = _step3.value;
+
+      if (player.id == playerID) {
+        return player;
+      }
+    }
+  } catch (err) {
+    _didIteratorError3 = true;
+    _iteratorError3 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion3 && _iterator3.return) {
+        _iterator3.return();
+      }
+    } finally {
+      if (_didIteratorError3) {
+        throw _iteratorError3;
       }
     }
   }
@@ -842,6 +973,7 @@ var getNextGameID = function getNextGameID(state) {
 
 module.exports = {
   getClientPlayerID: getClientPlayerID,
+  getOtherPlayerID: getOtherPlayerID,
   getClientPlayer: getClientPlayer,
   getClientGame: getClientGame,
   getPlayerByID: getPlayerByID,
@@ -917,6 +1049,7 @@ var _require2 = require('../config'),
     config = _require2.config;
 
 var _require3 = require('../selectors/selectors'),
+    getOtherPlayerID = _require3.getOtherPlayerID,
     getPlayerByID = _require3.getPlayerByID,
     getClientPlayerID = _require3.getClientPlayerID;
 
@@ -939,12 +1072,16 @@ var initCollisionSystem = function initCollisionSystem(store) {
     }
     time = state.game.time;
 
+    var sun = state.game.sun;
+
+    // projectile collides with sun
+    // implemented in tickReducer
+
     // ship collides with sun
+
     var gameOver = false;
     var message = '';
     var loserID = null;
-    var sun = state.game.sun;
-
     for (var id in state.game.ships) {
       var ship = state.game.ships[id];
       var distVec = subtract(ship.position, sun.position);
@@ -970,7 +1107,7 @@ var initCollisionSystem = function initCollisionSystem(store) {
           var _distVec = subtract(_ship.position, projectile.position);
           var _dist = distance(_distVec);
           // don't get hit by your own laser you just fired
-          if (_dist < config.laserSpeed && !(projectile.playerID == _id && projectile.history.length < 5)) {
+          if (_dist < _ship.radius + projectile.radius && !(projectile.playerID == _id && projectile.history.length < 10)) {
             gameOver = true;
             message = getPlayerByID(state, _id).name + ' was hit by a ' + projectile.type + '!';
             loserID = _id;
@@ -994,14 +1131,23 @@ var initCollisionSystem = function initCollisionSystem(store) {
 
     var thisClientID = getClientPlayerID(state);
     if (gameOver && loserID == thisClientID) {
-      console.log('gameover', message);
-      // stop game
+      var otherPlayerID = getOtherPlayerID(state);
+
+      // set ready state for both players
       var readyAction = { type: 'SET_PLAYER_READY', playerID: thisClientID, ready: false };
       dispatchToServer(thisClientID, readyAction);
       dispatch(readyAction);
+      var otherReadyAction = {
+        type: 'SET_PLAYER_READY', playerID: otherPlayerID, ready: false
+      };
+      dispatchToServer(thisClientID, otherReadyAction);
+      dispatch(otherReadyAction);
+
+      // stop game
       var stopAction = { type: 'STOP_TICK' };
       dispatch(stopAction);
       dispatchToServer(thisClientID, stopAction);
+
       // update scores
       for (var _id2 in state.game.ships) {
         var player = getPlayerByID(state, _id2);
@@ -1015,13 +1161,13 @@ var initCollisionSystem = function initCollisionSystem(store) {
           dispatchToServer(thisClientID, scoreAction);
         }
       }
-      // dispatch modal with message
-      var winOrLose = thisClientID == loserID ? 'You Lose!' : 'You Win!';
-      var modalAction = {
-        type: 'SET_MODAL', title: winOrLose, text: message, name: 'gameover'
-      };
-      dispatch(modalAction);
-      dispatchToServer(thisClientID, modalAction);
+      // dispatch modals with messages
+      dispatch({
+        type: 'SET_MODAL', title: 'You Lose!', text: message, name: 'gameover'
+      });
+      dispatchToServer(thisClientID, {
+        type: 'SET_MODAL', title: 'You Win!', text: message, name: 'gameover'
+      });
     }
   });
 };
@@ -1122,7 +1268,7 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
       case 32:
         {
           // space
-          var _action5 = { type: 'FIRE_LASER', time: time, playerID: playerID };
+          var _action5 = { type: 'FIRE_MISSILE', time: time, playerID: playerID };
           dispatchToServer(playerID, _action5);
           dispatch(_action5);
           break;
@@ -1220,7 +1366,7 @@ var initRenderSystem = function initRenderSystem(store) {
     if (state.game.time == time && state.game.tickInterval != null) {
       return;
     }
-    // import to do track time this way so this only happens once per tick
+    // important to track time this way so this only happens once per tick
     time = state.game.time;
 
     if (!canvas) {
@@ -1359,8 +1505,13 @@ var render = function render(game, ctx, referencePosition, c) {
     for (var _iterator3 = game.projectiles[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
       var currentProjectile = _step3.value;
       var position = currentProjectile.position,
-          history = currentProjectile.history;
+          history = currentProjectile.history,
+          type = currentProjectile.type;
 
+      if (type == 'missile') {
+        renderMissile(ctx, currentProjectile, referencePosition);
+        continue;
+      }
       var _tickDiff = tickDifference(referencePosition, position, c);
 
       // Compute tick difference based on projectile's player:
@@ -1421,6 +1572,57 @@ var render = function render(game, ctx, referencePosition, c) {
 
   // render planets
   // TODO
+};
+
+var renderMissile = function renderMissile(ctx, projectile, referencePosition) {
+  var history = projectile.history,
+      position = projectile.position;
+
+  var tickDiff = tickDifference(referencePosition, position, config.c);
+  var idx = history.length - 1 - tickDiff;
+
+  if (idx >= 0) {
+    var missile = history[idx];
+
+    ctx.save();
+    // TODO track colors better
+    // ctx.fillStyle = ['blue', 'red'][colorIndex];
+    ctx.fillStyle = 'green';
+    ctx.beginPath();
+    ctx.translate(missile.position.x, missile.position.y);
+    ctx.rotate(missile.theta);
+    ctx.moveTo(missile.radius, 0);
+    ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 2);
+    ctx.lineTo(-1 * missile.radius / 2, missile.radius / 2);
+    ctx.closePath();
+    ctx.fill();
+
+    if (missile.thrust > 0) {
+      ctx.fillStyle = 'orange';
+      ctx.beginPath();
+      ctx.moveTo(-1 * missile.radius / 1.25, 0);
+      ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 3);
+      ctx.lineTo(-1 * missile.radius / 2, missile.radius / 3);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // ctx.beginPath();
+    // ctx.strokeStyle = ['blue', 'red'][colorIndex];
+    // if (missile.history.length > 0) {
+    //   ctx.moveTo(missile.history[0].position.x, missile.history[0].position.y);
+    // }
+    // for (const pastShip of missile.history) {
+    //   ctx.lineTo(pastShip.position.x, pastShip.position.y);
+    // }
+    // ctx.stroke();
+    //
+    // ctx.fillStyle = ['blue', 'red'][colorIndex];
+    // for (const futureShip of missile.future) {
+    //   ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
+    // }
+  }
 };
 
 module.exports = { initRenderSystem: initRenderSystem };
@@ -1898,7 +2100,7 @@ var computeAccel = function computeAccel(m1, m2, dist) {
  * Pure function so that this can be used for calculating paths.
  * Optionally pass in a thrust vector that will affect acceleration
  */
-var computeNextEntity = function computeNextEntity(sun, entity, thrust) {
+var computeNextEntity = function computeNextEntity(sun, entity, thrust, noSmartTheta) {
   var thrustVal = thrust || 0;
   var thrustVec = {
     x: thrustVal * cos(entity.theta),
@@ -1906,7 +2108,7 @@ var computeNextEntity = function computeNextEntity(sun, entity, thrust) {
   };
 
   // get prev theta if no manual changes had been applied
-  var prevUncorrectedTheta = -1 * Math.atan2(entity.velocity.x, entity.velocity.y) + Math.PI / 2;
+  var prevUncorrectedTheta = Math.atan2(entity.velocity.y, entity.velocity.x) + Math.PI / 2;
 
   // sum acceleration due to the sun and acceleration due to thrust
   var accel = add(computeAccel(entity.mass, sun.mass, subtract(sun.position, entity.position)), thrustVec);
@@ -1914,9 +2116,12 @@ var computeNextEntity = function computeNextEntity(sun, entity, thrust) {
   var position = add(velocity, entity.position);
 
   // compute next theta relative to current direction of travel
-  var nextUncorrectedTheta = -1 * Math.atan2(velocity.x, velocity.y) + Math.PI / 2;
+  var nextUncorrectedTheta = Math.atan2(velocity.y, velocity.x) + Math.PI / 2;
   var thetaDiff = nextUncorrectedTheta - prevUncorrectedTheta;
   var theta = entity.theta + thetaDiff + entity.thetaSpeed;
+  if (noSmartTheta) {
+    theta = entity.theta + entity.thetaSpeed;
+  }
 
   return _extends({}, entity, {
     accel: accel,
@@ -1975,7 +2180,7 @@ var updateProjectile = function updateProjectile(state, j, numTicks) {
     var projectile = state.projectiles[j];
     var history = projectile.history;
     queueAdd(history, projectile, config.maxHistorySize);
-    state.projectiles[j] = _extends({}, projectile, computeNextEntity(sun, projectile), {
+    state.projectiles[j] = _extends({}, projectile, computeNextEntity(sun, projectile, projectile.thrust || 0, true /*no smart theta*/), {
       history: history
     });
   }

@@ -28,7 +28,7 @@ const updateProjectile = (state: GameState, j: number, numTicks: number): void =
     queueAdd(history, projectile, config.maxHistorySize);
     state.projectiles[j] = {
       ...projectile,
-      ...computeNextEntity(sun, projectile),
+      ...computeNextEntity(sun, projectile, projectile.thrust || 0, true /*no smart theta*/),
       history,
     }
   }

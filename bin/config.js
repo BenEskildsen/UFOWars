@@ -16,6 +16,15 @@ var config = {
     radius: 50,
     mass: 10000
   },
+  missile: {
+    thrust: 1,
+    radius: 10,
+    mass: 5,
+    maxFuel: 30,
+    thrustAt: 10,
+    maxAge: 50,
+    speed: 12
+  },
   G: 1, // gravitational constant
   maxHistorySize: 75,
   maxFutureSize: 75,

@@ -33,7 +33,7 @@ export type Store = {
 // -------------------------------------------------------------------------------
 
 // some unique id per player
-export type PlayerID = string; // number in practice lol
+export type PlayerID = string; // number in practice
 // unique id per game, 0 == lobby
 export type GameID = string; // number in practice lol
 
@@ -112,6 +112,13 @@ export type Ship = Entity & {
 export type Projectile = Entity & {
   playerID: PlayerID,
   type: string,
+};
+
+export type Missile = Projectile & {
+  thrust: number,
+  fuel: Resource,
+  age: number, // starts at 0 and increments per tick
+  target: 'Ship' | 'Missile';
 };
 
 // -------------------------------------------------------------------------------

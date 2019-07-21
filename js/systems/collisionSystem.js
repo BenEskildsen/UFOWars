@@ -2,7 +2,11 @@
 
 const {subtract, distance} = require('../utils/vectors');
 const {config} = require('../config');
-const {getPlayerByID, getClientPlayerID} = require('../selectors/selectors');
+const {
+  getOtherPlayerID,
+  getPlayerByID,
+  getClientPlayerID,
+} = require('../selectors/selectors');
 const {dispatchToServer} = require('../utils/clientToServer');
 const React = require('React');
 const Button = require('../ui/Button.react');
@@ -21,11 +25,15 @@ const initCollisionSystem = (store: Store): void => {
     }
     time = state.game.time;
 
+    const {sun} = state.game;
+
+    // projectile collides with sun
+    // implemented in tickReducer
+
     // ship collides with sun
     let gameOver = false;
     let message = '';
     let loserID = null;
-    const {sun} = state.game;
     for (const id in state.game.ships) {
       const ship = state.game.ships[id];
       const distVec = subtract(ship.position, sun.position);
@@ -44,8 +52,8 @@ const initCollisionSystem = (store: Store): void => {
         const distVec = subtract(ship.position, projectile.position);
         const dist = distance(distVec);
         // don't get hit by your own laser you just fired
-        if (dist < config.laserSpeed &&
-          !(projectile.playerID == id && projectile.history.length < 5)
+        if (dist < ship.radius + projectile.radius &&
+          !(projectile.playerID == id && projectile.history.length < 10)
         ) {
           gameOver = true;
           message = getPlayerByID(state, id).name + ' was hit by a ' + projectile.type + '!';
@@ -56,14 +64,23 @@ const initCollisionSystem = (store: Store): void => {
 
     const thisClientID = getClientPlayerID(state);
     if (gameOver && loserID == thisClientID) {
-      console.log('gameover', message);
-      // stop game
+      const otherPlayerID = getOtherPlayerID(state);
+
+      // set ready state for both players
       const readyAction = {type: 'SET_PLAYER_READY', playerID: thisClientID, ready: false};
       dispatchToServer(thisClientID, readyAction);
       dispatch(readyAction);
+      const otherReadyAction = {
+        type: 'SET_PLAYER_READY', playerID: otherPlayerID, ready: false,
+      };
+      dispatchToServer(thisClientID, otherReadyAction);
+      dispatch(otherReadyAction);
+
+      // stop game
       const stopAction = {type: 'STOP_TICK'};
       dispatch(stopAction);
       dispatchToServer(thisClientID, stopAction);
+
       // update scores
       for (const id in state.game.ships) {
         const player = getPlayerByID(state, id);
@@ -77,13 +94,13 @@ const initCollisionSystem = (store: Store): void => {
           dispatchToServer(thisClientID, scoreAction);
         }
       }
-      // dispatch modal with message
-      const winOrLose = thisClientID == loserID ? 'You Lose!' : 'You Win!';
-      const modalAction = {
-        type: 'SET_MODAL', title: winOrLose, text: message, name: 'gameover',
-      };
-      dispatch(modalAction);
-      dispatchToServer(thisClientID, modalAction);
+      // dispatch modals with messages
+      dispatch({
+        type: 'SET_MODAL', title: 'You Lose!', text: message, name: 'gameover',
+      });
+      dispatchToServer(thisClientID, {
+        type: 'SET_MODAL', title: 'You Win!', text: message, name: 'gameover',
+      });
     }
   });
 }

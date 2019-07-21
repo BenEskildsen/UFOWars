@@ -22,7 +22,7 @@ var Button = require('./ui/Button.react');
 // -------------------------------------------------------------------------------
 
 // some unique id per player
-// number in practice lol
+// number in practice
 // unique id per game, 0 == lobby
 // number in practice lol
 

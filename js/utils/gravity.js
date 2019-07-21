@@ -28,7 +28,7 @@ const computeAccel = (m1: Mass, m2: Mass, dist: Vector): Vector => {
  * Pure function so that this can be used for calculating paths.
  * Optionally pass in a thrust vector that will affect acceleration
  */
-const computeNextEntity = (sun: Entity, entity: Entity, thrust?: number): Entity => {
+const computeNextEntity = (sun: Entity, entity: Entity, thrust?: number, noSmartTheta: boolean): Entity => {
   const thrustVal = thrust || 0;
   const thrustVec = {
     x: thrustVal * cos(entity.theta),
@@ -36,7 +36,7 @@ const computeNextEntity = (sun: Entity, entity: Entity, thrust?: number): Entity
   };
 
   // get prev theta if no manual changes had been applied
-  const prevUncorrectedTheta = -1*Math.atan2(entity.velocity.x, entity.velocity.y) + Math.PI/2;
+  const prevUncorrectedTheta = Math.atan2(entity.velocity.y, entity.velocity.x) + Math.PI/2;
 
   // sum acceleration due to the sun and acceleration due to thrust
   const accel = add(
@@ -50,9 +50,12 @@ const computeNextEntity = (sun: Entity, entity: Entity, thrust?: number): Entity
   const position = add(velocity, entity.position);
 
   // compute next theta relative to current direction of travel
-  const nextUncorrectedTheta = -1*Math.atan2(velocity.x, velocity.y) + Math.PI/2;
+  const nextUncorrectedTheta = Math.atan2(velocity.y, velocity.x) + Math.PI/2;
   const thetaDiff = nextUncorrectedTheta - prevUncorrectedTheta;
-  const theta = entity.theta + thetaDiff + entity.thetaSpeed;
+  let theta = entity.theta + thetaDiff + entity.thetaSpeed;
+  if (noSmartTheta) {
+    theta = entity.theta + entity.thetaSpeed;
+  }
 
   return {
     ...entity,

@@ -80,9 +80,9 @@ const gameReducer = (state: GameState, action: Action): GameState => {
         };
       }
     }
-    case 'FIRE_LASER': {
+    case 'FIRE_MISSILE':
+    case 'FIRE_LASER':
       return fireProjectileReducer(state, action);
-    }
   }
 
   return state;

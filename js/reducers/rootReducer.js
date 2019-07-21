@@ -36,6 +36,7 @@ const rootReducer = (state: State, action: Action): State => {
     case 'SET_TURN':
     case 'SET_THRUST':
     case 'FIRE_LASER':
+    case 'FIRE_MISSILE':
       if (!state.game) return state;
       return {
         ...state,

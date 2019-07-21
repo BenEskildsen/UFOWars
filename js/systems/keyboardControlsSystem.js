@@ -67,7 +67,7 @@ const initKeyboardControlsSystem = (store) => {
         break;
       }
       case 32: { // space
-        const action = {type: 'FIRE_LASER', time, playerID};
+        const action = {type: 'FIRE_MISSILE', time, playerID};
         dispatchToServer(playerID, action);
         dispatch(action);
         break;
