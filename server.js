@@ -35,13 +35,15 @@ eurecaServer.exports.dispatch = function (playerID, action) {
       return; // this is kinda hacky *shrug emoji*
     case 'CREATE_GAME':
       games[action.gameID] = {id: action.gameID, players: []};
-      // fall through
+      // fallthrough
     case 'JOIN_GAME':
       clientToGame[playerID] = action.gameID; // assign player to game
       games[action.gameID].players.push(action.playerID);
-      // fall through
+      allClients = true;
+      break;
     case 'SET_PLAYER_NAME':
       allClients = true;
+      clientNames[action.playerID] = action.name;
       break;
   }
 

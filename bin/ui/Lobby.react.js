@@ -16,7 +16,8 @@ var _require = require('../selectors/selectors'),
     getNextGameID = _require.getNextGameID,
     getClientPlayerID = _require.getClientPlayerID,
     getClientPlayer = _require.getClientPlayer,
-    getClientGame = _require.getClientGame;
+    getClientGame = _require.getClientGame,
+    getPlayerByID = _require.getPlayerByID;
 
 var _require2 = require('../utils/clientToServer'),
     dispatchToServer = _require2.dispatchToServer;
@@ -69,12 +70,13 @@ var Lobby = function (_React$Component) {
               'p',
               null,
               'Joined: ',
-              game.players.length == 2 ? game.players[1] : 'None'
+              game.players.length == 2 ? getPlayerByID(state, game.players[1]).name : 'None'
             ),
             this.startButton()
           );
           continue;
         }
+        var hostName = getPlayerByID(state, host).name;
         gameRows.push(React.createElement(
           'div',
           { className: 'gameRow', key: 'gameRow_' + host },
@@ -82,7 +84,7 @@ var Lobby = function (_React$Component) {
             'p',
             null,
             'Host: ',
-            host
+            hostName
           ),
           React.createElement(
             'p',
@@ -101,15 +103,34 @@ var Lobby = function (_React$Component) {
       return React.createElement(
         'div',
         { className: 'lobby' },
-        React.createElement(
-          'div',
-          { className: 'nameRow' },
-          'Name: ',
-          clientPlayer.name
-        ),
+        this.playerNameRow(),
         this.createButton(),
         hostedGame,
         gameRows
+      );
+    }
+  }, {
+    key: 'playerNameRow',
+    value: function playerNameRow() {
+      var clientPlayer = getClientPlayer(this.state);
+      var dispatch = this.props.store.dispatch;
+      return React.createElement(
+        'div',
+        { className: 'nameRow' },
+        'Name:',
+        React.createElement('input', {
+          type: 'text',
+          value: clientPlayer.name,
+          onChange: function onChange(ev) {
+            var nameChangeAction = {
+              type: 'SET_PLAYER_NAME',
+              playerID: clientPlayer.id,
+              name: ev.target.value
+            };
+            dispatch(nameChangeAction);
+            dispatchToServer(clientPlayer.id, nameChangeAction);
+          }
+        })
       );
     }
   }, {
@@ -128,8 +149,6 @@ var Lobby = function (_React$Component) {
           var readyAction = { type: 'SET_PLAYER_READY', playerID: playerID, ready: true };
           dispatchToServer(playerID, readyAction);
           dispatch(readyAction);
-          // const startAction = {type: 'START', gameID: clientGame.id};
-          // dispatchToServer(playerID, startAction);
         },
         disabled: !gameReady
       });

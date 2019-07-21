@@ -5,6 +5,7 @@ const {
   getClientPlayerID,
   getClientPlayer,
   getClientGame,
+  getPlayerByID,
 } = require('../selectors/selectors');
 const {dispatchToServer} = require('../utils/clientToServer');
 const Button = require('./Button.react');
@@ -41,15 +42,20 @@ class Lobby extends React.Component {
       if (host == clientPlayer.id) {
         hostedGame = (
           <div className="hostedGame">
-            <p>Joined: {game.players.length == 2 ? game.players[1]: 'None'}</p>
+            <p>Joined: {
+              game.players.length == 2
+                ? getPlayerByID(state, game.players[1]).name
+                : 'None'
+            }</p>
             {this.startButton()}
           </div>
         );
         continue;
       }
+      const hostName = getPlayerByID(state, host).name;
       gameRows.push(
         <div className="gameRow" key={'gameRow_' + host}>
-          <p>Host: {host}</p>
+          <p>Host: {hostName}</p>
           <p># Players: {game.players.length}</p>
           <p>
             {game.started
@@ -63,12 +69,33 @@ class Lobby extends React.Component {
 
     return (
       <div className="lobby">
-        <div className="nameRow">
-           Name: {clientPlayer.name}
-        </div>
+        {this.playerNameRow()}
         {this.createButton()}
         {hostedGame}
         {gameRows}
+      </div>
+    );
+  }
+
+  playerNameRow() {
+    const clientPlayer = getClientPlayer(this.state);
+    const dispatch = this.props.store.dispatch;
+    return (
+      <div className="nameRow">
+         Name:
+         <input
+            type="text"
+            value={clientPlayer.name}
+            onChange={(ev) => {
+              const nameChangeAction = {
+                type: 'SET_PLAYER_NAME',
+                playerID: clientPlayer.id,
+                name: ev.target.value,
+              };
+              dispatch(nameChangeAction);
+              dispatchToServer(clientPlayer.id, nameChangeAction);
+            }}
+          />
       </div>
     );
   }
@@ -87,8 +114,6 @@ class Lobby extends React.Component {
           const readyAction = {type: 'SET_PLAYER_READY', playerID, ready: true};
           dispatchToServer(playerID, readyAction);
           dispatch(readyAction);
-          // const startAction = {type: 'START', gameID: clientGame.id};
-          // dispatchToServer(playerID, startAction);
         }}
         disabled={!gameReady}
       />
