@@ -33,7 +33,7 @@ var config = {
   laserSpeed: 20,
   maxProjectiles: 100,
   c: Infinity, // speed of light, in pixels per tick
-  playerColors: ['white', 'blue', 'red']
+  playerColors: ['white', 'LightSkyBlue', 'OrangeRed']
 };
 
 module.exports = { config: config };
@@ -1494,7 +1494,7 @@ var render = function render(state, ctx) {
       var projectile = _step3.value;
 
       if (projectile.type == 'missile') {
-        renderMissile(ctx, projectile);
+        renderMissile(state, ctx, projectile);
         continue;
       }
       ctx.save();
@@ -1506,8 +1506,7 @@ var render = function render(state, ctx) {
         length = config.laserSpeed;
         width = 2;
       }
-      // TODO track colors better
-      // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
+      ctx.strokeStyle = getPlayerColor(state, projectile.playerID);
       ctx.lineWidth = 1;
       ctx.fillStyle = _color;
       ctx.beginPath();
@@ -1515,7 +1514,7 @@ var render = function render(state, ctx) {
       ctx.rotate(projectile.theta);
       ctx.rect(0, 0, length, width);
       ctx.fill();
-      // ctx.stroke();
+      ctx.stroke();
       ctx.closePath();
       ctx.restore();
     }
@@ -1548,10 +1547,9 @@ var render = function render(state, ctx) {
   // TODO
 };
 
-var renderMissile = function renderMissile(ctx, missile) {
+var renderMissile = function renderMissile(state, ctx, missile) {
   ctx.save();
-  // TODO track colors better
-  // ctx.fillStyle = ['blue', 'red'][colorIndex];
+  ctx.strokeStyle = getPlayerColor(state, missile.playerID);
   ctx.fillStyle = 'green';
   ctx.beginPath();
   ctx.translate(missile.position.x, missile.position.y);
@@ -1561,6 +1559,7 @@ var renderMissile = function renderMissile(ctx, missile) {
   ctx.lineTo(-1 * missile.radius / 2, missile.radius / 2);
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
 
   if (missile.thrust > 0) {
     ctx.fillStyle = 'orange';
@@ -1572,21 +1571,6 @@ var renderMissile = function renderMissile(ctx, missile) {
     ctx.fill();
   }
   ctx.restore();
-
-  // ctx.beginPath();
-  // ctx.strokeStyle = ['blue', 'red'][colorIndex];
-  // if (missile.history.length > 0) {
-  //   ctx.moveTo(missile.history[0].position.x, missile.history[0].position.y);
-  // }
-  // for (const pastShip of missile.history) {
-  //   ctx.lineTo(pastShip.position.x, pastShip.position.y);
-  // }
-  // ctx.stroke();
-  //
-  // ctx.fillStyle = ['blue', 'red'][colorIndex];
-  // for (const futureShip of missile.future) {
-  //   ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
-  // }
 };
 
 module.exports = { initRenderSystem: initRenderSystem };

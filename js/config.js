@@ -34,8 +34,8 @@ const config = {
   c: Infinity, // speed of light, in pixels per tick
   playerColors: [
     'white',
-    'blue',
-    'red',
+    'LightSkyBlue',
+    'OrangeRed',
   ],
 };
 

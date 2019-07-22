@@ -85,7 +85,7 @@ const render = (state: State, ctx: any): void => {
   // render projectiles
   for (const projectile of game.projectiles) {
     if (projectile.type == 'missile') {
-      renderMissile(ctx, projectile);
+      renderMissile(state, ctx, projectile);
       continue;
     } 
     ctx.save();
@@ -97,8 +97,7 @@ const render = (state: State, ctx: any): void => {
       length = config.laserSpeed;
       width = 2;
     }
-    // TODO track colors better
-    // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
+    ctx.strokeStyle = getPlayerColor(state, projectile.playerID);
     ctx.lineWidth = 1;
     ctx.fillStyle = color;
     ctx.beginPath();
@@ -106,7 +105,7 @@ const render = (state: State, ctx: any): void => {
     ctx.rotate(projectile.theta);
     ctx.rect(0, 0, length, width);
     ctx.fill();
-    // ctx.stroke();
+    ctx.stroke();
     ctx.closePath();
     ctx.restore();
   }
@@ -126,10 +125,9 @@ const render = (state: State, ctx: any): void => {
   // TODO
 }
 
-const renderMissile = (ctx, missile) => {
+const renderMissile = (state, ctx, missile) => {
   ctx.save();
-  // TODO track colors better
-  // ctx.fillStyle = ['blue', 'red'][colorIndex];
+  ctx.strokeStyle = getPlayerColor(state, missile.playerID);
   ctx.fillStyle = 'green';
   ctx.beginPath();
   ctx.translate(missile.position.x, missile.position.y);
@@ -139,6 +137,7 @@ const renderMissile = (ctx, missile) => {
   ctx.lineTo(-1 * missile.radius / 2, missile.radius / 2);
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
 
   if (missile.thrust > 0) {
     ctx.fillStyle = 'orange';
@@ -150,21 +149,6 @@ const renderMissile = (ctx, missile) => {
     ctx.fill();
   }
   ctx.restore();
-
-  // ctx.beginPath();
-  // ctx.strokeStyle = ['blue', 'red'][colorIndex];
-  // if (missile.history.length > 0) {
-  //   ctx.moveTo(missile.history[0].position.x, missile.history[0].position.y);
-  // }
-  // for (const pastShip of missile.history) {
-  //   ctx.lineTo(pastShip.position.x, pastShip.position.y);
-  // }
-  // ctx.stroke();
-  //
-  // ctx.fillStyle = ['blue', 'red'][colorIndex];
-  // for (const futureShip of missile.future) {
-  //   ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
-  // }
 };
 
 module.exports = {initRenderSystem};
