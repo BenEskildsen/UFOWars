@@ -51,8 +51,8 @@ var Game = function (_React$Component) {
       }
       if (state.game != null) {
         content = React.createElement(
-          React.Fragment,
-          null,
+          'div',
+          { className: 'background' },
           React.createElement(Canvas, {
             game: state.game,
             width: config.width, height: config.height
@@ -61,8 +61,8 @@ var Game = function (_React$Component) {
       }
 
       return React.createElement(
-        'div',
-        { className: 'background' },
+        React.Fragment,
+        null,
         content,
         this.getModal()
       );

@@ -72,7 +72,46 @@ class Lobby extends React.Component {
         {this.playerNameRow()}
         {this.createButton()}
         {hostedGame}
-        {gameRows}
+        <div className="gameRows">
+          {gameRows}
+        </div>
+        {this.chatBar()}
+      </div>
+    );
+  }
+
+  chatBar() {
+    const dispatch = this.props.store.dispatch;
+    const state = this.state;
+    const clientPlayer = getClientPlayer(this.state);
+    return (
+      <div className="chatBar">
+        <textarea rows={40} cols={60}
+          disabled={true} readOnly={true} value={state.chat}
+          style={{resize: 'none'}}
+        />
+        <div>
+          <input
+            type="text"
+            size={55}
+            value={state.localChat}
+            onChange={(ev) => {
+              dispatch({type: 'LOCAL_CHAT', message: ev.target.value});
+            }}
+          />
+          <Button
+            label="Send"
+            onClick={() => {
+              const chatAction = {
+                type: 'CHAT',
+                playerID: clientPlayer.id,
+                message: state.localChat,
+              };
+              dispatch(chatAction);
+              dispatchToServer(clientPlayer.id, chatAction);
+            }}
+          />
+        </div>
       </div>
     );
   }
@@ -126,15 +165,17 @@ class Lobby extends React.Component {
     const clientGame = getClientGame(this.state);
     const {dispatch} = this.props.store;
     return (
-      <Button
-        label="Create Game"
-        onClick={() => {
-          const createAction = {type: 'CREATE_GAME', playerID, gameID};
-          dispatchToServer(playerID, createAction);
-          dispatch(createAction);
-        }}
-        disabled={clientGame.id != 0}
-      />
+      <div style={{margin: '4px'}}>
+        <Button
+          label="Create Game"
+          onClick={() => {
+            const createAction = {type: 'CREATE_GAME', playerID, gameID};
+            dispatchToServer(playerID, createAction);
+            dispatch(createAction);
+          }}
+          disabled={clientGame.id != 0}
+        />
+      </div>
     );
   }
 

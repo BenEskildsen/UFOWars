@@ -27,6 +27,8 @@ var rootReducer = function rootReducer(state, action) {
     case 'CREATE_GAME':
     case 'JOIN_GAME':
     case 'START':
+    case 'CHAT':
+    case 'LOCAL_CHAT':
       return lobbyReducer(state, action);
     case 'CREATE_PLAYER':
     case 'SET_PLAYER_NAME':

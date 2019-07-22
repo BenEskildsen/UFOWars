@@ -16,6 +16,8 @@ const rootReducer = (state: State, action: Action): State => {
     case 'CREATE_GAME':
     case 'JOIN_GAME':
     case 'START':
+    case 'CHAT':
+    case 'LOCAL_CHAT':
       return lobbyReducer(state, action);
     case 'CREATE_PLAYER':
     case 'SET_PLAYER_NAME':

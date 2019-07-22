@@ -46,6 +46,8 @@ export type State = {
     text: string,
     buttons: Array<Button>
   },
+  localChat: string, // what the player has typed but not yet submitted
+  chat: string, // all chat
 };
 
 export type Game = {

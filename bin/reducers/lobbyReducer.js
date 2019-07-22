@@ -12,6 +12,9 @@ var _require = require('../state/initGameState'),
 var _require2 = require('../config'),
     config = _require2.config;
 
+var _require3 = require('../selectors/selectors'),
+    getPlayerByID = _require3.getPlayerByID;
+
 var lobbyReducer = function lobbyReducer(state, action) {
   switch (action.type) {
     case 'CREATE_GAME':
@@ -100,6 +103,27 @@ var lobbyReducer = function lobbyReducer(state, action) {
             }, config.msPerTick)
           }),
           games: _extends({}, state.games, _defineProperty({}, _gameID2, _extends({}, state.games[_gameID2], { started: true })))
+        });
+      }
+    case 'CHAT':
+      {
+        var _playerID2 = action.playerID,
+            message = action.message;
+
+        if (!message) {
+          return state;
+        }
+        var playerName = getPlayerByID(state, _playerID2).name;
+        return _extends({}, state, {
+          chat: (state.chat || '') + playerName + ': ' + message + '\n'
+        });
+      }
+    case 'LOCAL_CHAT':
+      {
+        var _message = action.message;
+
+        return _extends({}, state, {
+          localChat: _message
         });
       }
   }

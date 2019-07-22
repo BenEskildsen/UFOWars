@@ -45,6 +45,9 @@ eurecaServer.exports.dispatch = function (playerID, action) {
       allClients = true;
       clientNames[action.playerID] = action.name;
       break;
+    case 'CHAT':
+      allClients = true;
+      break;
   }
 
   dispatchToOtherClients(playerID, action, allClients);

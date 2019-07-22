@@ -2,6 +2,7 @@
 
 const {initGameState} = require('../state/initGameState');
 const {config} = require('../config');
+const {getPlayerByID} = require('../selectors/selectors');
 
 import type {State, Action} from '../types';
 
@@ -57,6 +58,24 @@ const lobbyReducer = (state: State, action: Action): State=> {
           ...state.games,
           [gameID]: {...state.games[gameID], started: true},
         },
+      };
+    }
+    case 'CHAT': {
+      const {playerID, message} = action;
+      if (!message) {
+        return state;
+      }
+      const playerName = getPlayerByID(state, playerID).name;
+      return {
+        ...state,
+        chat: (state.chat || '') + playerName + ': ' + message + '\n',
+      };
+    }
+    case 'LOCAL_CHAT': {
+      const {message} = action;
+      return {
+        ...state,
+        localChat: message,
       };
     }
   }

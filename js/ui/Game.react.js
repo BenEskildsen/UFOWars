@@ -28,20 +28,20 @@ class Game extends React.Component {
     }
     if (state.game != null) {
       content = (
-        <React.Fragment>
+        <div className="background">
           <Canvas
             game={state.game}
             width={config.width} height={config.height}
           />
-        </React.Fragment>
+        </div>
       );
     }
 
     return (
-      <div className="background">
+      <React.Fragment>
         {content}
         {this.getModal()}
-      </div>
+      </React.Fragment>
     );
   }
 

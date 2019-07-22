@@ -15,7 +15,6 @@
  - - - - - - LOBBY - - - - -
  - styling and fancy UI for lobby
  - handle overflow in the lobby, without losing scroll lock on game itself
- - add chat room to lobby
 
 
  - - - - - - REFACTOR - - - - - -
@@ -74,3 +73,4 @@
  - implement missile weapons
 
  - ask the client what they want their name to be and track on the server
+ - add chat room to lobby
