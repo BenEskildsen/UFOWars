@@ -125,7 +125,6 @@ var getNextGameID = function getNextGameID(state) {
 
 var getPlayerColor = function getPlayerColor(state, playerID) {
   var colorIndex = state.game.gamePlayers.indexOf(playerID) + 1;
-  console.log(config);
   return config.playerColors[colorIndex];
 };
 
