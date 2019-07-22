@@ -350,6 +350,9 @@ var _require = require('../state/initGameState'),
 var _require2 = require('../config'),
     config = _require2.config;
 
+var _require3 = require('../selectors/selectors'),
+    getPlayerByID = _require3.getPlayerByID;
+
 var lobbyReducer = function lobbyReducer(state, action) {
   switch (action.type) {
     case 'CREATE_GAME':
@@ -440,12 +443,33 @@ var lobbyReducer = function lobbyReducer(state, action) {
           games: _extends({}, state.games, _defineProperty({}, _gameID2, _extends({}, state.games[_gameID2], { started: true })))
         });
       }
+    case 'CHAT':
+      {
+        var _playerID2 = action.playerID,
+            message = action.message;
+
+        if (!message) {
+          return state;
+        }
+        var playerName = getPlayerByID(state, _playerID2).name;
+        return _extends({}, state, {
+          chat: (state.chat || '') + playerName + ': ' + message + '\n'
+        });
+      }
+    case 'LOCAL_CHAT':
+      {
+        var _message = action.message;
+
+        return _extends({}, state, {
+          localChat: _message
+        });
+      }
   }
   return state;
 };
 
 module.exports = { lobbyReducer: lobbyReducer };
-},{"../config":1,"../state/initGameState":14}],9:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":13,"../state/initGameState":14}],9:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -657,6 +681,8 @@ var rootReducer = function rootReducer(state, action) {
     case 'CREATE_GAME':
     case 'JOIN_GAME':
     case 'START':
+    case 'CHAT':
+    case 'LOCAL_CHAT':
       return lobbyReducer(state, action);
     case 'CREATE_PLAYER':
     case 'SET_PLAYER_NAME':
@@ -1726,8 +1752,8 @@ var Game = function (_React$Component) {
       }
       if (state.game != null) {
         content = React.createElement(
-          React.Fragment,
-          null,
+          'div',
+          { className: 'background' },
           React.createElement(Canvas, {
             game: state.game,
             width: config.width, height: config.height
@@ -1736,8 +1762,8 @@ var Game = function (_React$Component) {
       }
 
       return React.createElement(
-        'div',
-        { className: 'background' },
+        React.Fragment,
+        null,
         content,
         this.getModal()
       );
@@ -1899,7 +1925,51 @@ var Lobby = function (_React$Component) {
         this.playerNameRow(),
         this.createButton(),
         hostedGame,
-        gameRows
+        React.createElement(
+          'div',
+          { className: 'gameRows' },
+          gameRows
+        ),
+        this.chatBar()
+      );
+    }
+  }, {
+    key: 'chatBar',
+    value: function chatBar() {
+      var dispatch = this.props.store.dispatch;
+      var state = this.state;
+      var clientPlayer = getClientPlayer(this.state);
+      return React.createElement(
+        'div',
+        { className: 'chatBar' },
+        React.createElement('textarea', { rows: 40, cols: 60,
+          disabled: true, readOnly: true, value: state.chat,
+          style: { resize: 'none' }
+        }),
+        React.createElement(
+          'div',
+          null,
+          React.createElement('input', {
+            type: 'text',
+            size: 55,
+            value: state.localChat,
+            onChange: function onChange(ev) {
+              dispatch({ type: 'LOCAL_CHAT', message: ev.target.value });
+            }
+          }),
+          React.createElement(Button, {
+            label: 'Send',
+            onClick: function onClick() {
+              var chatAction = {
+                type: 'CHAT',
+                playerID: clientPlayer.id,
+                message: state.localChat
+              };
+              dispatch(chatAction);
+              dispatchToServer(clientPlayer.id, chatAction);
+            }
+          })
+        )
       );
     }
   }, {
@@ -1954,15 +2024,19 @@ var Lobby = function (_React$Component) {
       var clientGame = getClientGame(this.state);
       var dispatch = this.props.store.dispatch;
 
-      return React.createElement(Button, {
-        label: 'Create Game',
-        onClick: function onClick() {
-          var createAction = { type: 'CREATE_GAME', playerID: playerID, gameID: gameID };
-          dispatchToServer(playerID, createAction);
-          dispatch(createAction);
-        },
-        disabled: clientGame.id != 0
-      });
+      return React.createElement(
+        'div',
+        { style: { margin: '4px' } },
+        React.createElement(Button, {
+          label: 'Create Game',
+          onClick: function onClick() {
+            var createAction = { type: 'CREATE_GAME', playerID: playerID, gameID: gameID };
+            dispatchToServer(playerID, createAction);
+            dispatch(createAction);
+          },
+          disabled: clientGame.id != 0
+        })
+      );
     }
   }, {
     key: 'joinButton',

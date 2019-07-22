@@ -14,6 +14,43 @@ body {
   overflow: hidden;
 }
 
+/******************************************************************************
+ * Lobby
+ ******************************************************************************/
+
+.lobby {
+  margin-left: 8px;
+}
+
+.hostedGame {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.gameRows {
+  display: inline-block;
+}
+
+.gameRow {
+  margin-bottom: 8px;
+  border-top: 1px solid grey;
+  padding: 2px;
+}
+
+.chatBar {
+  float: right;
+  margin-right: 8px;
+}
+
+p {
+  display: inline;
+  margin-right: 4px;
+}
+
+/******************************************************************************
+ * Game
+ ******************************************************************************/
+
 .gameCanvas {
   width: 800;
   height: 800;

@@ -106,7 +106,51 @@ var Lobby = function (_React$Component) {
         this.playerNameRow(),
         this.createButton(),
         hostedGame,
-        gameRows
+        React.createElement(
+          'div',
+          { className: 'gameRows' },
+          gameRows
+        ),
+        this.chatBar()
+      );
+    }
+  }, {
+    key: 'chatBar',
+    value: function chatBar() {
+      var dispatch = this.props.store.dispatch;
+      var state = this.state;
+      var clientPlayer = getClientPlayer(this.state);
+      return React.createElement(
+        'div',
+        { className: 'chatBar' },
+        React.createElement('textarea', { rows: 40, cols: 60,
+          disabled: true, readOnly: true, value: state.chat,
+          style: { resize: 'none' }
+        }),
+        React.createElement(
+          'div',
+          null,
+          React.createElement('input', {
+            type: 'text',
+            size: 55,
+            value: state.localChat,
+            onChange: function onChange(ev) {
+              dispatch({ type: 'LOCAL_CHAT', message: ev.target.value });
+            }
+          }),
+          React.createElement(Button, {
+            label: 'Send',
+            onClick: function onClick() {
+              var chatAction = {
+                type: 'CHAT',
+                playerID: clientPlayer.id,
+                message: state.localChat
+              };
+              dispatch(chatAction);
+              dispatchToServer(clientPlayer.id, chatAction);
+            }
+          })
+        )
       );
     }
   }, {
@@ -161,15 +205,19 @@ var Lobby = function (_React$Component) {
       var clientGame = getClientGame(this.state);
       var dispatch = this.props.store.dispatch;
 
-      return React.createElement(Button, {
-        label: 'Create Game',
-        onClick: function onClick() {
-          var createAction = { type: 'CREATE_GAME', playerID: playerID, gameID: gameID };
-          dispatchToServer(playerID, createAction);
-          dispatch(createAction);
-        },
-        disabled: clientGame.id != 0
-      });
+      return React.createElement(
+        'div',
+        { style: { margin: '4px' } },
+        React.createElement(Button, {
+          label: 'Create Game',
+          onClick: function onClick() {
+            var createAction = { type: 'CREATE_GAME', playerID: playerID, gameID: gameID };
+            dispatchToServer(playerID, createAction);
+            dispatch(createAction);
+          },
+          disabled: clientGame.id != 0
+        })
+      );
     }
   }, {
     key: 'joinButton',
