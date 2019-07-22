@@ -32,7 +32,11 @@ const config = {
   laserSpeed: 20,
   maxProjectiles: 100,
   c: Infinity, // speed of light, in pixels per tick
-  renderGroundTruth: false,
+  playerColors: [
+    'white',
+    'blue',
+    'red',
+  ],
 };
 
 module.exports = {config};

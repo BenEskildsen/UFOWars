@@ -1,5 +1,5 @@
 const {config} = require('../config');
-const {getClientPlayerID} = require('../selectors/selectors');
+const {getClientPlayerID, getPlayerColor} = require('../selectors/selectors');
 const {max, round, sqrt} = Math;
 
 import type {Store, Game} from '../types';
@@ -31,20 +31,21 @@ const initRenderSystem = (store: Store): void => {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, config.width, config.height);
 
-    const {game} = state;
-    render(game, ctx);
+    render(state, ctx);
   });
 }
 
-const render = (game: Game, ctx: any): void => {
+const render = (state: State, ctx: any): void => {
+  const {game} = state;
+
   // TODO abstract away rendering
   // render ships
-  let colorIndex = 0;
   for (const id in game.ships) {
     const ship = game.ships[id];
+    const color = getPlayerColor(state, ship.playerID);
 
     ctx.save();
-    ctx.fillStyle = ['blue', 'red'][colorIndex];
+    ctx.fillStyle = color;
     ctx.beginPath();
     ctx.translate(ship.position.x, ship.position.y);
     ctx.rotate(ship.theta);
@@ -66,7 +67,7 @@ const render = (game: Game, ctx: any): void => {
     ctx.restore();
 
     ctx.beginPath();
-    ctx.strokeStyle = ['blue', 'red'][colorIndex];
+    ctx.strokeStyle = color;
     if (ship.history.length > 0) {
       ctx.moveTo(ship.history[0].position.x, ship.history[0].position.y);
     }
@@ -75,12 +76,10 @@ const render = (game: Game, ctx: any): void => {
     }
     ctx.stroke();
 
-    ctx.fillStyle = ['blue', 'red'][colorIndex];
+    ctx.fillStyle = color;
     for (const futureShip of ship.future) {
       ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
     }
-
-    colorIndex++;
   }
 
   // render projectiles

@@ -3,6 +3,9 @@
 var _require = require('../utils/errors'),
     invariant = _require.invariant;
 
+var _require2 = require('../config'),
+    config = _require2.config;
+
 var getClientPlayerID = function getClientPlayerID(state) {
   return getClientPlayer(state).id;
 };
@@ -120,11 +123,18 @@ var getNextGameID = function getNextGameID(state) {
   return '' + (nextGameID + Math.round(Math.random() * 100));
 };
 
+var getPlayerColor = function getPlayerColor(state, playerID) {
+  var colorIndex = state.game.gamePlayers.indexOf(playerID) + 1;
+  console.log(config);
+  return config.playerColors[colorIndex];
+};
+
 module.exports = {
   getClientPlayerID: getClientPlayerID,
   getOtherPlayerID: getOtherPlayerID,
   getClientPlayer: getClientPlayer,
   getClientGame: getClientGame,
   getPlayerByID: getPlayerByID,
-  getNextGameID: getNextGameID
+  getNextGameID: getNextGameID,
+  getPlayerColor: getPlayerColor
 };

@@ -1,5 +1,5 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-"use strict";
+'use strict';
 
 var config = {
   msPerTick: 50,
@@ -33,7 +33,7 @@ var config = {
   laserSpeed: 20,
   maxProjectiles: 100,
   c: Infinity, // speed of light, in pixels per tick
-  renderGroundTruth: false
+  playerColors: ['white', 'blue', 'red']
 };
 
 module.exports = { config: config };
@@ -854,6 +854,9 @@ module.exports = { tickReducer: tickReducer };
 var _require = require('../utils/errors'),
     invariant = _require.invariant;
 
+var _require2 = require('../config'),
+    config = _require2.config;
+
 var getClientPlayerID = function getClientPlayerID(state) {
   return getClientPlayer(state).id;
 };
@@ -971,15 +974,22 @@ var getNextGameID = function getNextGameID(state) {
   return '' + (nextGameID + Math.round(Math.random() * 100));
 };
 
+var getPlayerColor = function getPlayerColor(state, playerID) {
+  var colorIndex = state.game.gamePlayers.indexOf(playerID) + 1;
+  console.log(config);
+  return config.playerColors[colorIndex];
+};
+
 module.exports = {
   getClientPlayerID: getClientPlayerID,
   getOtherPlayerID: getOtherPlayerID,
   getClientPlayer: getClientPlayer,
   getClientGame: getClientGame,
   getPlayerByID: getPlayerByID,
-  getNextGameID: getNextGameID
+  getNextGameID: getNextGameID,
+  getPlayerColor: getPlayerColor
 };
-},{"../utils/errors":25}],14:[function(require,module,exports){
+},{"../config":1,"../utils/errors":25}],14:[function(require,module,exports){
 'use strict';
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -1345,7 +1355,8 @@ var _require = require('../config'),
     config = _require.config;
 
 var _require2 = require('../selectors/selectors'),
-    getClientPlayerID = _require2.getClientPlayerID;
+    getClientPlayerID = _require2.getClientPlayerID,
+    getPlayerColor = _require2.getPlayerColor;
 
 var max = Math.max,
     round = Math.round,
@@ -1379,21 +1390,22 @@ var initRenderSystem = function initRenderSystem(store) {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, config.width, config.height);
 
-    var game = state.game;
-
-    render(game, ctx);
+    render(state, ctx);
   });
 };
 
-var render = function render(game, ctx) {
+var render = function render(state, ctx) {
+  var game = state.game;
+
   // TODO abstract away rendering
   // render ships
-  var colorIndex = 0;
+
   for (var id in game.ships) {
     var ship = game.ships[id];
+    var color = getPlayerColor(state, ship.playerID);
 
     ctx.save();
-    ctx.fillStyle = ['blue', 'red'][colorIndex];
+    ctx.fillStyle = color;
     ctx.beginPath();
     ctx.translate(ship.position.x, ship.position.y);
     ctx.rotate(ship.theta);
@@ -1415,7 +1427,7 @@ var render = function render(game, ctx) {
     ctx.restore();
 
     ctx.beginPath();
-    ctx.strokeStyle = ['blue', 'red'][colorIndex];
+    ctx.strokeStyle = color;
     if (ship.history.length > 0) {
       ctx.moveTo(ship.history[0].position.x, ship.history[0].position.y);
     }
@@ -1446,7 +1458,7 @@ var render = function render(game, ctx) {
 
     ctx.stroke();
 
-    ctx.fillStyle = ['blue', 'red'][colorIndex];
+    ctx.fillStyle = color;
     var _iteratorNormalCompletion2 = true;
     var _didIteratorError2 = false;
     var _iteratorError2 = undefined;
@@ -1471,8 +1483,6 @@ var render = function render(game, ctx) {
         }
       }
     }
-
-    colorIndex++;
   }
 
   // render projectiles
@@ -1489,18 +1499,18 @@ var render = function render(game, ctx) {
         continue;
       }
       ctx.save();
-      var color = 'white';
+      var _color = 'white';
       var length = 50;
       var width = 50;
       if (projectile.type == 'laser') {
-        color = 'lime';
+        _color = 'lime';
         length = config.laserSpeed;
         width = 2;
       }
       // TODO track colors better
       // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
       ctx.lineWidth = 1;
-      ctx.fillStyle = color;
+      ctx.fillStyle = _color;
       ctx.beginPath();
       ctx.translate(projectile.position.x, projectile.position.y);
       ctx.rotate(projectile.theta);
