@@ -1,6 +1,7 @@
 // @flow
 
 const {invariant} = require('../utils/errors');
+const {config} = require('../config');
 
 import type {GameID, State, Player, PlayerID, Game} from '../types';
 
@@ -56,6 +57,11 @@ const getNextGameID = (state: State): GameID => {
   return '' + (nextGameID + Math.round(Math.random() * 100));
 }
 
+const getPlayerColor = (state: State, playerID: PlayerID): Color => {
+  const colorIndex = state.game.gamePlayers.indexOf(playerID) + 1;
+  return config.playerColors[colorIndex];
+}
+
 module.exports = {
   getClientPlayerID,
   getOtherPlayerID,
@@ -63,4 +69,5 @@ module.exports = {
   getClientGame,
   getPlayerByID,
   getNextGameID,
+  getPlayerColor,
 };

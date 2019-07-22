@@ -1,5 +1,5 @@
 const {config} = require('../config');
-const {getClientPlayerID} = require('../selectors/selectors');
+const {getClientPlayerID, getPlayerColor} = require('../selectors/selectors');
 const {max, round, sqrt} = Math;
 
 import type {Store, Game} from '../types';
@@ -31,116 +31,83 @@ const initRenderSystem = (store: Store): void => {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, config.width, config.height);
 
-    const {game} = state;
-    const referencePosition = game.ships[getClientPlayerID(state)].position;
-    render(game, ctx, referencePosition, config.c);
-    if (config.renderGroundTruth) {
-      render(game, ctx, referencePosition, float('inf'));
-    }
+    render(state, ctx);
   });
 }
 
-const tickDifference = (position: Vector, otherPosition: Vector, c: number): number => {
-  const dx = (position.x - otherPosition.x);
-  const dy = (position.y - otherPosition.y);
-  return round(sqrt(dx*dx + dy*dy) / c);
-}
+const render = (state: State, ctx: any): void => {
+  const {game} = state;
 
-const render = (game: Game, ctx: any, referencePosition: Vector, c: number): void => {
   // TODO abstract away rendering
   // render ships
-  let colorIndex = 0;
-  let playerTickDiffs = {};
   for (const id in game.ships) {
-    const currentShip = game.ships[id];
-    const {position, history} = currentShip;
-    const tickDiff = tickDifference(referencePosition, position, c);
-    const idx = history.length - 1 - tickDiff;
-    playerTickDiffs[id] = tickDiff;
+    const ship = game.ships[id];
+    const color = getPlayerColor(state, ship.playerID);
 
-    if (idx >= 0) {
-      const ship = history[idx];
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.translate(ship.position.x, ship.position.y);
+    ctx.rotate(ship.theta);
+    ctx.moveTo(ship.radius, 0);
+    ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
+    ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
+    ctx.closePath();
+    ctx.fill();
 
-      ctx.save();
-      ctx.fillStyle = ['blue', 'red'][colorIndex];
+    if (ship.thrust > 0) {
+      ctx.fillStyle = 'orange';
       ctx.beginPath();
-      ctx.translate(ship.position.x, ship.position.y);
-      ctx.rotate(ship.theta);
-      ctx.moveTo(ship.radius, 0);
-      ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
-      ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
+      ctx.moveTo(-1 * ship.radius / 1.25, 0);
+      ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 3);
+      ctx.lineTo(-1 * ship.radius / 2, ship.radius / 3);
       ctx.closePath();
       ctx.fill();
-
-      if (ship.thrust > 0) {
-        ctx.fillStyle = 'orange';
-        ctx.beginPath();
-        ctx.moveTo(-1 * ship.radius / 1.25, 0);
-        ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 3);
-        ctx.lineTo(-1 * ship.radius / 2, ship.radius / 3);
-        ctx.closePath();
-        ctx.fill();
-      }
-      ctx.restore();
-
-      ctx.beginPath();
-      ctx.strokeStyle = ['blue', 'red'][colorIndex];
-      if (ship.history.length > 0) {
-        ctx.moveTo(ship.history[0].position.x, ship.history[0].position.y);
-      }
-      for (const pastShip of ship.history) {
-        ctx.lineTo(pastShip.position.x, pastShip.position.y);
-      }
-      ctx.stroke();
-
-      ctx.fillStyle = ['blue', 'red'][colorIndex];
-      for (const futureShip of ship.future) {
-        ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
-      }
     }
+    ctx.restore();
 
-    colorIndex++;
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    if (ship.history.length > 0) {
+      ctx.moveTo(ship.history[0].position.x, ship.history[0].position.y);
+    }
+    for (const pastShip of ship.history) {
+      ctx.lineTo(pastShip.position.x, pastShip.position.y);
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = color;
+    for (const futureShip of ship.future) {
+      ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
+    }
   }
 
   // render projectiles
-  for (const currentProjectile of game.projectiles) {
-    const {position, history, type} = currentProjectile;
-    if (type == 'missile') {
-      renderMissile(ctx, currentProjectile, referencePosition);
+  for (const projectile of game.projectiles) {
+    if (projectile.type == 'missile') {
+      renderMissile(state, ctx, projectile);
       continue;
+    } 
+    ctx.save();
+    let color = 'white';
+    let length = 50;
+    let width = 50;
+    if (projectile.type == 'laser') {
+      color = 'lime';
+      length = config.laserSpeed;
+      width = 2;
     }
-    const tickDiff = tickDifference(referencePosition, position, c);
-
-    // Compute tick difference based on projectile's player:
-    // const tickDiff = playerTickDiffs[currentProjectile.playerID];
-
-    const idx = history.length - 1 - tickDiff;
-
-    if (idx >= 0) {
-      const projectile = history[idx];
-
-      ctx.save();
-      let color = 'white';
-      let length = 50;
-      let width = 50;
-      if (projectile.type == 'laser') {
-        color = 'lime';
-        length = config.laserSpeed;
-        width = 2;
-      }
-      // TODO track colors better
-      // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
-      ctx.lineWidth = 1;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.translate(projectile.position.x, projectile.position.y);
-      ctx.rotate(projectile.theta);
-      ctx.rect(0, 0, length, width);
-      ctx.fill();
-      // ctx.stroke();
-      ctx.closePath();
-      ctx.restore();
-    }
+    ctx.strokeStyle = getPlayerColor(state, projectile.playerID);
+    ctx.lineWidth = 1;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.translate(projectile.position.x, projectile.position.y);
+    ctx.rotate(projectile.theta);
+    ctx.rect(0, 0, length, width);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+    ctx.restore();
   }
 
   // render sun
@@ -158,53 +125,30 @@ const render = (game: Game, ctx: any, referencePosition: Vector, c: number): voi
   // TODO
 }
 
-const renderMissile = (ctx, projectile, referencePosition) => {
-  const {history, position} = projectile;
-  const tickDiff = tickDifference(referencePosition, position, config.c);
-  const idx = history.length - 1 - tickDiff;
+const renderMissile = (state, ctx, missile) => {
+  ctx.save();
+  ctx.strokeStyle = getPlayerColor(state, missile.playerID);
+  ctx.fillStyle = 'green';
+  ctx.beginPath();
+  ctx.translate(missile.position.x, missile.position.y);
+  ctx.rotate(missile.theta);
+  ctx.moveTo(missile.radius, 0);
+  ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 2);
+  ctx.lineTo(-1 * missile.radius / 2, missile.radius / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 
-  if (idx >= 0) {
-    const missile = history[idx];
-
-    ctx.save();
-    // TODO track colors better
-    // ctx.fillStyle = ['blue', 'red'][colorIndex];
-    ctx.fillStyle = 'green';
+  if (missile.thrust > 0) {
+    ctx.fillStyle = 'orange';
     ctx.beginPath();
-    ctx.translate(missile.position.x, missile.position.y);
-    ctx.rotate(missile.theta);
-    ctx.moveTo(missile.radius, 0);
-    ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 2);
-    ctx.lineTo(-1 * missile.radius / 2, missile.radius / 2);
+    ctx.moveTo(-1 * missile.radius / 1.25, 0);
+    ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 3);
+    ctx.lineTo(-1 * missile.radius / 2, missile.radius / 3);
     ctx.closePath();
     ctx.fill();
-
-    if (missile.thrust > 0) {
-      ctx.fillStyle = 'orange';
-      ctx.beginPath();
-      ctx.moveTo(-1 * missile.radius / 1.25, 0);
-      ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 3);
-      ctx.lineTo(-1 * missile.radius / 2, missile.radius / 3);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.restore();
-
-    // ctx.beginPath();
-    // ctx.strokeStyle = ['blue', 'red'][colorIndex];
-    // if (missile.history.length > 0) {
-    //   ctx.moveTo(missile.history[0].position.x, missile.history[0].position.y);
-    // }
-    // for (const pastShip of missile.history) {
-    //   ctx.lineTo(pastShip.position.x, pastShip.position.y);
-    // }
-    // ctx.stroke();
-    //
-    // ctx.fillStyle = ['blue', 'red'][colorIndex];
-    // for (const futureShip of missile.future) {
-    //   ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
-    // }
   }
+  ctx.restore();
 };
 
 module.exports = {initRenderSystem};

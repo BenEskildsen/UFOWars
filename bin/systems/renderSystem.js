@@ -4,7 +4,8 @@ var _require = require('../config'),
     config = _require.config;
 
 var _require2 = require('../selectors/selectors'),
-    getClientPlayerID = _require2.getClientPlayerID;
+    getClientPlayerID = _require2.getClientPlayerID,
+    getPlayerColor = _require2.getPlayerColor;
 
 var max = Math.max,
     round = Math.round,
@@ -38,121 +39,99 @@ var initRenderSystem = function initRenderSystem(store) {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, config.width, config.height);
 
-    var game = state.game;
-
-    var referencePosition = game.ships[getClientPlayerID(state)].position;
-    render(game, ctx, referencePosition, config.c);
-    if (config.renderGroundTruth) {
-      render(game, ctx, referencePosition, float('inf'));
-    }
+    render(state, ctx);
   });
 };
 
-var tickDifference = function tickDifference(position, otherPosition, c) {
-  var dx = position.x - otherPosition.x;
-  var dy = position.y - otherPosition.y;
-  return round(sqrt(dx * dx + dy * dy) / c);
-};
+var render = function render(state, ctx) {
+  var game = state.game;
 
-var render = function render(game, ctx, referencePosition, c) {
   // TODO abstract away rendering
   // render ships
-  var colorIndex = 0;
-  var playerTickDiffs = {};
+
   for (var id in game.ships) {
-    var currentShip = game.ships[id];
-    var position = currentShip.position,
-        history = currentShip.history;
+    var ship = game.ships[id];
+    var color = getPlayerColor(state, ship.playerID);
 
-    var tickDiff = tickDifference(referencePosition, position, c);
-    var idx = history.length - 1 - tickDiff;
-    playerTickDiffs[id] = tickDiff;
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.translate(ship.position.x, ship.position.y);
+    ctx.rotate(ship.theta);
+    ctx.moveTo(ship.radius, 0);
+    ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
+    ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
+    ctx.closePath();
+    ctx.fill();
 
-    if (idx >= 0) {
-      var ship = history[idx];
-
-      ctx.save();
-      ctx.fillStyle = ['blue', 'red'][colorIndex];
+    if (ship.thrust > 0) {
+      ctx.fillStyle = 'orange';
       ctx.beginPath();
-      ctx.translate(ship.position.x, ship.position.y);
-      ctx.rotate(ship.theta);
-      ctx.moveTo(ship.radius, 0);
-      ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
-      ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
+      ctx.moveTo(-1 * ship.radius / 1.25, 0);
+      ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 3);
+      ctx.lineTo(-1 * ship.radius / 2, ship.radius / 3);
       ctx.closePath();
       ctx.fill();
+    }
+    ctx.restore();
 
-      if (ship.thrust > 0) {
-        ctx.fillStyle = 'orange';
-        ctx.beginPath();
-        ctx.moveTo(-1 * ship.radius / 1.25, 0);
-        ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 3);
-        ctx.lineTo(-1 * ship.radius / 2, ship.radius / 3);
-        ctx.closePath();
-        ctx.fill();
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    if (ship.history.length > 0) {
+      ctx.moveTo(ship.history[0].position.x, ship.history[0].position.y);
+    }
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+      for (var _iterator = ship.history[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var pastShip = _step.value;
+
+        ctx.lineTo(pastShip.position.x, pastShip.position.y);
       }
-      ctx.restore();
-
-      ctx.beginPath();
-      ctx.strokeStyle = ['blue', 'red'][colorIndex];
-      if (ship.history.length > 0) {
-        ctx.moveTo(ship.history[0].position.x, ship.history[0].position.y);
-      }
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
-
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
       try {
-        for (var _iterator = ship.history[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var pastShip = _step.value;
-
-          ctx.lineTo(pastShip.position.x, pastShip.position.y);
+        if (!_iteratorNormalCompletion && _iterator.return) {
+          _iterator.return();
         }
-      } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
       } finally {
-        try {
-          if (!_iteratorNormalCompletion && _iterator.return) {
-            _iterator.return();
-          }
-        } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
-          }
-        }
-      }
-
-      ctx.stroke();
-
-      ctx.fillStyle = ['blue', 'red'][colorIndex];
-      var _iteratorNormalCompletion2 = true;
-      var _didIteratorError2 = false;
-      var _iteratorError2 = undefined;
-
-      try {
-        for (var _iterator2 = ship.future[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-          var futureShip = _step2.value;
-
-          ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
-        }
-      } catch (err) {
-        _didIteratorError2 = true;
-        _iteratorError2 = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion2 && _iterator2.return) {
-            _iterator2.return();
-          }
-        } finally {
-          if (_didIteratorError2) {
-            throw _iteratorError2;
-          }
+        if (_didIteratorError) {
+          throw _iteratorError;
         }
       }
     }
 
-    colorIndex++;
+    ctx.stroke();
+
+    ctx.fillStyle = color;
+    var _iteratorNormalCompletion2 = true;
+    var _didIteratorError2 = false;
+    var _iteratorError2 = undefined;
+
+    try {
+      for (var _iterator2 = ship.future[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+        var futureShip = _step2.value;
+
+        ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
+      }
+    } catch (err) {
+      _didIteratorError2 = true;
+      _iteratorError2 = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion2 && _iterator2.return) {
+          _iterator2.return();
+        }
+      } finally {
+        if (_didIteratorError2) {
+          throw _iteratorError2;
+        }
+      }
+    }
   }
 
   // render projectiles
@@ -162,47 +141,32 @@ var render = function render(game, ctx, referencePosition, c) {
 
   try {
     for (var _iterator3 = game.projectiles[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-      var currentProjectile = _step3.value;
-      var position = currentProjectile.position,
-          history = currentProjectile.history,
-          type = currentProjectile.type;
+      var projectile = _step3.value;
 
-      if (type == 'missile') {
-        renderMissile(ctx, currentProjectile, referencePosition);
+      if (projectile.type == 'missile') {
+        renderMissile(state, ctx, projectile);
         continue;
       }
-      var _tickDiff = tickDifference(referencePosition, position, c);
-
-      // Compute tick difference based on projectile's player:
-      // const tickDiff = playerTickDiffs[currentProjectile.playerID];
-
-      var _idx = history.length - 1 - _tickDiff;
-
-      if (_idx >= 0) {
-        var projectile = history[_idx];
-
-        ctx.save();
-        var color = 'white';
-        var length = 50;
-        var width = 50;
-        if (projectile.type == 'laser') {
-          color = 'lime';
-          length = config.laserSpeed;
-          width = 2;
-        }
-        // TODO track colors better
-        // ctx.strokeStyle = ['blue', 'red'][projectile.playerID];
-        ctx.lineWidth = 1;
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.translate(projectile.position.x, projectile.position.y);
-        ctx.rotate(projectile.theta);
-        ctx.rect(0, 0, length, width);
-        ctx.fill();
-        // ctx.stroke();
-        ctx.closePath();
-        ctx.restore();
+      ctx.save();
+      var _color = 'white';
+      var length = 50;
+      var width = 50;
+      if (projectile.type == 'laser') {
+        _color = 'lime';
+        length = config.laserSpeed;
+        width = 2;
       }
+      ctx.strokeStyle = getPlayerColor(state, projectile.playerID);
+      ctx.lineWidth = 1;
+      ctx.fillStyle = _color;
+      ctx.beginPath();
+      ctx.translate(projectile.position.x, projectile.position.y);
+      ctx.rotate(projectile.theta);
+      ctx.rect(0, 0, length, width);
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.restore();
     }
 
     // render sun
@@ -233,55 +197,30 @@ var render = function render(game, ctx, referencePosition, c) {
   // TODO
 };
 
-var renderMissile = function renderMissile(ctx, projectile, referencePosition) {
-  var history = projectile.history,
-      position = projectile.position;
+var renderMissile = function renderMissile(state, ctx, missile) {
+  ctx.save();
+  ctx.strokeStyle = getPlayerColor(state, missile.playerID);
+  ctx.fillStyle = 'green';
+  ctx.beginPath();
+  ctx.translate(missile.position.x, missile.position.y);
+  ctx.rotate(missile.theta);
+  ctx.moveTo(missile.radius, 0);
+  ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 2);
+  ctx.lineTo(-1 * missile.radius / 2, missile.radius / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 
-  var tickDiff = tickDifference(referencePosition, position, config.c);
-  var idx = history.length - 1 - tickDiff;
-
-  if (idx >= 0) {
-    var missile = history[idx];
-
-    ctx.save();
-    // TODO track colors better
-    // ctx.fillStyle = ['blue', 'red'][colorIndex];
-    ctx.fillStyle = 'green';
+  if (missile.thrust > 0) {
+    ctx.fillStyle = 'orange';
     ctx.beginPath();
-    ctx.translate(missile.position.x, missile.position.y);
-    ctx.rotate(missile.theta);
-    ctx.moveTo(missile.radius, 0);
-    ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 2);
-    ctx.lineTo(-1 * missile.radius / 2, missile.radius / 2);
+    ctx.moveTo(-1 * missile.radius / 1.25, 0);
+    ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 3);
+    ctx.lineTo(-1 * missile.radius / 2, missile.radius / 3);
     ctx.closePath();
     ctx.fill();
-
-    if (missile.thrust > 0) {
-      ctx.fillStyle = 'orange';
-      ctx.beginPath();
-      ctx.moveTo(-1 * missile.radius / 1.25, 0);
-      ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 3);
-      ctx.lineTo(-1 * missile.radius / 2, missile.radius / 3);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.restore();
-
-    // ctx.beginPath();
-    // ctx.strokeStyle = ['blue', 'red'][colorIndex];
-    // if (missile.history.length > 0) {
-    //   ctx.moveTo(missile.history[0].position.x, missile.history[0].position.y);
-    // }
-    // for (const pastShip of missile.history) {
-    //   ctx.lineTo(pastShip.position.x, pastShip.position.y);
-    // }
-    // ctx.stroke();
-    //
-    // ctx.fillStyle = ['blue', 'red'][colorIndex];
-    // for (const futureShip of missile.future) {
-    //   ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
-    // }
   }
+  ctx.restore();
 };
 
 module.exports = { initRenderSystem: initRenderSystem };
