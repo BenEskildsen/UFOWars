@@ -35,3 +35,6 @@ Date  Time Started  Time Spent  Work Completed
 7/21    11:15am     2hr 30min   Fix clients agreeing when to start game
                                 Implement guided missiles
                                 Projectiles are destroyed when they hit the sun (23hr 15min)
+                    1hr 30min   Refactor renderSystem. Add chat to lobby and changing player name
+
+7/22     7:45pm     45min       Abstract away pixels, make canvas scale to window size

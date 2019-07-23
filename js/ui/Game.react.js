@@ -28,13 +28,24 @@ class Game extends React.Component {
     }
     if (state.game != null) {
       content = (
-        <div className="background">
+        <div className="background" id="background">
           <Canvas
             game={state.game}
-            width={config.width} height={config.height}
+            width={config.canvasWidth} height={config.canvasHeight}
           />
         </div>
       );
+    }
+    const backgroundDiv = document.getElementById('background');
+    if (backgroundDiv != null) {
+      const rect = backgroundDiv.getBoundingClientRect();
+      if (rect.height < rect.width) {
+        config.canvasHeight = rect.height;
+        config.canvasWidth = rect.height;
+      } else {
+        config.canvasHeight = rect.width;
+        config.canvasWidth = rect.width;
+      }
     }
 
     return (

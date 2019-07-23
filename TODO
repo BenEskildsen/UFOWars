@@ -1,7 +1,10 @@
 
  - - - - - - GAME - - - - - -
  - explosion animation
- - implement thrust using fuel
+ - implement nitro-thrust using fuel
+ - send time step that the game ended and render that end state
+ - missiles should look like torpedoes
+ - add planet
 
 
  - - - - - - SERVER - - - - -
@@ -14,18 +17,20 @@
 
  - - - - - - LOBBY - - - - -
  - styling and fancy UI for lobby
- - handle overflow in the lobby, without losing scroll lock on game itself
+ - indicate which other players are connected and if they're in the lobby
+ - clear your chat on send
+ - Enter should send chat too
+ - only join one game at a time
 
 
  - - - - - - REFACTOR - - - - - -
- - separate pixels and distances
  - how should unique gameIDs be assigned to newly-created games?
  - server side code should live in its own directory?
- - abstract away rendering into something neater
  - dispatchToServer shouldn't need to take in clientID
 
 
  - - - - - - BUGS - - - - - -
+ - sometimes the game can start multiple times without stopping
 
 
  - - - - - - WISH - - - - - -
@@ -74,3 +79,7 @@
 
  - ask the client what they want their name to be and track on the server
  - add chat room to lobby
+ - handle overflow in the lobby, without losing scroll lock on game itself
+
+ - separate pixels and distances
+ - abstract away rendering into something neater

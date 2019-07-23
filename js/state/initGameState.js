@@ -16,18 +16,18 @@ const initGameState = (players: Array<PlayerID>): GameState => {
       [players[0]]: makeShip(
         players[0], // playerID
         ship.mass, ship.radius,
-        {x: 400, y: 700}, // position
+        {x: width / 2, y: height / 2 + 300}, // position
         {x: 5, y: 0}, // velocity
       ),
       [players[1]]: makeShip(
         players[1], // playerID
         ship.mass, ship.radius,
-        {x: 400, y: 100}, // position
-        {x: -5, y: 0}, // velocity
+        {x: width / 2, y: height / 8}, // position
+        {x: -3.5, y: 0}, // velocity
       ),
     },
 
-    sun: makeEntity(sun.mass, sun.radius, {x: width / 2, y: width / 2}),
+    sun: makeEntity(sun.mass, sun.radius, {x: width / 2, y: height / 2}),
     planets: [],
     projectiles: [],
     paths: [],

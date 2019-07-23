@@ -52,12 +52,23 @@ var Game = function (_React$Component) {
       if (state.game != null) {
         content = React.createElement(
           'div',
-          { className: 'background' },
+          { className: 'background', id: 'background' },
           React.createElement(Canvas, {
             game: state.game,
-            width: config.width, height: config.height
+            width: config.canvasWidth, height: config.canvasHeight
           })
         );
+      }
+      var backgroundDiv = document.getElementById('background');
+      if (backgroundDiv != null) {
+        var rect = backgroundDiv.getBoundingClientRect();
+        if (rect.height < rect.width) {
+          config.canvasHeight = rect.height;
+          config.canvasWidth = rect.height;
+        } else {
+          config.canvasHeight = rect.width;
+          config.canvasWidth = rect.width;
+        }
       }
 
       return React.createElement(

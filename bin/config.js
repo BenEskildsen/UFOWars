@@ -1,28 +1,30 @@
 'use strict';
 
 var config = {
-  msPerTick: 50,
-  width: 800,
-  height: 800,
+  msPerTick: 40,
+  width: 2000,
+  height: 2000,
+  canvasWidth: 500,
+  canvasHeight: 500,
   ship: {
     thrust: 0.05,
     thetaSpeed: 5 * Math.PI / 180,
-    radius: 15,
+    radius: 30,
     mass: 10,
     maxFuel: 100,
     maxLaser: 100
   },
   sun: {
-    radius: 50,
+    radius: 60,
     mass: 10000
   },
   missile: {
     thrust: 1,
-    radius: 10,
+    radius: 13,
     mass: 5,
     maxFuel: 30,
     thrustAt: 10,
-    maxAge: 50,
+    maxAge: 80,
     speed: 12
   },
   G: 1, // gravitational constant

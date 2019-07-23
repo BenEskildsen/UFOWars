@@ -11,6 +11,14 @@ var _require2 = require('../config'),
 var _require3 = require('../utils/vectors'),
     makeVector = _require3.makeVector;
 
+var _require4 = require('../selectors/selectors'),
+    getPlayerColor = _require4.getPlayerColor;
+
+var max = Math.max,
+    round = Math.round,
+    sqrt = Math.sqrt;
+
+
 var makeLaserProjectile = function makeLaserProjectile(playerID, position, theta) {
   var velocity = makeVector(theta, config.laserSpeed);
   return _extends({}, makeEntity(0 /* mass */, 0 /* radius */, position, velocity, theta), {
@@ -33,4 +41,76 @@ var makeMissileProjectile = function makeMissileProjectile(playerID, position, t
   return projectile;
 };
 
-module.exports = { makeLaserProjectile: makeLaserProjectile, makeMissileProjectile: makeMissileProjectile };
+var renderProjectile = function renderProjectile(state, ctx, projectile) {
+  switch (projectile.type) {
+    case 'missile':
+      renderMissile(state, ctx, projectile);
+      break;
+    case 'laser':
+      renderLaser(state, ctx, projectile);
+      break;
+  }
+};
+
+var renderLaser = function renderLaser(state, ctx, projectile) {
+  ctx.save();
+  var color = 'white';
+  var length = 50;
+  var width = 50;
+  if (projectile.type == 'laser') {
+    color = 'lime';
+    length = config.laserSpeed;
+    width = 2;
+  }
+  ctx.strokeStyle = getPlayerColor(state, projectile.playerID);
+  ctx.lineWidth = 1;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.translate(projectile.position.x, projectile.position.y);
+  ctx.rotate(projectile.theta);
+  ctx.rect(0, 0, length, width);
+  ctx.fill();
+  ctx.stroke();
+  ctx.closePath();
+  ctx.restore();
+};
+
+var renderMissile = function renderMissile(state, ctx, missile) {
+  ctx.save();
+  ctx.strokeStyle = getPlayerColor(state, missile.playerID);
+  ctx.fillStyle = 'green';
+  ctx.beginPath();
+  ctx.translate(missile.position.x, missile.position.y);
+  ctx.rotate(missile.theta);
+
+  // ctx.arc(0, 0, missile.radius, Math.PI * 1.5, Math.PI * 0.5);
+  ctx.moveTo(missile.radius, 0);
+  // ctx.lineTo(missile.radius, -2 * missile.radius);
+  // ctx.lineTo(-1 * missile.radius, -2 * missile.radius);
+  // ctx.lineTo(-1 * missile.radius, 0);
+
+  ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 2);
+  ctx.lineTo(-1 * missile.radius / 2, missile.radius / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  if (missile.thrust > 0) {
+    ctx.fillStyle = 'orange';
+    ctx.beginPath();
+    ctx.moveTo(-1 * missile.radius / 1.25, 0);
+    ctx.lineTo(-1 * missile.radius / 2, -1 * missile.radius / 3);
+    ctx.lineTo(-1 * missile.radius / 2, missile.radius / 3);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+};
+
+module.exports = {
+  makeLaserProjectile: makeLaserProjectile,
+  makeMissileProjectile: makeMissileProjectile,
+  renderMissile: renderMissile,
+  renderProjectile: renderProjectile,
+  renderLaser: renderLaser
+};

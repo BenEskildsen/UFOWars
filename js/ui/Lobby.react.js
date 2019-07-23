@@ -109,6 +109,7 @@ class Lobby extends React.Component {
               };
               dispatch(chatAction);
               dispatchToServer(clientPlayer.id, chatAction);
+              dispatch({type: 'LOCAL_CHAT', message: ''});
             }}
           />
         </div>

@@ -5,7 +5,8 @@ body {
 
 .container {
   width: 100%;
-  font-family: 'PT Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: "Courier New", sans-serif;
+  font-weight: 300;
 }
 
 .background {
@@ -52,8 +53,6 @@ p {
  ******************************************************************************/
 
 .gameCanvas {
-  width: 800;
-  height: 800;
   background-color: white;
 }
 
