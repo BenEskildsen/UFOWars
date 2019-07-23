@@ -20,6 +20,8 @@ export type Degrees = number;
 export type Size = number;
 export type Pixel = number;
 
+export type Color = string;
+
 export type Listener = () => mixed; // some callback passed to subscribe
 export type Unsubscribe = () => mixed; // unsubscribe a listener
 export type Store = {
