@@ -26,15 +26,15 @@ var initGameState = function initGameState(players) {
     tickInterval: null,
     ships: (_ships = {}, _defineProperty(_ships, players[0], makeShip(players[0], // playerID
     ship.mass, ship.radius, { x: width / 2, y: height / 2 - 1150 }, // position
-    { x: -5.5, y: 0 } // velocity
+    { x: -14, y: 0 } // velocity
     )), _defineProperty(_ships, players[1], makeShip(players[1], // playerID
     ship.mass, ship.radius, { x: width / 2, y: 7 * height / 8 }, // position
-    { x: 2, y: 0 } // velocity
+    { x: 7.5, y: 0 } // velocity
     )), _ships),
 
     sun: makeEntity(sun.mass, sun.radius, { x: width / 2, y: height / 2 }),
     planets: [makeEntity(earth.mass, earth.radius, { x: width / 2, y: height / 2 - 1000 }, // position
-    { x: -3, y: 0 // velocity
+    { x: -8.5, y: 0 // velocity
     })],
     projectiles: [],
     paths: [],

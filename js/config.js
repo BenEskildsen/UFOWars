@@ -16,11 +16,11 @@ const config = {
   },
   sun: {
     radius: 100,
-    mass: 10000,
+    mass: 100000,
   },
   earth: {
-    radius: 35,
-    mass: 1000,
+    radius: 30,
+    mass: 10000,
   },
   missile: {
     thrust: 1,
@@ -31,7 +31,7 @@ const config = {
     maxAge: 80,
     speed: 12,
   },
-  G: 1, // gravitational constant
+  G: 0.75, // gravitational constant
   maxHistorySize: 75,
   maxFutureSize: 75,
   laserSize: 4, // deprecated in favor of laserSpeed

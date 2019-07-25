@@ -4,7 +4,6 @@
  - explosion animation
  - implement nitro-thrust using fuel
  - missiles should look like torpedoes
- - add planet
 
 
  - - - - - - SERVER - - - - -
@@ -85,3 +84,5 @@
 
  - separate pixels and distances
  - abstract away rendering into something neater
+
+ - add planet
