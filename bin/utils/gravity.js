@@ -36,7 +36,7 @@ var computeAccel = function computeAccel(m1, m2, dist) {
  * Pure function so that this can be used for calculating paths.
  * Optionally pass in a thrust vector that will affect acceleration
  */
-var computeNextEntity = function computeNextEntity(sun, entity, thrust, noSmartTheta) {
+var computeNextEntity = function computeNextEntity(masses, entity, thrust, noSmartTheta) {
   var thrustVal = thrust || 0;
   var thrustVec = {
     x: thrustVal * cos(entity.theta),
@@ -46,8 +46,33 @@ var computeNextEntity = function computeNextEntity(sun, entity, thrust, noSmartT
   // get prev theta if no manual changes had been applied
   var prevUncorrectedTheta = Math.atan2(entity.velocity.y, entity.velocity.x) + Math.PI / 2;
 
-  // sum acceleration due to the sun and acceleration due to thrust
-  var accel = add(computeAccel(entity.mass, sun.mass, subtract(sun.position, entity.position)), thrustVec);
+  // sum acceleration due to the given masses and acceleration due to thrust
+  var accel = { x: 0, y: 0 };
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = masses[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var mass = _step.value;
+
+      accel = add(accel, computeAccel(entity.mass, mass.mass, subtract(mass.position, entity.position)), thrustVec);
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
   var velocity = add(accel, entity.velocity);
   var position = add(velocity, entity.position);
 

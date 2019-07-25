@@ -2,25 +2,29 @@
 
 var config = {
   msPerTick: 40,
-  width: 2000,
-  height: 2000,
+  width: 4000,
+  height: 4000,
   canvasWidth: 500,
   canvasHeight: 500,
   ship: {
     thrust: 0.05,
     thetaSpeed: 5 * Math.PI / 180,
-    radius: 30,
+    radius: 35,
     mass: 10,
     maxFuel: 100,
     maxLaser: 100
   },
   sun: {
-    radius: 60,
+    radius: 100,
     mass: 10000
+  },
+  earth: {
+    radius: 35,
+    mass: 1000
   },
   missile: {
     thrust: 1,
-    radius: 13,
+    radius: 20,
     mass: 5,
     maxFuel: 30,
     thrustAt: 10,

@@ -68,7 +68,16 @@ const render = (state: State, ctx: any): void => {
   ctx.fill();
 
   // render planets
-  // TODO
+  for (const planet of game.planets) {
+    ctx.fillStyle = 'steelblue';
+    ctx.beginPath();
+    ctx.arc(
+      planet.position.x, planet.position.y,
+      planet.radius, 0, Math.PI * 2,
+    );
+    ctx.closePath();
+    ctx.fill();
+  }
 
   ctx.restore();
 }

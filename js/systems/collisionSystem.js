@@ -30,18 +30,33 @@ const initCollisionSystem = (store: Store): void => {
     // projectile collides with sun
     // implemented in tickReducer
 
-    // ship collides with sun
     let gameOver = false;
     let message = '';
     let loserID = null;
+
+    // ship collides with sun
     for (const id in state.game.ships) {
       const ship = state.game.ships[id];
       const distVec = subtract(ship.position, sun.position);
       const dist = distance(distVec);
       if (dist < sun.radius) {
         gameOver = true;
-        message = getPlayerByID(state, id).name + ' ran into the sun!';
+        message = getPlayerByID(state, id).name + ' crashed into the sun!';
         loserID = id;
+      }
+    }
+
+    // ship collides with planet
+    for (const id in state.game.ships) {
+      const ship = state.game.ships[id];
+      for (const planet of state.game.planets) {
+        const distVec = subtract(ship.position, planet.position);
+        const dist = distance(distVec);
+        if (dist < planet.radius) {
+          gameOver = true;
+          message = getPlayerByID(state, id).name + ' crashed into the earth!';
+          loserID = id;
+        }
       }
     }
 

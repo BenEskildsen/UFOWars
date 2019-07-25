@@ -3,25 +3,29 @@
 
 var config = {
   msPerTick: 40,
-  width: 2000,
-  height: 2000,
+  width: 4000,
+  height: 4000,
   canvasWidth: 500,
   canvasHeight: 500,
   ship: {
     thrust: 0.05,
     thetaSpeed: 5 * Math.PI / 180,
-    radius: 30,
+    radius: 35,
     mass: 10,
     maxFuel: 100,
     maxLaser: 100
   },
   sun: {
-    radius: 60,
+    radius: 100,
     mass: 10000
+  },
+  earth: {
+    radius: 35,
+    mass: 1000
   },
   missile: {
     thrust: 1,
-    radius: 13,
+    radius: 20,
     mass: 5,
     maxFuel: 30,
     thrustAt: 10,
@@ -894,6 +898,8 @@ module.exports = { rootReducer: rootReducer };
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 var _require = require('../utils/gravity'),
     computeNextEntity = _require.computeNextEntity;
 
@@ -949,8 +955,10 @@ var tickReducer = function tickReducer(state, action) {
 var handleTick = function handleTick(state) {
   state.time = state.time + 1;
 
-  var sun = state.sun;
+  var sun = state.sun,
+      planets = state.planets;
 
+  var masses = [sun].concat(_toConsumableArray(planets));
 
   for (var id in state.ships) {
     updateShip(state, id, 1 /* one tick */);
@@ -958,7 +966,7 @@ var handleTick = function handleTick(state) {
     ship.future = [];
     var futureShip = _extends({}, ship);
     while (ship.future.length < config.maxFutureSize) {
-      futureShip = _extends({}, computeNextEntity(sun, futureShip));
+      futureShip = _extends({}, computeNextEntity(masses, futureShip));
       ship.future.push(futureShip);
     }
   }
@@ -967,7 +975,7 @@ var handleTick = function handleTick(state) {
   state.planets = state.planets.map(function (planet) {
     var history = planet.history;
     queueAdd(history, planet, config.maxHistorySize);
-    return _extends({}, planet, computeNextEntity(sun, planet), {
+    return _extends({}, planet, computeNextEntity([sun], planet), {
       history: history
     });
   });
@@ -979,18 +987,23 @@ var handleTick = function handleTick(state) {
     // handle missiles
     var projectile = state.projectiles[i];
     projectile.age += 1;
-    if (projectile.target == 'Ship') {
-      var targetShip = null;
-      for (var _id in state.ships) {
-        if (_id != projectile.playerID) {
-          targetShip = state.ships[_id];
+    switch (projectile.target) {
+      case 'Ship':
+        {
+          var targetShip = null;
+          for (var _id in state.ships) {
+            if (_id != projectile.playerID) {
+              targetShip = state.ships[_id];
+              break;
+            }
+          }
+          invariant(targetShip != null, 'Missile has no target ship');
+          var dist = subtract(targetShip.position, projectile.position);
+          projectile.theta = Math.atan2(dist.y, dist.x);
           break;
         }
-      }
-      invariant(targetShip != null, 'Missile has no target ship');
-      var dist = subtract(targetShip.position, projectile.position);
-      projectile.theta = Math.atan2(dist.y, dist.x);
-    } else if (projectile.target == 'Missile') {
+      case 'Missile':
+      case 'Planet':
       // TODO
     }
     if (projectile.age > missile.thrustAt && projectile.fuel.cur > 0) {
@@ -1211,22 +1224,25 @@ var initGameState = function initGameState(players) {
   var ship = config.ship,
       sun = config.sun,
       width = config.width,
-      height = config.height;
+      height = config.height,
+      earth = config.earth;
 
   return {
     gamePlayers: players,
     time: 0,
     tickInterval: null,
     ships: (_ships = {}, _defineProperty(_ships, players[0], makeShip(players[0], // playerID
-    ship.mass, ship.radius, { x: width / 2, y: height / 2 + 300 }, // position
-    { x: 5, y: 0 } // velocity
+    ship.mass, ship.radius, { x: width / 2, y: height / 2 - 1150 }, // position
+    { x: -5.5, y: 0 } // velocity
     )), _defineProperty(_ships, players[1], makeShip(players[1], // playerID
-    ship.mass, ship.radius, { x: width / 2, y: height / 8 }, // position
-    { x: -3.5, y: 0 } // velocity
+    ship.mass, ship.radius, { x: width / 2, y: 7 * height / 8 }, // position
+    { x: 2, y: 0 } // velocity
     )), _ships),
 
     sun: makeEntity(sun.mass, sun.radius, { x: width / 2, y: height / 2 }),
-    planets: [],
+    planets: [makeEntity(earth.mass, earth.radius, { x: width / 2, y: height / 2 - 1000 }, // position
+    { x: -3, y: 0 // velocity
+    })],
     projectiles: [],
     paths: [],
 
@@ -1289,39 +1305,38 @@ var initCollisionSystem = function initCollisionSystem(store) {
     // projectile collides with sun
     // implemented in tickReducer
 
-    // ship collides with sun
-
     var gameOver = false;
     var message = '';
     var loserID = null;
+
+    // ship collides with sun
     for (var id in state.game.ships) {
       var ship = state.game.ships[id];
       var distVec = subtract(ship.position, sun.position);
       var dist = distance(distVec);
       if (dist < sun.radius) {
         gameOver = true;
-        message = getPlayerByID(state, id).name + ' ran into the sun!';
+        message = getPlayerByID(state, id).name + ' crashed into the sun!';
         loserID = id;
       }
     }
 
-    // ship collides with projectile
+    // ship collides with planet
     for (var _id in state.game.ships) {
+      var _ship = state.game.ships[_id];
       var _iteratorNormalCompletion = true;
       var _didIteratorError = false;
       var _iteratorError = undefined;
 
       try {
-        for (var _iterator = state.game.projectiles[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var projectile = _step.value;
+        for (var _iterator = state.game.planets[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var planet = _step.value;
 
-          var _ship = state.game.ships[_id];
-          var _distVec = subtract(_ship.position, projectile.position);
+          var _distVec = subtract(_ship.position, planet.position);
           var _dist = distance(_distVec);
-          // don't get hit by your own laser you just fired
-          if (_dist < _ship.radius + projectile.radius && !(projectile.playerID == _id && projectile.history.length < 10)) {
+          if (_dist < planet.radius) {
             gameOver = true;
-            message = getPlayerByID(state, _id).name + ' was hit by a ' + projectile.type + '!';
+            message = getPlayerByID(state, _id).name + ' crashed into the earth!';
             loserID = _id;
           }
         }
@@ -1336,6 +1351,42 @@ var initCollisionSystem = function initCollisionSystem(store) {
         } finally {
           if (_didIteratorError) {
             throw _iteratorError;
+          }
+        }
+      }
+    }
+
+    // ship collides with projectile
+    for (var _id2 in state.game.ships) {
+      var _iteratorNormalCompletion2 = true;
+      var _didIteratorError2 = false;
+      var _iteratorError2 = undefined;
+
+      try {
+        for (var _iterator2 = state.game.projectiles[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+          var projectile = _step2.value;
+
+          var _ship2 = state.game.ships[_id2];
+          var _distVec2 = subtract(_ship2.position, projectile.position);
+          var _dist2 = distance(_distVec2);
+          // don't get hit by your own laser you just fired
+          if (_dist2 < _ship2.radius + projectile.radius && !(projectile.playerID == _id2 && projectile.history.length < 10)) {
+            gameOver = true;
+            message = getPlayerByID(state, _id2).name + ' was hit by a ' + projectile.type + '!';
+            loserID = _id2;
+          }
+        }
+      } catch (err) {
+        _didIteratorError2 = true;
+        _iteratorError2 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion2 && _iterator2.return) {
+            _iterator2.return();
+          }
+        } finally {
+          if (_didIteratorError2) {
+            throw _iteratorError2;
           }
         }
       }
@@ -1361,8 +1412,8 @@ var initCollisionSystem = function initCollisionSystem(store) {
       dispatchToServer(thisClientID, stopAction);
 
       // update scores
-      for (var _id2 in state.game.ships) {
-        var player = getPlayerByID(state, _id2);
+      for (var _id3 in state.game.ships) {
+        var player = getPlayerByID(state, _id3);
         if (player.id != loserID) {
           var scoreAction = {
             type: 'SET_PLAYER_SCORE',
@@ -1647,7 +1698,34 @@ var render = function render(state, ctx) {
   ctx.fill();
 
   // render planets
-  // TODO
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
+
+  try {
+    for (var _iterator2 = game.planets[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var planet = _step2.value;
+
+      ctx.fillStyle = 'steelblue';
+      ctx.beginPath();
+      ctx.arc(planet.position.x, planet.position.y, planet.radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+  } catch (err) {
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion2 && _iterator2.return) {
+        _iterator2.return();
+      }
+    } finally {
+      if (_didIteratorError2) {
+        throw _iteratorError2;
+      }
+    }
+  }
 
   ctx.restore();
 };
@@ -2206,7 +2284,7 @@ var computeAccel = function computeAccel(m1, m2, dist) {
  * Pure function so that this can be used for calculating paths.
  * Optionally pass in a thrust vector that will affect acceleration
  */
-var computeNextEntity = function computeNextEntity(sun, entity, thrust, noSmartTheta) {
+var computeNextEntity = function computeNextEntity(masses, entity, thrust, noSmartTheta) {
   var thrustVal = thrust || 0;
   var thrustVec = {
     x: thrustVal * cos(entity.theta),
@@ -2216,8 +2294,33 @@ var computeNextEntity = function computeNextEntity(sun, entity, thrust, noSmartT
   // get prev theta if no manual changes had been applied
   var prevUncorrectedTheta = Math.atan2(entity.velocity.y, entity.velocity.x) + Math.PI / 2;
 
-  // sum acceleration due to the sun and acceleration due to thrust
-  var accel = add(computeAccel(entity.mass, sun.mass, subtract(sun.position, entity.position)), thrustVec);
+  // sum acceleration due to the given masses and acceleration due to thrust
+  var accel = { x: 0, y: 0 };
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = masses[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var mass = _step.value;
+
+      accel = add(accel, computeAccel(entity.mass, mass.mass, subtract(mass.position, entity.position)), thrustVec);
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
   var velocity = add(accel, entity.velocity);
   var position = add(velocity, entity.position);
 
@@ -2257,6 +2360,8 @@ module.exports = { queueAdd: queueAdd };
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 var _require = require('../utils/gravity'),
     computeNextEntity = _require.computeNextEntity;
 
@@ -2267,26 +2372,30 @@ var _require3 = require('../config'),
     config = _require3.config;
 
 var updateShip = function updateShip(state, id, numTicks) {
-  var sun = state.sun;
+  var sun = state.sun,
+      planets = state.planets;
 
+  var masses = [sun].concat(_toConsumableArray(planets));
   for (var i = 0; i < numTicks; i++) {
     var ship = state.ships[id];
     var history = ship.history;
     queueAdd(history, ship, config.maxHistorySize);
-    state.ships[id] = _extends({}, ship, computeNextEntity(sun, ship, ship.thrust), {
+    state.ships[id] = _extends({}, ship, computeNextEntity(masses, ship, ship.thrust), {
       history: history
     });
   }
 };
 
 var updateProjectile = function updateProjectile(state, j, numTicks) {
-  var sun = state.sun;
+  var sun = state.sun,
+      planets = state.planets;
 
+  var masses = [sun].concat(_toConsumableArray(planets));
   for (var i = 0; i < numTicks; i++) {
     var projectile = state.projectiles[j];
     var history = projectile.history;
     queueAdd(history, projectile, config.maxHistorySize);
-    state.projectiles[j] = _extends({}, projectile, computeNextEntity(sun, projectile, projectile.thrust || 0, true /*no smart theta*/), {
+    state.projectiles[j] = _extends({}, projectile, computeNextEntity(masses, projectile, projectile.thrust || 0, true /*no smart theta*/), {
       history: history
     });
   }

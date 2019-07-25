@@ -94,7 +94,34 @@ var render = function render(state, ctx) {
   ctx.fill();
 
   // render planets
-  // TODO
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
+
+  try {
+    for (var _iterator2 = game.planets[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var planet = _step2.value;
+
+      ctx.fillStyle = 'steelblue';
+      ctx.beginPath();
+      ctx.arc(planet.position.x, planet.position.y, planet.radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+  } catch (err) {
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion2 && _iterator2.return) {
+        _iterator2.return();
+      }
+    } finally {
+      if (_didIteratorError2) {
+        throw _iteratorError2;
+      }
+    }
+  }
 
   ctx.restore();
 };

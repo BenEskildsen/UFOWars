@@ -38,3 +38,5 @@ Date  Time Started  Time Spent  Work Completed
                     1hr 30min   Refactor renderSystem. Add chat to lobby and changing player name
 
 7/22     7:45pm     45min       Abstract away pixels, make canvas scale to window size
+
+7/23     8:10pm

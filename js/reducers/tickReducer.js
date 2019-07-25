@@ -38,7 +38,8 @@ const tickReducer = (state: GameState, action: Action): GameState => {
 const handleTick = (state: GameState): GameState => {
   state.time = state.time + 1;
 
-  const {sun} = state;
+  const {sun, planets} = state;
+  const masses = [sun, ...planets];
 
   for (const id in state.ships) {
     updateShip(state, id, 1 /* one tick */);
@@ -46,7 +47,7 @@ const handleTick = (state: GameState): GameState => {
     ship.future = [];
     let futureShip = {...ship};
     while (ship.future.length < config.maxFutureSize) {
-      futureShip = {...computeNextEntity(sun, futureShip)};
+      futureShip = {...computeNextEntity(masses, futureShip)};
       ship.future.push(futureShip);
     }
   }
@@ -57,7 +58,7 @@ const handleTick = (state: GameState): GameState => {
     queueAdd(history, planet, config.maxHistorySize);
     return {
       ...planet,
-      ...computeNextEntity(sun, planet),
+      ...computeNextEntity([sun], planet),
       history,
     };
   });
@@ -68,19 +69,23 @@ const handleTick = (state: GameState): GameState => {
     // handle missiles
     const projectile = state.projectiles[i];
     projectile.age += 1;
-    if (projectile.target == 'Ship') {
-      let targetShip = null;
-      for (const id in state.ships) {
-        if (id != projectile.playerID) {
-          targetShip = state.ships[id];
-          break;
+    switch (projectile.target) {
+      case 'Ship': {
+        let targetShip = null;
+        for (const id in state.ships) {
+          if (id != projectile.playerID) {
+            targetShip = state.ships[id];
+            break;
+          }
         }
+        invariant(targetShip != null, 'Missile has no target ship');
+        const dist = subtract(targetShip.position, projectile.position);
+        projectile.theta = Math.atan2(dist.y, dist.x);
+        break;
       }
-      invariant(targetShip != null, 'Missile has no target ship');
-      const dist = subtract(targetShip.position, projectile.position);
-      projectile.theta = Math.atan2(dist.y, dist.x);
-    } else if (projectile.target == 'Missile') {
-      // TODO
+      case 'Missile':
+      case 'Planet':
+        // TODO
     }
     if (projectile.age > missile.thrustAt && projectile.fuel.cur > 0) {
       projectile.fuel.cur -= 1;

@@ -1,8 +1,8 @@
 
  - - - - - - GAME - - - - - -
+ - send time step that the game ended and render that end state
  - explosion animation
  - implement nitro-thrust using fuel
- - send time step that the game ended and render that end state
  - missiles should look like torpedoes
  - add planet
 
@@ -24,9 +24,9 @@
 
 
  - - - - - - REFACTOR - - - - - -
- - how should unique gameIDs be assigned to newly-created games?
- - server side code should live in its own directory?
+ - improve collision detection to act on the shapes themselves
  - dispatchToServer shouldn't need to take in clientID
+ - add singleplayer mode for faster testing
 
 
  - - - - - - BUGS - - - - - -
@@ -35,6 +35,8 @@
 
  - - - - - - WISH - - - - - -
  - actually implement configurable speed of light delay
+ - how should unique gameIDs be assigned to newly-created games?
+ - server side code should live in its own directory?
 
 
 

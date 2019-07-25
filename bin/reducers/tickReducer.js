@@ -2,6 +2,8 @@
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 var _require = require('../utils/gravity'),
     computeNextEntity = _require.computeNextEntity;
 
@@ -57,8 +59,10 @@ var tickReducer = function tickReducer(state, action) {
 var handleTick = function handleTick(state) {
   state.time = state.time + 1;
 
-  var sun = state.sun;
+  var sun = state.sun,
+      planets = state.planets;
 
+  var masses = [sun].concat(_toConsumableArray(planets));
 
   for (var id in state.ships) {
     updateShip(state, id, 1 /* one tick */);
@@ -66,7 +70,7 @@ var handleTick = function handleTick(state) {
     ship.future = [];
     var futureShip = _extends({}, ship);
     while (ship.future.length < config.maxFutureSize) {
-      futureShip = _extends({}, computeNextEntity(sun, futureShip));
+      futureShip = _extends({}, computeNextEntity(masses, futureShip));
       ship.future.push(futureShip);
     }
   }
@@ -75,7 +79,7 @@ var handleTick = function handleTick(state) {
   state.planets = state.planets.map(function (planet) {
     var history = planet.history;
     queueAdd(history, planet, config.maxHistorySize);
-    return _extends({}, planet, computeNextEntity(sun, planet), {
+    return _extends({}, planet, computeNextEntity([sun], planet), {
       history: history
     });
   });
@@ -87,18 +91,23 @@ var handleTick = function handleTick(state) {
     // handle missiles
     var projectile = state.projectiles[i];
     projectile.age += 1;
-    if (projectile.target == 'Ship') {
-      var targetShip = null;
-      for (var _id in state.ships) {
-        if (_id != projectile.playerID) {
-          targetShip = state.ships[_id];
+    switch (projectile.target) {
+      case 'Ship':
+        {
+          var targetShip = null;
+          for (var _id in state.ships) {
+            if (_id != projectile.playerID) {
+              targetShip = state.ships[_id];
+              break;
+            }
+          }
+          invariant(targetShip != null, 'Missile has no target ship');
+          var dist = subtract(targetShip.position, projectile.position);
+          projectile.theta = Math.atan2(dist.y, dist.x);
           break;
         }
-      }
-      invariant(targetShip != null, 'Missile has no target ship');
-      var dist = subtract(targetShip.position, projectile.position);
-      projectile.theta = Math.atan2(dist.y, dist.x);
-    } else if (projectile.target == 'Missile') {
+      case 'Missile':
+      case 'Planet':
       // TODO
     }
     if (projectile.age > missile.thrustAt && projectile.fuel.cur > 0) {

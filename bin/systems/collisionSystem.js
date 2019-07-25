@@ -38,39 +38,38 @@ var initCollisionSystem = function initCollisionSystem(store) {
     // projectile collides with sun
     // implemented in tickReducer
 
-    // ship collides with sun
-
     var gameOver = false;
     var message = '';
     var loserID = null;
+
+    // ship collides with sun
     for (var id in state.game.ships) {
       var ship = state.game.ships[id];
       var distVec = subtract(ship.position, sun.position);
       var dist = distance(distVec);
       if (dist < sun.radius) {
         gameOver = true;
-        message = getPlayerByID(state, id).name + ' ran into the sun!';
+        message = getPlayerByID(state, id).name + ' crashed into the sun!';
         loserID = id;
       }
     }
 
-    // ship collides with projectile
+    // ship collides with planet
     for (var _id in state.game.ships) {
+      var _ship = state.game.ships[_id];
       var _iteratorNormalCompletion = true;
       var _didIteratorError = false;
       var _iteratorError = undefined;
 
       try {
-        for (var _iterator = state.game.projectiles[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var projectile = _step.value;
+        for (var _iterator = state.game.planets[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var planet = _step.value;
 
-          var _ship = state.game.ships[_id];
-          var _distVec = subtract(_ship.position, projectile.position);
+          var _distVec = subtract(_ship.position, planet.position);
           var _dist = distance(_distVec);
-          // don't get hit by your own laser you just fired
-          if (_dist < _ship.radius + projectile.radius && !(projectile.playerID == _id && projectile.history.length < 10)) {
+          if (_dist < planet.radius) {
             gameOver = true;
-            message = getPlayerByID(state, _id).name + ' was hit by a ' + projectile.type + '!';
+            message = getPlayerByID(state, _id).name + ' crashed into the earth!';
             loserID = _id;
           }
         }
@@ -85,6 +84,42 @@ var initCollisionSystem = function initCollisionSystem(store) {
         } finally {
           if (_didIteratorError) {
             throw _iteratorError;
+          }
+        }
+      }
+    }
+
+    // ship collides with projectile
+    for (var _id2 in state.game.ships) {
+      var _iteratorNormalCompletion2 = true;
+      var _didIteratorError2 = false;
+      var _iteratorError2 = undefined;
+
+      try {
+        for (var _iterator2 = state.game.projectiles[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+          var projectile = _step2.value;
+
+          var _ship2 = state.game.ships[_id2];
+          var _distVec2 = subtract(_ship2.position, projectile.position);
+          var _dist2 = distance(_distVec2);
+          // don't get hit by your own laser you just fired
+          if (_dist2 < _ship2.radius + projectile.radius && !(projectile.playerID == _id2 && projectile.history.length < 10)) {
+            gameOver = true;
+            message = getPlayerByID(state, _id2).name + ' was hit by a ' + projectile.type + '!';
+            loserID = _id2;
+          }
+        }
+      } catch (err) {
+        _didIteratorError2 = true;
+        _iteratorError2 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion2 && _iterator2.return) {
+            _iterator2.return();
+          }
+        } finally {
+          if (_didIteratorError2) {
+            throw _iteratorError2;
           }
         }
       }
@@ -110,8 +145,8 @@ var initCollisionSystem = function initCollisionSystem(store) {
       dispatchToServer(thisClientID, stopAction);
 
       // update scores
-      for (var _id2 in state.game.ships) {
-        var player = getPlayerByID(state, _id2);
+      for (var _id3 in state.game.ships) {
+        var player = getPlayerByID(state, _id3);
         if (player.id != loserID) {
           var scoreAction = {
             type: 'SET_PLAYER_SCORE',
