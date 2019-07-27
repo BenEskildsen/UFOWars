@@ -8,6 +8,7 @@ const initState = (): State => {
     players: [],
     games: {'0': {id: '0', players: [], started: false}},
     modal: null,
+    chat: '',
   };
 }
 

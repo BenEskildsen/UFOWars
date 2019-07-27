@@ -47,6 +47,7 @@ eurecaServer.exports.dispatch = function (playerID, action) {
       break;
     case 'CHAT':
       allClients = true;
+      chat += clientNames[action.playerID] + ': ' + action.message + '\n';
       break;
   }
 
@@ -63,6 +64,7 @@ const clientNames = {}; // PlayerID -> string
 const LOBBY_ID = 0;
 const clientToGame = {}; // PlayerID -> GameID
 const games = {}; // GameID -> {id: GameID, players: Array<PlayerID>}
+let chat = ''
 
 // ------------------------------------------------------------------------------
 // each time a client is connected we call
@@ -105,6 +107,18 @@ eurecaServer.onConnect(function (socket) {
       }
     }
   }
+  // update the just-connected client with the chat
+  client.receiveAction({
+    type: 'SET_CHAT',
+    chat: chat + '**** Welcome to UFO Wars ****\n'
+  });
+
+  // send chat to the other clients that this one exists
+  dispatchToOtherClients(nextPlayerID, {
+    type: 'CHAT',
+    playerID: nextPlayerID,
+    message: 'Hi I have just joined'
+  });
 
   // update the other clients that this one exists
   dispatchToOtherClients(nextPlayerID, {

@@ -5,7 +5,8 @@ var initState = function initState() {
     game: null,
     players: [],
     games: { '0': { id: '0', players: [], started: false } },
-    modal: null
+    modal: null,
+    chat: ''
   };
 };
 

@@ -4,6 +4,9 @@
  - explosion animation
  - implement nitro-thrust using fuel
  - missiles should look like torpedoes
+ - missiles should be able to target each other
+ - swap player positions each round
+ - missiles hitting planet should kill blue
 
 
  - - - - - - SERVER - - - - -
@@ -16,10 +19,6 @@
 
  - - - - - - LOBBY - - - - -
  - styling and fancy UI for lobby
- - indicate which other players are connected and if they're in the lobby
- - clear your chat on send
- - Enter should send chat too
- - only join one game at a time
 
 
  - - - - - - REFACTOR - - - - - -
@@ -29,7 +28,10 @@
 
 
  - - - - - - BUGS - - - - - -
+ - set initial speed of missiles relative to player ship
  - sometimes the game can start multiple times without stopping
+ - only join one game at a time
+ - don't let chat swallow arrow keys during game
 
 
  - - - - - - WISH - - - - - -
@@ -86,3 +88,8 @@
  - abstract away rendering into something neater
 
  - add planet
+
+ - clear your chat on send
+ - Enter should send chat too
+ - indicate which other players are connected and if they're in the lobby
+ - server should track the chat to catch up new clients

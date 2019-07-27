@@ -23,6 +23,7 @@ var _require2 = require('../utils/clientToServer'),
     dispatchToServer = _require2.dispatchToServer;
 
 var Button = require('./Button.react');
+var Chat = require('./Chat.react');
 
 /**
  * props: {store}
@@ -119,40 +120,20 @@ var Lobby = function (_React$Component) {
     value: function chatBar() {
       var dispatch = this.props.store.dispatch;
       var state = this.state;
-      var clientPlayer = getClientPlayer(this.state);
-      return React.createElement(
-        'div',
-        { className: 'chatBar' },
-        React.createElement('textarea', { rows: 40, cols: 60,
-          disabled: true, readOnly: true, value: state.chat,
-          style: { resize: 'none' }
-        }),
-        React.createElement(
-          'div',
-          null,
-          React.createElement('input', {
-            type: 'text',
-            size: 55,
-            value: state.localChat,
-            onChange: function onChange(ev) {
-              dispatch({ type: 'LOCAL_CHAT', message: ev.target.value });
-            }
-          }),
-          React.createElement(Button, {
-            label: 'Send',
-            onClick: function onClick() {
-              var chatAction = {
-                type: 'CHAT',
-                playerID: clientPlayer.id,
-                message: state.localChat
-              };
-              dispatch(chatAction);
-              dispatchToServer(clientPlayer.id, chatAction);
-              dispatch({ type: 'LOCAL_CHAT', message: '' });
-            }
-          })
-        )
-      );
+      var clientPlayer = getClientPlayer(state);
+
+      return React.createElement(Chat, {
+        chat: state.chat,
+        onSend: function onSend(message) {
+          var chatAction = {
+            type: 'CHAT',
+            playerID: clientPlayer.id,
+            message: message
+          };
+          dispatch(chatAction);
+          dispatchToServer(clientPlayer.id, chatAction);
+        }
+      });
     }
   }, {
     key: 'playerNameRow',

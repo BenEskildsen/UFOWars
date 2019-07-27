@@ -1,9 +1,14 @@
 
 const React = require('React');
 const {config} = require('../config');
+const {dispatchToServer} = require('../utils/clientToServer');
 const Canvas = require('./Canvas.react');
 const Lobby = require('./Lobby.react');
 const Button = require('./Button.react');
+const Chat = require('./Chat.react');
+const {
+  getClientPlayer,
+} = require('../selectors/selectors');
 
 /**
  * props: {store}
@@ -22,6 +27,7 @@ class Game extends React.Component {
   render() {
     const {dispatch} = this.props.store;
     const {state} = this;
+
     let content = null;
     if (state.players.length != 0) {
       content = <Lobby store={this.props.store} />;
@@ -36,6 +42,21 @@ class Game extends React.Component {
         </div>
       );
     }
+         // TODO: fix chat to not steal arrow key presses
+         //  <Chat
+         //    rows={15}
+         //    chat={state.chat}
+         //    onSend={(message) => {
+         //      const clientPlayer = getClientPlayer(this.state);
+         //      const chatAction = {
+         //        type: 'CHAT',
+         //        playerID: clientPlayer.id,
+         //        message,
+         //      };
+         //      dispatch(chatAction);
+         //      dispatchToServer(clientPlayer.id, chatAction);
+         //    }}
+         //  />
     const backgroundDiv = document.getElementById('background');
     if (backgroundDiv != null) {
       const rect = backgroundDiv.getBoundingClientRect();

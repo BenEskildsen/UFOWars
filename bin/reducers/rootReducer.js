@@ -20,6 +20,9 @@ var _require5 = require('./playerReducer'),
 var _require6 = require('./lobbyReducer'),
     lobbyReducer = _require6.lobbyReducer;
 
+var _require7 = require('./chatReducer'),
+    chatReducer = _require7.chatReducer;
+
 var rootReducer = function rootReducer(state, action) {
   if (state === undefined) return initState();
 
@@ -27,7 +30,6 @@ var rootReducer = function rootReducer(state, action) {
     case 'CREATE_GAME':
     case 'JOIN_GAME':
     case 'START':
-    case 'CHAT':
     case 'LOCAL_CHAT':
       return lobbyReducer(state, action);
     case 'CREATE_PLAYER':
@@ -53,6 +55,9 @@ var rootReducer = function rootReducer(state, action) {
       return _extends({}, state, {
         game: gameReducer(state.game, action)
       });
+    case 'CHAT':
+    case 'SET_CHAT':
+      return chatReducer(state, action);
   }
   return state;
 };

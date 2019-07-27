@@ -9,12 +9,12 @@ const {
 } = require('../selectors/selectors');
 const {dispatchToServer} = require('../utils/clientToServer');
 const Button = require('./Button.react');
+const Chat = require('./Chat.react');
 
 /**
  * props: {store}
  * state: {...state.getState()}
  */
-
 class Lobby extends React.Component {
 
   constructor(props) {
@@ -83,37 +83,21 @@ class Lobby extends React.Component {
   chatBar() {
     const dispatch = this.props.store.dispatch;
     const state = this.state;
-    const clientPlayer = getClientPlayer(this.state);
+    const clientPlayer = getClientPlayer(state);
+
     return (
-      <div className="chatBar">
-        <textarea rows={40} cols={60}
-          disabled={true} readOnly={true} value={state.chat}
-          style={{resize: 'none'}}
-        />
-        <div>
-          <input
-            type="text"
-            size={55}
-            value={state.localChat}
-            onChange={(ev) => {
-              dispatch({type: 'LOCAL_CHAT', message: ev.target.value});
-            }}
-          />
-          <Button
-            label="Send"
-            onClick={() => {
-              const chatAction = {
-                type: 'CHAT',
-                playerID: clientPlayer.id,
-                message: state.localChat,
-              };
-              dispatch(chatAction);
-              dispatchToServer(clientPlayer.id, chatAction);
-              dispatch({type: 'LOCAL_CHAT', message: ''});
-            }}
-          />
-        </div>
-      </div>
+      <Chat
+        chat={state.chat}
+        onSend={(message) => {
+          const chatAction = {
+            type: 'CHAT',
+            playerID: clientPlayer.id,
+            message,
+          };
+          dispatch(chatAction);
+          dispatchToServer(clientPlayer.id, chatAction);
+        }}
+      />
     );
   }
 

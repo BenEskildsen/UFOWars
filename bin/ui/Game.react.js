@@ -15,14 +15,22 @@ var React = require('React');
 var _require = require('../config'),
     config = _require.config;
 
+var _require2 = require('../utils/clientToServer'),
+    dispatchToServer = _require2.dispatchToServer;
+
 var Canvas = require('./Canvas.react');
 var Lobby = require('./Lobby.react');
 var Button = require('./Button.react');
+var Chat = require('./Chat.react');
+
+var _require3 = require('../selectors/selectors'),
+    getClientPlayer = _require3.getClientPlayer;
 
 /**
  * props: {store}
  * state: {...store.getState()}
  */
+
 
 var Game = function (_React$Component) {
   _inherits(Game, _React$Component);
@@ -45,6 +53,7 @@ var Game = function (_React$Component) {
       var dispatch = this.props.store.dispatch;
       var state = this.state;
 
+
       var content = null;
       if (state.players.length != 0) {
         content = React.createElement(Lobby, { store: this.props.store });
@@ -59,6 +68,21 @@ var Game = function (_React$Component) {
           })
         );
       }
+      // TODO: fix chat to not steal arrow key presses
+      //  <Chat
+      //    rows={15}
+      //    chat={state.chat}
+      //    onSend={(message) => {
+      //      const clientPlayer = getClientPlayer(this.state);
+      //      const chatAction = {
+      //        type: 'CHAT',
+      //        playerID: clientPlayer.id,
+      //        message,
+      //      };
+      //      dispatch(chatAction);
+      //      dispatchToServer(clientPlayer.id, chatAction);
+      //    }}
+      //  />
       var backgroundDiv = document.getElementById('background');
       if (backgroundDiv != null) {
         var rect = backgroundDiv.getBoundingClientRect();
