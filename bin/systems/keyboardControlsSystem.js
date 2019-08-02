@@ -64,6 +64,7 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
     var state = store.getState();
     var time = state.game.time;
 
+    var target = null;
     switch (ev.keyCode) {
       case 37:
         {
@@ -89,10 +90,53 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
           dispatch(_action4);
           break;
         }
+      case 67:
+        // c
+        // if defender, target missile, if attacker, target planet
+        for (var id in state.game.ships) {
+          target = id == playerID ? 'Missile' : 'Planet';
+          break;
+        }
+
+      // purposefully fall through into space
       case 32:
         {
           // space
-          var _action5 = { type: 'FIRE_MISSILE', time: time, playerID: playerID };
+          // don't fire the action at all if this player has any other missiles
+          var dontFire = false;
+          var _iteratorNormalCompletion = true;
+          var _didIteratorError = false;
+          var _iteratorError = undefined;
+
+          try {
+            for (var _iterator = state.game.projectiles[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+              var projectile = _step.value;
+
+              if (projectile.playerID == playerID) {
+                dontFire = true;
+                break;
+              }
+            }
+          } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+          }
+
+          if (dontFire) {
+            break;
+          }
+          target = target == null ? 'Ship' : target;
+          var _action5 = { type: 'FIRE_MISSILE', time: time, playerID: playerID, target: target };
           dispatchToServer(playerID, _action5);
           dispatch(_action5);
           break;

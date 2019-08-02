@@ -1,11 +1,11 @@
 
  - - - - - - GAME - - - - - -
  - send time step that the game ended and render that end state
+ - missiles should destroy each other on collision
+ - tune the game such that missile can ever actually hit eachother
  - explosion animation
- - implement nitro-thrust using fuel
- - missiles should look like torpedoes
- - missiles should be able to target each other
  - swap player positions each round
+ - missiles should look like torpedoes
  - missiles hitting planet should kill blue
 
 
@@ -28,13 +28,12 @@
 
 
  - - - - - - BUGS - - - - - -
- - set initial speed of missiles relative to player ship
- - sometimes the game can start multiple times without stopping
  - only join one game at a time
  - don't let chat swallow arrow keys during game
 
 
  - - - - - - WISH - - - - - -
+ - implement nitro-thrust using fuel
  - actually implement configurable speed of light delay
  - how should unique gameIDs be assigned to newly-created games?
  - server side code should live in its own directory?
@@ -93,3 +92,7 @@
  - Enter should send chat too
  - indicate which other players are connected and if they're in the lobby
  - server should track the chat to catch up new clients
+
+ - set initial speed of missiles relative to player ship
+ - sometimes the game can start multiple times without stopping
+ - missiles should be able to target each other

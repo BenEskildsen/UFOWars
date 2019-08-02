@@ -9,7 +9,8 @@ var _require2 = require('../config'),
     config = _require2.config;
 
 var _require3 = require('../utils/vectors'),
-    makeVector = _require3.makeVector;
+    makeVector = _require3.makeVector,
+    add = _require3.add;
 
 var _require4 = require('../selectors/selectors'),
     getPlayerColor = _require4.getPlayerColor;
@@ -27,12 +28,12 @@ var makeLaserProjectile = function makeLaserProjectile(playerID, position, theta
   });
 };
 
-var makeMissileProjectile = function makeMissileProjectile(playerID, position, theta, target) {
+var makeMissileProjectile = function makeMissileProjectile(playerID, position, theta, velocity, target) {
   var projectile = _extends({}, makeLaserProjectile(playerID, position, theta), {
     type: 'missile',
     mass: config.missile.mass,
     radius: config.missile.radius,
-    velocity: makeVector(theta, config.missile.speed),
+    velocity: add(velocity, makeVector(theta, config.missile.speed)),
     target: target,
     age: 0,
     thrust: 0,

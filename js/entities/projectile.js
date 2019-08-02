@@ -2,7 +2,7 @@
 
 const {makeEntity} = require('./entity');
 const {config} = require('../config');
-const {makeVector} = require('../utils/vectors');
+const {makeVector, add} = require('../utils/vectors');
 const {getPlayerColor} = require('../selectors/selectors');
 const {max, round, sqrt} = Math;
 
@@ -25,14 +25,15 @@ const makeMissileProjectile = (
   playerID: PlayerID,
   position: Vector,
   theta: Radians,
-  target: 'Ship' | 'Missile',
+  velocity: Vector,
+  target: 'Ship' | 'Missile' | 'Planet',
 ): Missile => {
   const projectile = {
     ...makeLaserProjectile(playerID, position, theta),
     type: 'missile',
     mass: config.missile.mass,
     radius: config.missile.radius,
-    velocity: makeVector(theta, config.missile.speed),
+    velocity: add(velocity, makeVector(theta, config.missile.speed)),
     target,
     age: 0,
     thrust: 0,

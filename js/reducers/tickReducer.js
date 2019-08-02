@@ -64,32 +64,55 @@ const handleTick = (state: GameState): GameState => {
   });
 
   // update projectiles
-  const {missile} = config;
   for (let i = 0; i < state.projectiles.length; i++) {
     // handle missiles
-    const projectile = state.projectiles[i];
-    projectile.age += 1;
-    switch (projectile.target) {
+    if (state.projectiles[i].type != 'missile') {
+      continue;
+    }
+    const missile = state.projectiles[i];
+    missile.age += 1;
+    switch (missile.target) {
       case 'Ship': {
         let targetShip = null;
         for (const id in state.ships) {
-          if (id != projectile.playerID) {
+          if (id != missile.playerID) {
             targetShip = state.ships[id];
             break;
           }
         }
         invariant(targetShip != null, 'Missile has no target ship');
-        const dist = subtract(targetShip.position, projectile.position);
-        projectile.theta = Math.atan2(dist.y, dist.x);
+        const dist = subtract(targetShip.position, missile.position);
+        missile.theta = Math.atan2(dist.y, dist.x);
         break;
       }
-      case 'Missile':
-      case 'Planet':
-        // TODO
+      case 'Missile': {
+        let targetMissile = null;
+        for (const projectile of state.projectiles) {
+          if (
+            projectile.type == 'missile' &&
+            projectile.playerID != missile.playerID
+          ) {
+            targetMissile = projectile;
+            break;
+          }
+        }
+        if (targetMissile == null) {
+          break; // if no missile to target, just shoot wherever
+        }
+        const dist = subtract(targetMissile.position, missile.position);
+        missile.theta = Math.atan2(dist.y, dist.x);
+        break;
+      }
+      case 'Planet': {
+        const targetPlanet = state.planets[0];
+        const dist = subtract(targetPlanet.position, missile.position);
+        missile.theta = Math.atan2(dist.y, dist.x);
+        break;
+      }
     }
-    if (projectile.age > missile.thrustAt && projectile.fuel.cur > 0) {
-      projectile.fuel.cur -= 1;
-      projectile.thrust = missile.thrust;
+    if (missile.age > config.missile.thrustAt && missile.fuel.cur > 0) {
+      missile.fuel.cur -= 1;
+      missile.thrust = config.missile.thrust;
     }
 
     updateProjectile(state, i, 1 /* one tick */);
@@ -113,7 +136,7 @@ const handleTick = (state: GameState): GameState => {
   });
   // clean up old missiles
   nextProjectiles = nextProjectiles.filter(projectile => {
-    return !(projectile.type == 'missile' && projectile.age > missile.maxAge)
+    return !(projectile.type == 'missile' && projectile.age > config.missile.maxAge)
   });
 
   return {

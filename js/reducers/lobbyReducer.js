@@ -44,6 +44,9 @@ const lobbyReducer = (state: State, action: Action): State=> {
     case 'START': {
       const {gameID} = action;
       const {players} = state.games[gameID];
+      if (state.game != null && state.game.tickInterval != null) {
+        return state;
+      }
       return {
         ...state,
         game: {

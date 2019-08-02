@@ -94,6 +94,9 @@ var lobbyReducer = function lobbyReducer(state, action) {
         var _gameID2 = action.gameID;
         var players = state.games[_gameID2].players;
 
+        if (state.game != null && state.game.tickInterval != null) {
+          return state;
+        }
         return _extends({}, state, {
           game: _extends({}, initGameState(players), {
             tickInterval: setInterval(

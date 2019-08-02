@@ -43,3 +43,5 @@ Date  Time Started  Time Spent  Work Completed
 
 7/26     7:30pm     1hr         Save chat on the server, press enter to chat,
                                 Factor out chat component
+
+8/1      9:00pm     1hr         Missiles can target planet or other missiles

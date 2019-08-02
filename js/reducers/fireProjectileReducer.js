@@ -34,23 +34,31 @@ const fireProjectileReducer = (state: GameState, action: Action): GameState => {
       };
     }
     case 'FIRE_MISSILE': {
-      const {playerID} = action;
+      const {playerID, target} = action;
       const {projectiles, ships} = state;
       let shipPosition = ships[playerID].position;
       let shipTheta = ships[playerID].theta;
+      let shipVelocity = ships[playerID].velocity;
       if (action.time < state.time) {
         const timeDiff = state.time - action.time;
         // rewind history
         const prevPos = ships[playerID].history[ships[playerID].history.length - timeDiff - 1];
         shipPosition = prevPos.position;
         shipTheta = prevPos.theta;
+        shipVelocity = prevPos.velocity;
       } else if (action. time > state.time) {
         return {
           ...state,
           actionQueue: [...state.actionQueue, action],
         };
       }
-      const projectile = makeMissileProjectile(playerID, shipPosition, shipTheta, 'Ship');
+      const projectile = makeMissileProjectile(
+        playerID,
+        shipPosition,
+        shipTheta,
+        shipVelocity,
+        target,
+      );
       queueAdd(projectiles, projectile, config.maxProjectiles);
       return {
         ...state,

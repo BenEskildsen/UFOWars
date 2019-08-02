@@ -29,7 +29,7 @@ var config = {
     maxFuel: 30,
     thrustAt: 10,
     maxAge: 80,
-    speed: 12
+    speed: 10
   },
   G: 0.75, // gravitational constant
   maxHistorySize: 75,

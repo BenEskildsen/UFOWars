@@ -85,34 +85,77 @@ var handleTick = function handleTick(state) {
   });
 
   // update projectiles
-  var missile = config.missile;
-
   for (var i = 0; i < state.projectiles.length; i++) {
     // handle missiles
-    var projectile = state.projectiles[i];
-    projectile.age += 1;
-    switch (projectile.target) {
+    if (state.projectiles[i].type != 'missile') {
+      continue;
+    }
+    var missile = state.projectiles[i];
+    missile.age += 1;
+    switch (missile.target) {
       case 'Ship':
         {
           var targetShip = null;
           for (var _id in state.ships) {
-            if (_id != projectile.playerID) {
+            if (_id != missile.playerID) {
               targetShip = state.ships[_id];
               break;
             }
           }
           invariant(targetShip != null, 'Missile has no target ship');
-          var dist = subtract(targetShip.position, projectile.position);
-          projectile.theta = Math.atan2(dist.y, dist.x);
+          var dist = subtract(targetShip.position, missile.position);
+          missile.theta = Math.atan2(dist.y, dist.x);
           break;
         }
       case 'Missile':
+        {
+          var targetMissile = null;
+          var _iteratorNormalCompletion = true;
+          var _didIteratorError = false;
+          var _iteratorError = undefined;
+
+          try {
+            for (var _iterator = state.projectiles[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+              var projectile = _step.value;
+
+              if (projectile.type == 'missile' && projectile.playerID != missile.playerID) {
+                targetMissile = projectile;
+                break;
+              }
+            }
+          } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+          }
+
+          if (targetMissile == null) {
+            break; // if no missile to target, just shoot wherever
+          }
+          var _dist = subtract(targetMissile.position, missile.position);
+          missile.theta = Math.atan2(_dist.y, _dist.x);
+          break;
+        }
       case 'Planet':
-      // TODO
+        {
+          var targetPlanet = state.planets[0];
+          var _dist2 = subtract(targetPlanet.position, missile.position);
+          missile.theta = Math.atan2(_dist2.y, _dist2.x);
+          break;
+        }
     }
-    if (projectile.age > missile.thrustAt && projectile.fuel.cur > 0) {
-      projectile.fuel.cur -= 1;
-      projectile.thrust = missile.thrust;
+    if (missile.age > config.missile.thrustAt && missile.fuel.cur > 0) {
+      missile.fuel.cur -= 1;
+      missile.thrust = config.missile.thrust;
     }
 
     updateProjectile(state, i, 1 /* one tick */);
@@ -121,13 +164,13 @@ var handleTick = function handleTick(state) {
   // check on queued actions
   var nextState = state;
   var nextActionQueue = [];
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
 
   try {
-    for (var _iterator = state.actionQueue[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var action = _step.value;
+    for (var _iterator2 = state.actionQueue[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var action = _step2.value;
 
       if (action.time == state.time) {
         nextState = gameReducer(nextState, action);
@@ -138,16 +181,16 @@ var handleTick = function handleTick(state) {
 
     // projectiles colliding with sun
   } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
   } finally {
     try {
-      if (!_iteratorNormalCompletion && _iterator.return) {
-        _iterator.return();
+      if (!_iteratorNormalCompletion2 && _iterator2.return) {
+        _iterator2.return();
       }
     } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
+      if (_didIteratorError2) {
+        throw _iteratorError2;
       }
     }
   }
@@ -158,7 +201,7 @@ var handleTick = function handleTick(state) {
   });
   // clean up old missiles
   nextProjectiles = nextProjectiles.filter(function (projectile) {
-    return !(projectile.type == 'missile' && projectile.age > missile.maxAge);
+    return !(projectile.type == 'missile' && projectile.age > config.missile.maxAge);
   });
 
   return _extends({}, nextState, {

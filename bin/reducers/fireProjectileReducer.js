@@ -46,24 +46,27 @@ var fireProjectileReducer = function fireProjectileReducer(state, action) {
       }
     case 'FIRE_MISSILE':
       {
-        var _playerID = action.playerID;
+        var _playerID = action.playerID,
+            target = action.target;
         var _projectiles = state.projectiles,
             _ships = state.ships;
 
         var _shipPosition = _ships[_playerID].position;
         var _shipTheta = _ships[_playerID].theta;
+        var shipVelocity = _ships[_playerID].velocity;
         if (action.time < state.time) {
           var _timeDiff = state.time - action.time;
           // rewind history
           var _prevPos = _ships[_playerID].history[_ships[_playerID].history.length - _timeDiff - 1];
           _shipPosition = _prevPos.position;
           _shipTheta = _prevPos.theta;
+          shipVelocity = _prevPos.velocity;
         } else if (action.time > state.time) {
           return _extends({}, state, {
             actionQueue: [].concat(_toConsumableArray(state.actionQueue), [action])
           });
         }
-        var _projectile = makeMissileProjectile(_playerID, _shipPosition, _shipTheta, 'Ship');
+        var _projectile = makeMissileProjectile(_playerID, _shipPosition, _shipTheta, shipVelocity, target);
         queueAdd(_projectiles, _projectile, config.maxProjectiles);
         return _extends({}, state, {
           projectiles: _projectiles

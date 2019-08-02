@@ -30,7 +30,7 @@ var config = {
     maxFuel: 30,
     thrustAt: 10,
     maxAge: 80,
-    speed: 12
+    speed: 10
   },
   G: 0.75, // gravitational constant
   maxHistorySize: 75,
@@ -73,7 +73,8 @@ var _require2 = require('../config'),
     config = _require2.config;
 
 var _require3 = require('../utils/vectors'),
-    makeVector = _require3.makeVector;
+    makeVector = _require3.makeVector,
+    add = _require3.add;
 
 var _require4 = require('../selectors/selectors'),
     getPlayerColor = _require4.getPlayerColor;
@@ -91,12 +92,12 @@ var makeLaserProjectile = function makeLaserProjectile(playerID, position, theta
   });
 };
 
-var makeMissileProjectile = function makeMissileProjectile(playerID, position, theta, target) {
+var makeMissileProjectile = function makeMissileProjectile(playerID, position, theta, velocity, target) {
   var projectile = _extends({}, makeLaserProjectile(playerID, position, theta), {
     type: 'missile',
     mass: config.missile.mass,
     radius: config.missile.radius,
-    velocity: makeVector(theta, config.missile.speed),
+    velocity: add(velocity, makeVector(theta, config.missile.speed)),
     target: target,
     age: 0,
     thrust: 0,
@@ -438,24 +439,27 @@ var fireProjectileReducer = function fireProjectileReducer(state, action) {
       }
     case 'FIRE_MISSILE':
       {
-        var _playerID = action.playerID;
+        var _playerID = action.playerID,
+            target = action.target;
         var _projectiles = state.projectiles,
             _ships = state.ships;
 
         var _shipPosition = _ships[_playerID].position;
         var _shipTheta = _ships[_playerID].theta;
+        var shipVelocity = _ships[_playerID].velocity;
         if (action.time < state.time) {
           var _timeDiff = state.time - action.time;
           // rewind history
           var _prevPos = _ships[_playerID].history[_ships[_playerID].history.length - _timeDiff - 1];
           _shipPosition = _prevPos.position;
           _shipTheta = _prevPos.theta;
+          shipVelocity = _prevPos.velocity;
         } else if (action.time > state.time) {
           return _extends({}, state, {
             actionQueue: [].concat(_toConsumableArray(state.actionQueue), [action])
           });
         }
-        var _projectile = makeMissileProjectile(_playerID, _shipPosition, _shipTheta, 'Ship');
+        var _projectile = makeMissileProjectile(_playerID, _shipPosition, _shipTheta, shipVelocity, target);
         queueAdd(_projectiles, _projectile, config.maxProjectiles);
         return _extends({}, state, {
           projectiles: _projectiles
@@ -652,6 +656,9 @@ var lobbyReducer = function lobbyReducer(state, action) {
         var _gameID2 = action.gameID;
         var players = state.games[_gameID2].players;
 
+        if (state.game != null && state.game.tickInterval != null) {
+          return state;
+        }
         return _extends({}, state, {
           game: _extends({}, initGameState(players), {
             tickInterval: setInterval(
@@ -1004,34 +1011,77 @@ var handleTick = function handleTick(state) {
   });
 
   // update projectiles
-  var missile = config.missile;
-
   for (var i = 0; i < state.projectiles.length; i++) {
     // handle missiles
-    var projectile = state.projectiles[i];
-    projectile.age += 1;
-    switch (projectile.target) {
+    if (state.projectiles[i].type != 'missile') {
+      continue;
+    }
+    var missile = state.projectiles[i];
+    missile.age += 1;
+    switch (missile.target) {
       case 'Ship':
         {
           var targetShip = null;
           for (var _id in state.ships) {
-            if (_id != projectile.playerID) {
+            if (_id != missile.playerID) {
               targetShip = state.ships[_id];
               break;
             }
           }
           invariant(targetShip != null, 'Missile has no target ship');
-          var dist = subtract(targetShip.position, projectile.position);
-          projectile.theta = Math.atan2(dist.y, dist.x);
+          var dist = subtract(targetShip.position, missile.position);
+          missile.theta = Math.atan2(dist.y, dist.x);
           break;
         }
       case 'Missile':
+        {
+          var targetMissile = null;
+          var _iteratorNormalCompletion = true;
+          var _didIteratorError = false;
+          var _iteratorError = undefined;
+
+          try {
+            for (var _iterator = state.projectiles[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+              var projectile = _step.value;
+
+              if (projectile.type == 'missile' && projectile.playerID != missile.playerID) {
+                targetMissile = projectile;
+                break;
+              }
+            }
+          } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+          }
+
+          if (targetMissile == null) {
+            break; // if no missile to target, just shoot wherever
+          }
+          var _dist = subtract(targetMissile.position, missile.position);
+          missile.theta = Math.atan2(_dist.y, _dist.x);
+          break;
+        }
       case 'Planet':
-      // TODO
+        {
+          var targetPlanet = state.planets[0];
+          var _dist2 = subtract(targetPlanet.position, missile.position);
+          missile.theta = Math.atan2(_dist2.y, _dist2.x);
+          break;
+        }
     }
-    if (projectile.age > missile.thrustAt && projectile.fuel.cur > 0) {
-      projectile.fuel.cur -= 1;
-      projectile.thrust = missile.thrust;
+    if (missile.age > config.missile.thrustAt && missile.fuel.cur > 0) {
+      missile.fuel.cur -= 1;
+      missile.thrust = config.missile.thrust;
     }
 
     updateProjectile(state, i, 1 /* one tick */);
@@ -1040,13 +1090,13 @@ var handleTick = function handleTick(state) {
   // check on queued actions
   var nextState = state;
   var nextActionQueue = [];
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
 
   try {
-    for (var _iterator = state.actionQueue[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var action = _step.value;
+    for (var _iterator2 = state.actionQueue[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var action = _step2.value;
 
       if (action.time == state.time) {
         nextState = gameReducer(nextState, action);
@@ -1057,16 +1107,16 @@ var handleTick = function handleTick(state) {
 
     // projectiles colliding with sun
   } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
   } finally {
     try {
-      if (!_iteratorNormalCompletion && _iterator.return) {
-        _iterator.return();
+      if (!_iteratorNormalCompletion2 && _iterator2.return) {
+        _iterator2.return();
       }
     } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
+      if (_didIteratorError2) {
+        throw _iteratorError2;
       }
     }
   }
@@ -1077,7 +1127,7 @@ var handleTick = function handleTick(state) {
   });
   // clean up old missiles
   nextProjectiles = nextProjectiles.filter(function (projectile) {
-    return !(projectile.type == 'missile' && projectile.age > missile.maxAge);
+    return !(projectile.type == 'missile' && projectile.age > config.missile.maxAge);
   });
 
   return _extends({}, nextState, {
@@ -1394,7 +1444,7 @@ var initCollisionSystem = function initCollisionSystem(store) {
           var _distVec2 = subtract(_ship2.position, projectile.position);
           var _dist2 = distance(_distVec2);
           // don't get hit by your own laser you just fired
-          if (_dist2 < _ship2.radius + projectile.radius && !(projectile.playerID == _id2 && projectile.history.length < 10)) {
+          if (_dist2 < _ship2.radius + projectile.radius && !(projectile.playerID == _id2 && projectile.history.length < 25)) {
             gameOver = true;
             message = getPlayerByID(state, _id2).name + ' was hit by a ' + projectile.type + '!';
             loserID = _id2;
@@ -1527,6 +1577,7 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
     var state = store.getState();
     var time = state.game.time;
 
+    var target = null;
     switch (ev.keyCode) {
       case 37:
         {
@@ -1552,10 +1603,53 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
           dispatch(_action4);
           break;
         }
+      case 67:
+        // c
+        // if defender, target missile, if attacker, target planet
+        for (var id in state.game.ships) {
+          target = id == playerID ? 'Missile' : 'Planet';
+          break;
+        }
+
+      // purposefully fall through into space
       case 32:
         {
           // space
-          var _action5 = { type: 'FIRE_MISSILE', time: time, playerID: playerID };
+          // don't fire the action at all if this player has any other missiles
+          var dontFire = false;
+          var _iteratorNormalCompletion = true;
+          var _didIteratorError = false;
+          var _iteratorError = undefined;
+
+          try {
+            for (var _iterator = state.game.projectiles[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+              var projectile = _step.value;
+
+              if (projectile.playerID == playerID) {
+                dontFire = true;
+                break;
+              }
+            }
+          } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+          }
+
+          if (dontFire) {
+            break;
+          }
+          target = target == null ? 'Ship' : target;
+          var _action5 = { type: 'FIRE_MISSILE', time: time, playerID: playerID, target: target };
           dispatchToServer(playerID, _action5);
           dispatch(_action5);
           break;

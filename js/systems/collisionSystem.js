@@ -68,7 +68,7 @@ const initCollisionSystem = (store: Store): void => {
         const dist = distance(distVec);
         // don't get hit by your own laser you just fired
         if (dist < ship.radius + projectile.radius &&
-          !(projectile.playerID == id && projectile.history.length < 10)
+          !(projectile.playerID == id && projectile.history.length < 25)
         ) {
           gameOver = true;
           message = getPlayerByID(state, id).name + ' was hit by a ' + projectile.type + '!';
