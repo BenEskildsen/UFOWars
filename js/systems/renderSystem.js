@@ -93,6 +93,7 @@ const render = (state: State, ctx: any): void => {
     );
     ctx.closePath();
     ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   ctx.restore();
