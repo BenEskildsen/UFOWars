@@ -108,6 +108,8 @@ var render = function render(state, ctx) {
       ctx.closePath();
       ctx.fill();
     }
+
+    // render explosions
   } catch (err) {
     _didIteratorError2 = true;
     _iteratorError2 = err;
@@ -119,6 +121,39 @@ var render = function render(state, ctx) {
     } finally {
       if (_didIteratorError2) {
         throw _iteratorError2;
+      }
+    }
+  }
+
+  var _iteratorNormalCompletion3 = true;
+  var _didIteratorError3 = false;
+  var _iteratorError3 = undefined;
+
+  try {
+    for (var _iterator3 = game.explosions[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+      var explosion = _step3.value;
+
+      if (explosion.radius <= 0) {
+        continue;
+      }
+      ctx.globalAlpha = 1 - (config.explosion.age - explosion.age) / config.explosion.age;
+      ctx.fillStyle = explosion.color;
+      ctx.beginPath();
+      ctx.arc(explosion.position.x, explosion.position.y, explosion.radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+  } catch (err) {
+    _didIteratorError3 = true;
+    _iteratorError3 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion3 && _iterator3.return) {
+        _iterator3.return();
+      }
+    } finally {
+      if (_didIteratorError3) {
+        throw _iteratorError3;
       }
     }
   }

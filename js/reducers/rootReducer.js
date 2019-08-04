@@ -7,6 +7,7 @@ const {modalReducer} = require('./modalReducer');
 const {playerReducer} = require('./playerReducer');
 const {lobbyReducer} = require('./lobbyReducer');
 const {chatReducer} = require('./chatReducer');
+const {animationReducer} = require('./animationReducer');
 
 import type {State, Action} from '../types';
 
@@ -39,6 +40,7 @@ const rootReducer = (state: State, action: Action): State => {
     case 'SET_THRUST':
     case 'FIRE_LASER':
     case 'FIRE_MISSILE':
+    case 'MAKE_EXPLOSION':
       if (!state.game) return state;
       return {
         ...state,
@@ -47,6 +49,12 @@ const rootReducer = (state: State, action: Action): State => {
     case 'CHAT':
     case 'SET_CHAT':
       return chatReducer(state, action);
+    case 'STEP_ANIMATION':
+      if (!state.game) return state;
+      return {
+        ...state,
+        game: animationReducer(state.game, action),
+      };
   }
   return state;
 };

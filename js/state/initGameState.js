@@ -12,6 +12,7 @@ const initGameState = (players: Array<PlayerID>): GameState => {
     gamePlayers: players,
     time: 0,
     tickInterval: null,
+    animationInterval: null,
     ships: {
       [players[0]]: makeShip(
         players[0], // playerID
@@ -36,7 +37,7 @@ const initGameState = (players: Array<PlayerID>): GameState => {
       ),
     ],
     projectiles: [],
-    paths: [],
+    explosions: [],
 
     actionQueue: [],
   };

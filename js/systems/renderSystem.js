@@ -79,6 +79,22 @@ const render = (state: State, ctx: any): void => {
     ctx.fill();
   }
 
+  // render explosions
+  for (const explosion of game.explosions) {
+    if (explosion.radius <= 0) {
+      continue;
+    }
+    ctx.globalAlpha = 1 - ((config.explosion.age - explosion.age) / config.explosion.age)
+    ctx.fillStyle = explosion.color;
+    ctx.beginPath();
+    ctx.arc(
+      explosion.position.x, explosion.position.y,
+      explosion.radius, 0, Math.PI * 2,
+    );
+    ctx.closePath();
+    ctx.fill();
+  }
+
   ctx.restore();
 }
 

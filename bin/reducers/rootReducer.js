@@ -23,6 +23,9 @@ var _require6 = require('./lobbyReducer'),
 var _require7 = require('./chatReducer'),
     chatReducer = _require7.chatReducer;
 
+var _require8 = require('./animationReducer'),
+    animationReducer = _require8.animationReducer;
+
 var rootReducer = function rootReducer(state, action) {
   if (state === undefined) return initState();
 
@@ -51,6 +54,7 @@ var rootReducer = function rootReducer(state, action) {
     case 'SET_THRUST':
     case 'FIRE_LASER':
     case 'FIRE_MISSILE':
+    case 'MAKE_EXPLOSION':
       if (!state.game) return state;
       return _extends({}, state, {
         game: gameReducer(state.game, action)
@@ -58,6 +62,11 @@ var rootReducer = function rootReducer(state, action) {
     case 'CHAT':
     case 'SET_CHAT':
       return chatReducer(state, action);
+    case 'STEP_ANIMATION':
+      if (!state.game) return state;
+      return _extends({}, state, {
+        game: animationReducer(state.game, action)
+      });
   }
   return state;
 };

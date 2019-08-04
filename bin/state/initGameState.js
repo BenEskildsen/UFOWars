@@ -24,6 +24,7 @@ var initGameState = function initGameState(players) {
     gamePlayers: players,
     time: 0,
     tickInterval: null,
+    animationInterval: null,
     ships: (_ships = {}, _defineProperty(_ships, players[0], makeShip(players[0], // playerID
     ship.mass, ship.radius, { x: width / 2, y: height / 2 - 1150 }, // position
     { x: -14, y: 0 } // velocity
@@ -37,7 +38,7 @@ var initGameState = function initGameState(players) {
     { x: -8.5, y: 0 // velocity
     })],
     projectiles: [],
-    paths: [],
+    explosions: [],
 
     actionQueue: []
   };

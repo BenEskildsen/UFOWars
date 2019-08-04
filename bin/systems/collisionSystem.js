@@ -3,6 +3,7 @@
 // no flow checking cuz it's annoying
 
 var _require = require('../utils/vectors'),
+    add = _require.add,
     subtract = _require.subtract,
     distance = _require.distance;
 
@@ -19,6 +20,10 @@ var _require4 = require('../utils/clientToServer'),
 
 var React = require('React');
 var Button = require('../ui/Button.react');
+var floor = Math.floor,
+    round = Math.round,
+    random = Math.random;
+
 
 var initCollisionSystem = function initCollisionSystem(store) {
 
@@ -157,6 +162,23 @@ var initCollisionSystem = function initCollisionSystem(store) {
           dispatchToServer(thisClientID, scoreAction);
         }
       }
+
+      // set explosions
+      var playerShip = state.game.ships[loserID];
+      var numExplosions = round(random() * 4) + 4;
+      for (var i = 0; i < numExplosions; i++) {
+        var explosionAction = {
+          type: 'MAKE_EXPLOSION',
+          position: add(playerShip.position, { x: round(random() * 100) - 50, y: round(random() * 100) - 50 }),
+          age: config.explosion.age,
+          rate: config.explosion.rate + random(),
+          color: ['yellow', 'orange', 'white'][floor(random() * 3)],
+          radius: round(random() * 5) - 10
+        };
+        dispatch(explosionAction);
+        dispatchToServer(thisClientID, explosionAction);
+      }
+
       // dispatch modals with messages
       dispatch({
         type: 'SET_MODAL', title: 'You Lose!', text: message, name: 'gameover'

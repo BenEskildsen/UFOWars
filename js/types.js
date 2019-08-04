@@ -75,12 +75,15 @@ export type GameState = {
   gamePlayers: Array<PlayerID>, // the players participating in this game
   time: number,
   tickInterval: any, // when running, this is set
+  animationInterval: any, // separate "thread" for animations that continue even when
+                          // the game is over
 
   // entities
   ships: {[id: PlayerID]: Ship},
   planets: Array<Entity>,
   sun: Entity,
   projectiles: Array<Projectile>,
+  explosions: Array<Explosion>,
 
   actionQueue: Array<Action>, // Actions time-stamped to the future wait here
 };
@@ -98,6 +101,12 @@ export type Entity = {
 
   history: Array<Entity>,
   future: Array<Entity>,
+};
+
+export type Explosion = Entity & {
+  age: number,
+  rate: number, // rate of explosion size increase
+  color: string,
 };
 
 export type Ship = Entity & {

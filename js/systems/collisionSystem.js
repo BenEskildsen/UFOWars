@@ -1,6 +1,6 @@
 // no flow checking cuz it's annoying
 
-const {subtract, distance} = require('../utils/vectors');
+const {add, subtract, distance} = require('../utils/vectors');
 const {config} = require('../config');
 const {
   getOtherPlayerID,
@@ -10,6 +10,7 @@ const {
 const {dispatchToServer} = require('../utils/clientToServer');
 const React = require('React');
 const Button = require('../ui/Button.react');
+const {floor, round, random} = Math;
 
 import type {Store} from '../types';
 
@@ -109,6 +110,26 @@ const initCollisionSystem = (store: Store): void => {
           dispatchToServer(thisClientID, scoreAction);
         }
       }
+
+      // set explosions
+      const playerShip = state.game.ships[loserID];
+      const numExplosions = round(random() * 4) + 4;
+      for (let i = 0; i < numExplosions; i++) {
+        const explosionAction = {
+          type: 'MAKE_EXPLOSION',
+          position: add(
+            playerShip.position,
+            {x: round(random() * 100) - 50, y: round(random() * 100) - 50},
+          ),
+          age: config.explosion.age,
+          rate: config.explosion.rate + random(),
+          color: ['yellow', 'orange', 'white'][floor(random() * 3)],
+          radius: round(random() * 5) - 10
+        };
+        dispatch(explosionAction);
+        dispatchToServer(thisClientID, explosionAction);
+      }
+
       // dispatch modals with messages
       dispatch({
         type: 'SET_MODAL', title: 'You Lose!', text: message, name: 'gameover',

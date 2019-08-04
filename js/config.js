@@ -31,6 +31,12 @@ const config = {
     maxAge: 80,
     speed: 10,
   },
+  explosion: {
+    age: 50,
+    rate: 2,
+    color: 'white',
+    offset: 100,
+  },
   G: 0.75, // gravitational constant
   maxHistorySize: 75,
   maxFutureSize: 75,

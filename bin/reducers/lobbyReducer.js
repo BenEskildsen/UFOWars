@@ -103,6 +103,9 @@ var lobbyReducer = function lobbyReducer(state, action) {
             // HACK: store is only available via window
             function () {
               return store.dispatch({ type: 'TICK' });
+            }, config.msPerTick),
+            animationInterval: setInterval(function () {
+              return store.dispatch({ type: 'STEP_ANIMATION' });
             }, config.msPerTick)
           }),
           games: _extends({}, state.games, _defineProperty({}, _gameID2, _extends({}, state.games[_gameID2], { started: true })))

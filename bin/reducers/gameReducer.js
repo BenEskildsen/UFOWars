@@ -16,6 +16,9 @@ var _require3 = require('../utils/updateEntities'),
     updateShip = _require3.updateShip,
     updateProjectile = _require3.updateProjectile;
 
+var _require4 = require('../entities/explosion'),
+    makeExplosion = _require4.makeExplosion;
+
 var gameReducer = function gameReducer(state, action) {
   switch (action.type) {
     case 'SET_TURN':
@@ -79,6 +82,19 @@ var gameReducer = function gameReducer(state, action) {
     case 'FIRE_MISSILE':
     case 'FIRE_LASER':
       return fireProjectileReducer(state, action);
+    case 'MAKE_EXPLOSION':
+      {
+        console.log(action);
+        var position = action.position,
+            age = action.age,
+            rate = action.rate,
+            color = action.color,
+            radius = action.radius;
+
+        return _extends({}, state, {
+          explosions: [].concat(_toConsumableArray(state.explosions), [makeExplosion(position, rate, age, color, radius)])
+        });
+      }
   }
 
   return state;

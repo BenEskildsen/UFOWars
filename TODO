@@ -3,7 +3,6 @@
  - send time step that the game ended and render that end state
  - missiles should destroy each other on collision
  - tune the game such that missile can ever actually hit eachother
- - explosion animation
  - swap player positions each round
  - missiles should look like torpedoes
  - missiles hitting planet should kill blue
@@ -96,3 +95,5 @@
  - set initial speed of missiles relative to player ship
  - sometimes the game can start multiple times without stopping
  - missiles should be able to target each other
+
+ - explosion animation
