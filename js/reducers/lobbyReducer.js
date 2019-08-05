@@ -51,7 +51,7 @@ const lobbyReducer = (state: State, action: Action): State=> {
         setInterval(
           () => store.dispatch({type: 'STEP_ANIMATION'}),
           config.msPerTick,
-        ),
+        );
       };
       return {
         ...state,
@@ -62,9 +62,10 @@ const lobbyReducer = (state: State, action: Action): State=> {
             () => store.dispatch({type: 'TICK'}),
             config.msPerTick,
           ),
-          animationInterval: state.game.animationInterval == null
-            ? setAnimationIterval()
-            : state.game.animationInterval,
+          animationInterval: 
+            (state.game != null && state.game.animationInterval != null)
+            ? state.game.animationInterval
+            : setAnimationInterval(),
         },
         games: {
           ...state.games,

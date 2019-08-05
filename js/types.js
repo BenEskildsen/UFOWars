@@ -88,7 +88,10 @@ export type GameState = {
   actionQueue: Array<Action>, // Actions time-stamped to the future wait here
 };
 
+export type EntityID = number;
+
 export type Entity = {
+  id: EntityID,
   position: Vector,
   velocity: Vector,
   accel: Vector,
@@ -120,6 +123,8 @@ export type Ship = Entity & {
   laserCharge: Resource,
   // ammo: Resource,
   // missiles: Resource,
+
+  target: EntityID,
 };
 
 export type Projectile = Entity & {
@@ -131,7 +136,7 @@ export type Missile = Projectile & {
   thrust: number,
   fuel: Resource,
   age: number, // starts at 0 and increments per tick
-  target: 'Ship' | 'Missile';
+  target: EntityID;
 };
 
 // -------------------------------------------------------------------------------

@@ -4,6 +4,7 @@ const {config} = require('../config');
 const {fireProjectileReducer} = require('./fireProjectileReducer');
 const {updateShip, updateProjectile} = require('../utils/updateEntities');
 const {makeExplosion} = require('../entities/explosion');
+const {getNextTarget} = require('../selectors/selectors');
 
 import type {State, GameState, Ship, Action} from '../types';
 
@@ -85,7 +86,6 @@ const gameReducer = (state: GameState, action: Action): GameState => {
     case 'FIRE_LASER':
       return fireProjectileReducer(state, action);
     case 'MAKE_EXPLOSION': {
-      console.log(action);
       const {position, age, rate, color, radius} = action;
       return {
         ...state,
@@ -95,6 +95,19 @@ const gameReducer = (state: GameState, action: Action): GameState => {
         ],
       };
     }
+    case 'SHIFT_TARGET':
+      const {playerID} = action;
+      const nextTarget = getNextTarget(state, playerID);
+      return {
+        ...state,
+        ships: {
+          ...state.ships,
+          [playerID]: {
+            ...state.ships[playerID],
+            target: nextTarget,
+          },
+        },
+      }
   }
 
   return state;

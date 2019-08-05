@@ -62,6 +62,36 @@ const getPlayerColor = (state: State, playerID: PlayerID): Color => {
   return config.playerColors[colorIndex];
 }
 
+const getNextTarget = (state: GameState, playerID: PlayerID): Entity => {
+  const {ships, planets, projectiles} = state;
+  const entities = Object.values(ships).concat(projectiles).concat(planets);
+  const entityIDs = entities.map(entity => entity.id);
+
+  const currentShip = ships[playerID];
+  const currentTarget = currentShip.target;
+  const currentIndex = entityIDs.indexOf(currentTarget);
+  console.log('currentIndex ', currentIndex);
+
+  let nextIndex = (currentIndex + 1) % entities.length;
+  while (entities[nextIndex].playerID == playerID) {
+    nextIndex = (nextIndex + 1) % entities.length;
+  }
+
+  return entities[nextIndex].id;
+}
+
+const getEntityByID = (state: GameState, id: EntityID): ?Entity => {
+  const {ships, planets, projectiles} = state;
+  const entities = Object.values(ships).concat(projectiles).concat(planets);
+  const entityIDs = entities.map(entity => entity.id);
+
+  const index = entityIDs.indexOf(id);
+  if (index == -1) {
+    return null;
+  }
+  return entities[index];
+}
+
 module.exports = {
   getClientPlayerID,
   getOtherPlayerID,
@@ -70,4 +100,6 @@ module.exports = {
   getPlayerByID,
   getNextGameID,
   getPlayerColor,
+  getNextTarget,
+  getEntityByID,
 };

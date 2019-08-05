@@ -90,15 +90,6 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
           dispatch(_action4);
           break;
         }
-      case 67:
-        // c
-        // if defender, target missile, if attacker, target planet
-        for (var id in state.game.ships) {
-          target = id == playerID ? 'Missile' : 'Planet';
-          break;
-        }
-
-      // purposefully fall through into space
       case 32:
         {
           // space
@@ -135,11 +126,18 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
           if (dontFire) {
             break;
           }
-          target = target == null ? 'Ship' : target;
+          target = state.game.ships[playerID].target;
           var _action5 = { type: 'FIRE_MISSILE', time: time, playerID: playerID, target: target };
           dispatchToServer(playerID, _action5);
           dispatch(_action5);
           break;
+        }
+
+      case 16:
+        {
+          // shift
+          var _action6 = { type: 'SHIFT_TARGET', playerID: playerID };
+          dispatch(_action6);
         }
     }
   };

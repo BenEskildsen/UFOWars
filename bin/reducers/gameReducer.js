@@ -19,6 +19,9 @@ var _require3 = require('../utils/updateEntities'),
 var _require4 = require('../entities/explosion'),
     makeExplosion = _require4.makeExplosion;
 
+var _require5 = require('../selectors/selectors'),
+    getNextTarget = _require5.getNextTarget;
+
 var gameReducer = function gameReducer(state, action) {
   switch (action.type) {
     case 'SET_TURN':
@@ -84,7 +87,6 @@ var gameReducer = function gameReducer(state, action) {
       return fireProjectileReducer(state, action);
     case 'MAKE_EXPLOSION':
       {
-        console.log(action);
         var position = action.position,
             age = action.age,
             rate = action.rate,
@@ -95,6 +97,15 @@ var gameReducer = function gameReducer(state, action) {
           explosions: [].concat(_toConsumableArray(state.explosions), [makeExplosion(position, rate, age, color, radius)])
         });
       }
+    case 'SHIFT_TARGET':
+      var playerID = action.playerID;
+
+      var nextTarget = getNextTarget(state, playerID);
+      return _extends({}, state, {
+        ships: _extends({}, state.ships, _defineProperty({}, playerID, _extends({}, state.ships[playerID], {
+          target: nextTarget
+        })))
+      });
   }
 
   return state;

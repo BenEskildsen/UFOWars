@@ -97,6 +97,11 @@ var lobbyReducer = function lobbyReducer(state, action) {
         if (state.game != null && state.game.tickInterval != null) {
           return state;
         }
+        var setAnimationInterval = function setAnimationInterval() {
+          setInterval(function () {
+            return store.dispatch({ type: 'STEP_ANIMATION' });
+          }, config.msPerTick);
+        };
         return _extends({}, state, {
           game: _extends({}, initGameState(players), {
             tickInterval: setInterval(
@@ -104,9 +109,7 @@ var lobbyReducer = function lobbyReducer(state, action) {
             function () {
               return store.dispatch({ type: 'TICK' });
             }, config.msPerTick),
-            animationInterval: setInterval(function () {
-              return store.dispatch({ type: 'STEP_ANIMATION' });
-            }, config.msPerTick)
+            animationInterval: state.game != null && state.game.animationInterval != null ? state.game.animationInterval : setAnimationInterval()
           }),
           games: _extends({}, state.games, _defineProperty({}, _gameID2, _extends({}, state.games[_gameID2], { started: true })))
         });

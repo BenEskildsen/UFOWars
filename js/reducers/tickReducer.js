@@ -8,6 +8,7 @@ const {config} = require('../config');
 const {sin, cos, abs, sqrt} = Math;
 const {gameReducer} = require('./gameReducer');
 const {invariant} = require('../utils/errors');
+const {getEntityByID} = require('../selectors/selectors');
 
 import type {Ship, GameState, Entity, Action} from '../types';
 
@@ -71,45 +72,14 @@ const handleTick = (state: GameState): GameState => {
     }
     const missile = state.projectiles[i];
     missile.age += 1;
-    switch (missile.target) {
-      case 'Ship': {
-        let targetShip = null;
-        for (const id in state.ships) {
-          if (id != missile.playerID) {
-            targetShip = state.ships[id];
-            break;
-          }
-        }
-        invariant(targetShip != null, 'Missile has no target ship');
-        const dist = subtract(targetShip.position, missile.position);
-        missile.theta = Math.atan2(dist.y, dist.x);
-        break;
-      }
-      case 'Missile': {
-        let targetMissile = null;
-        for (const projectile of state.projectiles) {
-          if (
-            projectile.type == 'missile' &&
-            projectile.playerID != missile.playerID
-          ) {
-            targetMissile = projectile;
-            break;
-          }
-        }
-        if (targetMissile == null) {
-          break; // if no missile to target, just shoot wherever
-        }
-        const dist = subtract(targetMissile.position, missile.position);
-        missile.theta = Math.atan2(dist.y, dist.x);
-        break;
-      }
-      case 'Planet': {
-        const targetPlanet = state.planets[0];
-        const dist = subtract(targetPlanet.position, missile.position);
-        missile.theta = Math.atan2(dist.y, dist.x);
-        break;
-      }
+    // target missle
+    let missileTarget = getEntityByID(state, missile.target);
+    if (missileTarget == null) {
+      break; // if no missile to target, just shoot wherever
     }
+    const dist = subtract(missileTarget.position, missile.position);
+    missile.theta = Math.atan2(dist.y, dist.x);
+
     if (missile.age > config.missile.thrustAt && missile.fuel.cur > 0) {
       missile.fuel.cur -= 1;
       missile.thrust = config.missile.thrust;

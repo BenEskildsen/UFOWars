@@ -128,6 +128,46 @@ var getPlayerColor = function getPlayerColor(state, playerID) {
   return config.playerColors[colorIndex];
 };
 
+var getNextTarget = function getNextTarget(state, playerID) {
+  var ships = state.ships,
+      planets = state.planets,
+      projectiles = state.projectiles;
+
+  var entities = Object.values(ships).concat(projectiles).concat(planets);
+  var entityIDs = entities.map(function (entity) {
+    return entity.id;
+  });
+
+  var currentShip = ships[playerID];
+  var currentTarget = currentShip.target;
+  var currentIndex = entityIDs.indexOf(currentTarget);
+  console.log('currentIndex ', currentIndex);
+
+  var nextIndex = (currentIndex + 1) % entities.length;
+  while (entities[nextIndex].playerID == playerID) {
+    nextIndex = (nextIndex + 1) % entities.length;
+  }
+
+  return entities[nextIndex].id;
+};
+
+var getEntityByID = function getEntityByID(state, id) {
+  var ships = state.ships,
+      planets = state.planets,
+      projectiles = state.projectiles;
+
+  var entities = Object.values(ships).concat(projectiles).concat(planets);
+  var entityIDs = entities.map(function (entity) {
+    return entity.id;
+  });
+
+  var index = entityIDs.indexOf(id);
+  if (index == -1) {
+    return null;
+  }
+  return entities[index];
+};
+
 module.exports = {
   getClientPlayerID: getClientPlayerID,
   getOtherPlayerID: getOtherPlayerID,
@@ -135,5 +175,7 @@ module.exports = {
   getClientGame: getClientGame,
   getPlayerByID: getPlayerByID,
   getNextGameID: getNextGameID,
-  getPlayerColor: getPlayerColor
+  getPlayerColor: getPlayerColor,
+  getNextTarget: getNextTarget,
+  getEntityByID: getEntityByID
 };

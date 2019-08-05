@@ -67,14 +67,6 @@ const initKeyboardControlsSystem = (store) => {
         dispatch(action);
         break;
       }
-      case 67: // c
-        // if defender, target missile, if attacker, target planet
-        for (const id in state.game.ships) {
-          target = id == playerID ? 'Missile' : 'Planet';
-          break;
-        }
-
-        // purposefully fall through into space
       case 32: { // space
         // don't fire the action at all if this player has any other missiles
         let dontFire = false;
@@ -87,11 +79,16 @@ const initKeyboardControlsSystem = (store) => {
         if (dontFire) {
           break;
         }
-        target = target == null ? 'Ship' : target;
+        target = state.game.ships[playerID].target;
         const action = {type: 'FIRE_MISSILE', time, playerID, target};
         dispatchToServer(playerID, action);
         dispatch(action);
         break;
+      }
+
+      case 16: { // shift
+        const action = {type: 'SHIFT_TARGET', playerID};
+        dispatch(action);
       }
     }
   }

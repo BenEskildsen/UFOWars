@@ -2,6 +2,8 @@
 
 import type {Mass, Radians, Vector, Size, Entity} from '../types';
 
+let nextID = 0;
+
 const makeEntity = (
   mass: Mass,
   radius: Size,
@@ -19,6 +21,7 @@ const makeEntity = (
     thetaSpeed: 0,
     history: [],
     future: [],
+    id: nextID++,
   };
 };
 

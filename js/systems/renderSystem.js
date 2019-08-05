@@ -1,5 +1,5 @@
 const {config} = require('../config');
-const {getClientPlayerID, getPlayerColor} = require('../selectors/selectors');
+const {getClientPlayerID, getPlayerColor, getEntityByID} = require('../selectors/selectors');
 const {renderShip} = require('../entities/ship');
 const {renderProjectile} = require('../entities/projectile');
 
@@ -46,9 +46,24 @@ const render = (state: State, ctx: any): void => {
     config.canvasHeight / config.height,
   );
 
-  // render ships
+  // render ships and their target
   for (const id in game.ships) {
     renderShip(state, ctx, id);
+
+    const ship = game.ships[id];
+    if (ship.target != null) {
+      const targetEntity = getEntityByID(game, ship.target);
+      ctx.save();
+      ctx.strokeStyle = getPlayerColor(state, ship.playerID);
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.arc(
+        targetEntity.position.x, targetEntity.position.y, 
+        50, 0, Math.PI * 2); 
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // render projectiles

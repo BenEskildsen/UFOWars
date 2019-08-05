@@ -32,6 +32,9 @@ var _require6 = require('./gameReducer'),
 var _require7 = require('../utils/errors'),
     invariant = _require7.invariant;
 
+var _require8 = require('../selectors/selectors'),
+    getEntityByID = _require8.getEntityByID;
+
 var tickReducer = function tickReducer(state, action) {
   switch (action.type) {
     case 'START_TICK':
@@ -92,67 +95,14 @@ var handleTick = function handleTick(state) {
     }
     var missile = state.projectiles[i];
     missile.age += 1;
-    switch (missile.target) {
-      case 'Ship':
-        {
-          var targetShip = null;
-          for (var _id in state.ships) {
-            if (_id != missile.playerID) {
-              targetShip = state.ships[_id];
-              break;
-            }
-          }
-          invariant(targetShip != null, 'Missile has no target ship');
-          var dist = subtract(targetShip.position, missile.position);
-          missile.theta = Math.atan2(dist.y, dist.x);
-          break;
-        }
-      case 'Missile':
-        {
-          var targetMissile = null;
-          var _iteratorNormalCompletion = true;
-          var _didIteratorError = false;
-          var _iteratorError = undefined;
-
-          try {
-            for (var _iterator = state.projectiles[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-              var projectile = _step.value;
-
-              if (projectile.type == 'missile' && projectile.playerID != missile.playerID) {
-                targetMissile = projectile;
-                break;
-              }
-            }
-          } catch (err) {
-            _didIteratorError = true;
-            _iteratorError = err;
-          } finally {
-            try {
-              if (!_iteratorNormalCompletion && _iterator.return) {
-                _iterator.return();
-              }
-            } finally {
-              if (_didIteratorError) {
-                throw _iteratorError;
-              }
-            }
-          }
-
-          if (targetMissile == null) {
-            break; // if no missile to target, just shoot wherever
-          }
-          var _dist = subtract(targetMissile.position, missile.position);
-          missile.theta = Math.atan2(_dist.y, _dist.x);
-          break;
-        }
-      case 'Planet':
-        {
-          var targetPlanet = state.planets[0];
-          var _dist2 = subtract(targetPlanet.position, missile.position);
-          missile.theta = Math.atan2(_dist2.y, _dist2.x);
-          break;
-        }
+    // target missle
+    var missileTarget = getEntityByID(state, missile.target);
+    if (missileTarget == null) {
+      break; // if no missile to target, just shoot wherever
     }
+    var dist = subtract(missileTarget.position, missile.position);
+    missile.theta = Math.atan2(dist.y, dist.x);
+
     if (missile.age > config.missile.thrustAt && missile.fuel.cur > 0) {
       missile.fuel.cur -= 1;
       missile.thrust = config.missile.thrust;
@@ -164,13 +114,13 @@ var handleTick = function handleTick(state) {
   // check on queued actions
   var nextState = state;
   var nextActionQueue = [];
-  var _iteratorNormalCompletion2 = true;
-  var _didIteratorError2 = false;
-  var _iteratorError2 = undefined;
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
 
   try {
-    for (var _iterator2 = state.actionQueue[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-      var action = _step2.value;
+    for (var _iterator = state.actionQueue[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var action = _step.value;
 
       if (action.time == state.time) {
         nextState = gameReducer(nextState, action);
@@ -181,16 +131,16 @@ var handleTick = function handleTick(state) {
 
     // projectiles colliding with sun
   } catch (err) {
-    _didIteratorError2 = true;
-    _iteratorError2 = err;
+    _didIteratorError = true;
+    _iteratorError = err;
   } finally {
     try {
-      if (!_iteratorNormalCompletion2 && _iterator2.return) {
-        _iterator2.return();
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
       }
     } finally {
-      if (_didIteratorError2) {
-        throw _iteratorError2;
+      if (_didIteratorError) {
+        throw _iteratorError;
       }
     }
   }

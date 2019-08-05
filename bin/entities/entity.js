@@ -1,5 +1,7 @@
 'use strict';
 
+var nextID = 0;
+
 var makeEntity = function makeEntity(mass, radius, position, velocity, theta) {
   return {
     mass: mass,
@@ -10,7 +12,8 @@ var makeEntity = function makeEntity(mass, radius, position, velocity, theta) {
     theta: theta || 0,
     thetaSpeed: 0,
     history: [],
-    future: []
+    future: [],
+    id: nextID++
   };
 };
 

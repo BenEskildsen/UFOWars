@@ -5,7 +5,8 @@ var _require = require('../config'),
 
 var _require2 = require('../selectors/selectors'),
     getClientPlayerID = _require2.getClientPlayerID,
-    getPlayerColor = _require2.getPlayerColor;
+    getPlayerColor = _require2.getPlayerColor,
+    getEntityByID = _require2.getEntityByID;
 
 var _require3 = require('../entities/ship'),
     renderShip = _require3.renderShip;
@@ -52,9 +53,22 @@ var render = function render(state, ctx) {
   ctx.save();
   ctx.scale(config.canvasWidth / config.width, config.canvasHeight / config.height);
 
-  // render ships
+  // render ships and their target
   for (var id in game.ships) {
     renderShip(state, ctx, id);
+
+    var ship = game.ships[id];
+    if (ship.target != null) {
+      var targetEntity = getEntityByID(game, ship.target);
+      ctx.save();
+      ctx.strokeStyle = getPlayerColor(state, ship.playerID);
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.arc(targetEntity.position.x, targetEntity.position.y, 50, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // render projectiles
@@ -142,6 +156,7 @@ var render = function render(state, ctx) {
       ctx.arc(explosion.position.x, explosion.position.y, explosion.radius, 0, Math.PI * 2);
       ctx.closePath();
       ctx.fill();
+      ctx.globalAlpha = 1;
     }
   } catch (err) {
     _didIteratorError3 = true;
