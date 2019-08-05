@@ -58,8 +58,8 @@ var render = function render(state, ctx) {
     renderShip(state, ctx, id);
 
     var ship = game.ships[id];
-    if (ship.target != null) {
-      var targetEntity = getEntityByID(game, ship.target);
+    var targetEntity = getEntityByID(game, ship.target);
+    if (targetEntity != null) {
       ctx.save();
       ctx.strokeStyle = getPlayerColor(state, ship.playerID);
       ctx.lineWidth = 10;

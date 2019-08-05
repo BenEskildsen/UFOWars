@@ -106,6 +106,15 @@ var gameReducer = function gameReducer(state, action) {
           target: nextTarget
         })))
       });
+    case 'DESTROY_MISSILE':
+      var id = action.id;
+
+      var nextMissiles = state.projectiles.filter(function (projectile) {
+        return projectile.id != id;
+      });
+      return _extends({}, state, {
+        projectiles: nextMissiles
+      });
   }
 
   return state;

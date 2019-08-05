@@ -108,6 +108,13 @@ const gameReducer = (state: GameState, action: Action): GameState => {
           },
         },
       }
+    case 'DESTROY_MISSILE':
+      const {id} = action;
+      const nextMissiles = state.projectiles.filter(projectile => projectile.id != id);
+      return {
+        ...state,
+        projectiles: nextMissiles,
+      }
   }
 
   return state;

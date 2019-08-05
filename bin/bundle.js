@@ -661,6 +661,15 @@ var gameReducer = function gameReducer(state, action) {
           target: nextTarget
         })))
       });
+    case 'DESTROY_MISSILE':
+      var id = action.id;
+
+      var nextMissiles = state.projectiles.filter(function (projectile) {
+        return projectile.id != id;
+      });
+      return _extends({}, state, {
+        projectiles: nextMissiles
+      });
   }
 
   return state;
@@ -1030,6 +1039,7 @@ var rootReducer = function rootReducer(state, action) {
     case 'FIRE_MISSILE':
     case 'MAKE_EXPLOSION':
     case 'SHIFT_TARGET':
+    case 'DESTROY_MISSILE':
       if (!state.game) return state;
       return _extends({}, state, {
         game: gameReducer(state.game, action)
@@ -1147,11 +1157,10 @@ var handleTick = function handleTick(state) {
     missile.age += 1;
     // target missle
     var missileTarget = getEntityByID(state, missile.target);
-    if (missileTarget == null) {
-      break; // if no missile to target, just shoot wherever
+    if (missileTarget != null) {
+      var dist = subtract(missileTarget.position, missile.position);
+      missile.theta = Math.atan2(dist.y, dist.x);
     }
-    var dist = subtract(missileTarget.position, missile.position);
-    missile.theta = Math.atan2(dist.y, dist.x);
 
     if (missile.age > config.missile.thrustAt && missile.fuel.cur > 0) {
       missile.fuel.cur -= 1;
@@ -1589,6 +1598,96 @@ var initCollisionSystem = function initCollisionSystem(store) {
     }
 
     var thisClientID = getClientPlayerID(state);
+    var thisPlayerIsHost = false;
+    for (var _id3 in state.game.ships) {
+      if (_id3 == thisClientID) {
+        thisPlayerIsHost = true;
+      }
+      break;
+    }
+
+    // missile collides with missile
+    var _iteratorNormalCompletion3 = true;
+    var _didIteratorError3 = false;
+    var _iteratorError3 = undefined;
+
+    try {
+      for (var _iterator3 = state.game.projectiles[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+        var projectile1 = _step3.value;
+        var _iteratorNormalCompletion4 = true;
+        var _didIteratorError4 = false;
+        var _iteratorError4 = undefined;
+
+        try {
+          for (var _iterator4 = state.game.projectiles[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+            var projectile2 = _step4.value;
+
+            if (projectile1 == projectile2) {
+              continue;
+            }
+            var _distVec3 = subtract(projectile1.position, projectile2.position);
+            var _dist3 = distance(_distVec3);
+            if (_dist3 < projectile1.radius * 2) {
+              var action1 = { type: 'DESTROY_MISSILE', id: projectile1.id, time: time };
+              var explosionAction1 = {
+                type: 'MAKE_EXPLOSION',
+                position: projectile1.position,
+                age: config.explosion.age,
+                rate: config.explosion.rate + random(),
+                color: ['yellow', 'orange', 'white'][floor(random() * 3)],
+                radius: round(random() * 5) - 10
+              };
+              var action2 = { type: 'DESTROY_MISSILE', id: projectile2.id, time: time };
+              var explosionAction2 = {
+                type: 'MAKE_EXPLOSION',
+                position: projectile2.position,
+                age: config.explosion.age,
+                rate: config.explosion.rate + random(),
+                color: ['yellow', 'orange', 'white'][floor(random() * 3)],
+                radius: round(random() * 5) - 10
+              };
+              if (thisPlayerIsHost) {
+                dispatch(action1);
+                dispatch(action2);
+                dispatch(explosionAction1);
+                dispatch(explosionAction2);
+                dispatchToServer(thisClientID, action1);
+                dispatchToServer(thisClientID, action2);
+                dispatchToServer(thisClientID, explosionAction1);
+                dispatchToServer(thisClientID, explosionAction2);
+              }
+            }
+          }
+        } catch (err) {
+          _didIteratorError4 = true;
+          _iteratorError4 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion4 && _iterator4.return) {
+              _iterator4.return();
+            }
+          } finally {
+            if (_didIteratorError4) {
+              throw _iteratorError4;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      _didIteratorError3 = true;
+      _iteratorError3 = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion3 && _iterator3.return) {
+          _iterator3.return();
+        }
+      } finally {
+        if (_didIteratorError3) {
+          throw _iteratorError3;
+        }
+      }
+    }
+
     if (gameOver && loserID == thisClientID) {
       var otherPlayerID = getOtherPlayerID(state);
 
@@ -1608,8 +1707,8 @@ var initCollisionSystem = function initCollisionSystem(store) {
       dispatchToServer(thisClientID, stopAction);
 
       // update scores
-      for (var _id3 in state.game.ships) {
-        var player = getPlayerByID(state, _id3);
+      for (var _id4 in state.game.ships) {
+        var player = getPlayerByID(state, _id4);
         if (player.id != loserID) {
           var scoreAction = {
             type: 'SET_PLAYER_SCORE',
@@ -1917,8 +2016,8 @@ var render = function render(state, ctx) {
     renderShip(state, ctx, id);
 
     var ship = game.ships[id];
-    if (ship.target != null) {
-      var targetEntity = getEntityByID(game, ship.target);
+    var targetEntity = getEntityByID(game, ship.target);
+    if (targetEntity != null) {
       ctx.save();
       ctx.strokeStyle = getPlayerColor(state, ship.playerID);
       ctx.lineWidth = 10;

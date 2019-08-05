@@ -74,11 +74,10 @@ const handleTick = (state: GameState): GameState => {
     missile.age += 1;
     // target missle
     let missileTarget = getEntityByID(state, missile.target);
-    if (missileTarget == null) {
-      break; // if no missile to target, just shoot wherever
+    if (missileTarget != null) {
+      const dist = subtract(missileTarget.position, missile.position);
+      missile.theta = Math.atan2(dist.y, dist.x);    
     }
-    const dist = subtract(missileTarget.position, missile.position);
-    missile.theta = Math.atan2(dist.y, dist.x);
 
     if (missile.age > config.missile.thrustAt && missile.fuel.cur > 0) {
       missile.fuel.cur -= 1;
