@@ -154,7 +154,7 @@ class Lobby extends React.Component {
         <Button
           label="Create Game"
           onClick={() => {
-            const createAction = {type: 'CREATE_GAME', playerID, gameID};
+            const createAction = {type: 'CREATE_GAME', playerID, gameID, mode: 'versus'};
             dispatchToServer(playerID, createAction);
             dispatch(createAction);
           }}

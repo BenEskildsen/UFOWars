@@ -34,7 +34,7 @@ eurecaServer.exports.dispatch = function (playerID, action) {
       );
       return; // this is kinda hacky *shrug emoji*
     case 'CREATE_GAME':
-      games[action.gameID] = {id: action.gameID, players: []};
+      games[action.gameID] = {id: action.gameID, players: [], mode: action.mode};
       // fallthrough
     case 'JOIN_GAME':
       clientToGame[playerID] = action.gameID; // assign player to game
@@ -63,7 +63,7 @@ const clientNames = {}; // PlayerID -> string
 
 const LOBBY_ID = 0;
 const clientToGame = {}; // PlayerID -> GameID
-const games = {}; // GameID -> {id: GameID, players: Array<PlayerID>}
+const games = {}; // GameID -> {id: GameID, players: Array<PlayerID>, mode: GameMode}
 let chat = ''
 
 // ------------------------------------------------------------------------------
@@ -96,6 +96,7 @@ eurecaServer.onConnect(function (socket) {
       type: 'CREATE_GAME',
       playerID: String(games[gameID].players[0]),
       gameID: gameID,
+      mode: games[gameID].mode
     });
     if (games[gameID].players.length > 1) {
       for (let i = 1; i < games[gameID].players.length; i++) {

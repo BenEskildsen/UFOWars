@@ -6,8 +6,23 @@ const {config} = require('../config');
 
 import type {GameState, PlayerID} from '../types';
 
-const initGameState = (players: Array<PlayerID>): GameState => {
+const initGameState = (players: Array<PlayerID>, mode: 'versus' | 'coop' | 'planet'): GameState => {
   const {ship, sun, width, height, earth} = config;
+  const planets = [];
+  if (mode == 'planet') {
+    planets.push(makeEntity(
+      earth.mass, earth.radius,
+      {x: width / 2, y: height / 2 - 1000}, // position
+      {x: -8.5, y: 0} // velocity
+    ));
+  }
+  if (mode == 'coop') {
+    planets.push(makeEntity(
+      earth.mass, earth.radius,
+      {x: width / 2, y: height / 2 - 1000}, // position
+      {x: -8.5, y: 0} // velocity
+    ));
+  }
   return {
     gamePlayers: players,
     time: 0,
@@ -31,13 +46,7 @@ const initGameState = (players: Array<PlayerID>): GameState => {
     },
 
     sun: makeEntity(sun.mass, sun.radius, {x: width / 2, y: height / 2}),
-    planets: [
-      // makeEntity(
-      //   earth.mass, earth.radius,
-      //   {x: width / 2, y: height / 2 - 1000}, // position
-      //   {x: -8.5, y: 0} // velocity
-      // ),
-    ],
+    planets,
     projectiles: [],
     explosions: [],
 

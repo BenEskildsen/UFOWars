@@ -9,7 +9,7 @@ import type {State, Action} from '../types';
 const lobbyReducer = (state: State, action: Action): State=> {
   switch (action.type) {
     case 'CREATE_GAME': {
-      const {gameID, playerID} = action;
+      const {gameID, playerID, mode} = action;
       for (const player of state.players) {
         if (player.id === playerID) {
           player.gameID = gameID;
@@ -19,7 +19,7 @@ const lobbyReducer = (state: State, action: Action): State=> {
         ...state,
         games: {
           ...state.games,
-          [gameID]: {id: gameID, players: [playerID], started: false},
+          [gameID]: {id: gameID, mode, players: [playerID], started: false},
         },
       };
     }
@@ -43,7 +43,7 @@ const lobbyReducer = (state: State, action: Action): State=> {
     }
     case 'START': {
       const {gameID} = action;
-      const {players} = state.games[gameID];
+      const {players, mode} = state.games[gameID];
       if (state.game != null && state.game.tickInterval != null) {
         return state;
       }
@@ -56,7 +56,7 @@ const lobbyReducer = (state: State, action: Action): State=> {
       return {
         ...state,
         game: {
-          ...initGameState(players),
+          ...initGameState(players, mode),
           tickInterval: setInterval(
             // HACK: store is only available via window
             () => store.dispatch({type: 'TICK'}),
