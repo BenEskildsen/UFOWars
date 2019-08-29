@@ -20,7 +20,8 @@ var lobbyReducer = function lobbyReducer(state, action) {
     case 'CREATE_GAME':
       {
         var gameID = action.gameID,
-            playerID = action.playerID;
+            playerID = action.playerID,
+            mode = action.mode;
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
@@ -49,7 +50,7 @@ var lobbyReducer = function lobbyReducer(state, action) {
         }
 
         return _extends({}, state, {
-          games: _extends({}, state.games, _defineProperty({}, gameID, { id: gameID, players: [playerID], started: false }))
+          games: _extends({}, state.games, _defineProperty({}, gameID, { id: gameID, mode: mode, players: [playerID], started: false }))
         });
       }
     case 'JOIN_GAME':
@@ -92,7 +93,9 @@ var lobbyReducer = function lobbyReducer(state, action) {
     case 'START':
       {
         var _gameID2 = action.gameID;
-        var players = state.games[_gameID2].players;
+        var _state$games$_gameID = state.games[_gameID2],
+            players = _state$games$_gameID.players,
+            _mode = _state$games$_gameID.mode;
 
         if (state.game != null && state.game.tickInterval != null) {
           return state;
@@ -103,7 +106,7 @@ var lobbyReducer = function lobbyReducer(state, action) {
           }, config.msPerTick);
         };
         return _extends({}, state, {
-          game: _extends({}, initGameState(players), {
+          game: _extends({}, initGameState(players, _mode), {
             tickInterval: setInterval(
             // HACK: store is only available via window
             function () {

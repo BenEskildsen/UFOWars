@@ -38,8 +38,8 @@ var config = {
     offset: 100
   },
   G: 0.75, // gravitational constant
-  maxHistorySize: 75,
-  maxFutureSize: 75,
+  maxHistorySize: 150,
+  maxFutureSize: 100,
   laserSize: 4, // deprecated in favor of laserSpeed
   laserSpeed: 20,
   maxProjectiles: 100,

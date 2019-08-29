@@ -68,7 +68,7 @@ var handleTick = function handleTick(state) {
   var masses = [sun].concat(_toConsumableArray(planets));
 
   for (var id in state.ships) {
-    updateShip(state, id, 1 /* one tick */);
+    updateShip(state, id, 1 /* one tick */, {});
     var ship = state.ships[id];
     ship.future = [];
     var futureShip = _extends({}, ship);

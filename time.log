@@ -51,3 +51,7 @@ Date  Time Started  Time Spent  Work Completed
                                 Missiles collide with each other
 
 8/26	   5:45pm     1hr         Add game modes
+
+8/28     9pm        1hr 30m     Make game modes selectable in the lobby
+                                Move rewind time into update ship
+                                Implement rewinding the planet

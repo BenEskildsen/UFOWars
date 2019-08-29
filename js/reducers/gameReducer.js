@@ -14,18 +14,11 @@ const gameReducer = (state: GameState, action: Action): GameState => {
       // re-sync if necessary
       if (action.time < state.time) {
         const timeDiff = state.time - action.time;
-        // rewind history
-        let prevPos = null;
-        for (let i = 0; i < timeDiff; i++) {
-          prevPos = state.ships[action.playerID].history.pop();
-        }
-        const ship: Ship = state.ships[action.playerID];
-        state.ships[action.playerID] = {
-          ...ship,
-          ...prevPos,
-          thetaSpeed: action.thetaSpeed,
-        };
-        updateShip(state, action.playerID, timeDiff);
+        updateShip(
+          state, action.playerID,
+          timeDiff, {thetaSpeed: action.thetaSpeed},
+          true, // should rewind history
+        );
         return state;
       } else if (action.time > state.time) {
         return {
@@ -49,19 +42,11 @@ const gameReducer = (state: GameState, action: Action): GameState => {
       // re-sync if necessary
       if (action.time < state.time) {
         const timeDiff = state.time - action.time;
-        // rewind history
-        let prevPos = null;
-        for (let i = 0; i < timeDiff; i++) {
-          prevPos = state.ships[action.playerID].history.pop();
-        }
-        const ship: Ship = state.ships[action.playerID];
-        state.ships[action.playerID] = {
-          ...ship,
-          ...prevPos,
-          thrust: action.thrust,
-          future: [],
-        }
-        updateShip(state, action.playerID, timeDiff);
+        updateShip(
+          state, action.playerID,
+          timeDiff, {thrust: action.thrust, future: []},
+          true, // should rewind history
+        );
         return state;
       } else if (action.time > state.time) {
         return {

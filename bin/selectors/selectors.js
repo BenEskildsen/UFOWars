@@ -141,7 +141,6 @@ var getNextTarget = function getNextTarget(state, playerID) {
   var currentShip = ships[playerID];
   var currentTarget = currentShip.target;
   var currentIndex = entityIDs.indexOf(currentTarget);
-  console.log('currentIndex ', currentIndex);
 
   var nextIndex = (currentIndex + 1) % entities.length;
   while (entities[nextIndex].playerID == playerID) {

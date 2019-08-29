@@ -70,7 +70,6 @@ const getNextTarget = (state: GameState, playerID: PlayerID): Entity => {
   const currentShip = ships[playerID];
   const currentTarget = currentShip.target;
   const currentIndex = entityIDs.indexOf(currentTarget);
-  console.log('currentIndex ', currentIndex);
 
   let nextIndex = (currentIndex + 1) % entities.length;
   while (entities[nextIndex].playerID == playerID) {

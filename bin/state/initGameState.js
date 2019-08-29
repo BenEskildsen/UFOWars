@@ -11,7 +11,7 @@ var _require2 = require('../entities/ship'),
 var _require3 = require('../config'),
     config = _require3.config;
 
-var initGameState = function initGameState(players) {
+var initGameState = function initGameState(players, mode) {
   var _ships;
 
   var ship = config.ship,
@@ -20,6 +20,17 @@ var initGameState = function initGameState(players) {
       height = config.height,
       earth = config.earth;
 
+  var planets = [];
+  if (mode == 'planet') {
+    planets.push(makeEntity(earth.mass, earth.radius, { x: width / 2, y: height / 2 - 1000 }, // position
+    { x: -8.5, y: 0 // velocity
+    }));
+  }
+  if (mode == 'coop') {
+    planets.push(makeEntity(earth.mass, earth.radius, { x: width / 2, y: height / 2 - 1000 }, // position
+    { x: -8.5, y: 0 // velocity
+    }));
+  }
   return {
     gamePlayers: players,
     time: 0,
@@ -37,13 +48,7 @@ var initGameState = function initGameState(players) {
     )), _ships),
 
     sun: makeEntity(sun.mass, sun.radius, { x: width / 2, y: height / 2 }),
-    planets: [
-      // makeEntity(
-      //   earth.mass, earth.radius,
-      //   {x: width / 2, y: height / 2 - 1000}, // position
-      //   {x: -8.5, y: 0} // velocity
-      // ),
-    ],
+    planets: planets,
     projectiles: [],
     explosions: [],
 

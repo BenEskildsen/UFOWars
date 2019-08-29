@@ -34,6 +34,7 @@ var renderShip = function renderShip(state, ctx, id) {
   var ship = game.ships[id];
   var color = getPlayerColor(state, ship.playerID);
 
+  // ship
   ctx.save();
   ctx.fillStyle = color;
   ctx.beginPath();
@@ -45,6 +46,7 @@ var renderShip = function renderShip(state, ctx, id) {
   ctx.closePath();
   ctx.fill();
 
+  // flames
   if (ship.thrust > 0) {
     ctx.fillStyle = 'orange';
     ctx.beginPath();
@@ -56,8 +58,12 @@ var renderShip = function renderShip(state, ctx, id) {
   }
   ctx.restore();
 
+  // path
   ctx.beginPath();
   ctx.strokeStyle = color;
+  // scale line width with screensize
+  var scale = config.width / config.canvasWidth;
+  ctx.lineWidth = scale;
   if (ship.history.length > 0) {
     ctx.moveTo(ship.history[0].position.x, ship.history[0].position.y);
   }
@@ -97,7 +103,7 @@ var renderShip = function renderShip(state, ctx, id) {
     for (var _iterator2 = ship.future[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
       var futureShip = _step2.value;
 
-      ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
+      ctx.fillRect(futureShip.position.x, futureShip.position.y, scale / 1.5, scale / 1.5);
     }
   } catch (err) {
     _didIteratorError2 = true;

@@ -39,8 +39,8 @@ var config = {
     offset: 100
   },
   G: 0.75, // gravitational constant
-  maxHistorySize: 75,
-  maxFutureSize: 75,
+  maxHistorySize: 150,
+  maxFutureSize: 100,
   laserSize: 4, // deprecated in favor of laserSpeed
   laserSpeed: 20,
   maxProjectiles: 100,
@@ -206,7 +206,7 @@ module.exports = {
   renderProjectile: renderProjectile,
   renderLaser: renderLaser
 };
-},{"../config":1,"../selectors/selectors":16,"../utils/vectors":33,"./entity":2}],5:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":16,"../utils/vectors":34,"./entity":2}],5:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -243,6 +243,7 @@ var renderShip = function renderShip(state, ctx, id) {
   var ship = game.ships[id];
   var color = getPlayerColor(state, ship.playerID);
 
+  // ship
   ctx.save();
   ctx.fillStyle = color;
   ctx.beginPath();
@@ -254,6 +255,7 @@ var renderShip = function renderShip(state, ctx, id) {
   ctx.closePath();
   ctx.fill();
 
+  // flames
   if (ship.thrust > 0) {
     ctx.fillStyle = 'orange';
     ctx.beginPath();
@@ -265,8 +267,12 @@ var renderShip = function renderShip(state, ctx, id) {
   }
   ctx.restore();
 
+  // path
   ctx.beginPath();
   ctx.strokeStyle = color;
+  // scale line width with screensize
+  var scale = config.width / config.canvasWidth;
+  ctx.lineWidth = scale;
   if (ship.history.length > 0) {
     ctx.moveTo(ship.history[0].position.x, ship.history[0].position.y);
   }
@@ -306,7 +312,7 @@ var renderShip = function renderShip(state, ctx, id) {
     for (var _iterator2 = ship.future[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
       var futureShip = _step2.value;
 
-      ctx.fillRect(futureShip.position.x, futureShip.position.y, 2, 2);
+      ctx.fillRect(futureShip.position.x, futureShip.position.y, scale / 1.5, scale / 1.5);
     }
   } catch (err) {
     _didIteratorError2 = true;
@@ -378,7 +384,7 @@ store.subscribe(function () {
 });
 
 ReactDOM.render(React.createElement(Game, { store: store }), document.getElementById('container'));
-},{"./reducers/rootReducer":14,"./systems/collisionSystem":19,"./systems/keyboardControlsSystem":20,"./systems/playerReadySystem":21,"./systems/renderSystem":22,"./ui/Game.react":26,"./utils/clientToServer":28,"react":57,"react-dom":52,"redux":65}],7:[function(require,module,exports){
+},{"./reducers/rootReducer":14,"./systems/collisionSystem":19,"./systems/keyboardControlsSystem":20,"./systems/playerReadySystem":21,"./systems/renderSystem":22,"./ui/Game.react":26,"./utils/clientToServer":29,"react":58,"react-dom":53,"redux":66}],7:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -552,7 +558,7 @@ var fireProjectileReducer = function fireProjectileReducer(state, action) {
 };
 
 module.exports = { fireProjectileReducer: fireProjectileReducer };
-},{"../config":1,"../entities/projectile":4,"../utils/queue":31,"../utils/vectors":33}],10:[function(require,module,exports){
+},{"../config":1,"../entities/projectile":4,"../utils/queue":32,"../utils/vectors":34}],10:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -584,16 +590,8 @@ var gameReducer = function gameReducer(state, action) {
         // re-sync if necessary
         if (action.time < state.time) {
           var timeDiff = state.time - action.time;
-          // rewind history
-          var prevPos = null;
-          for (var i = 0; i < timeDiff; i++) {
-            prevPos = state.ships[action.playerID].history.pop();
-          }
-          var ship = state.ships[action.playerID];
-          state.ships[action.playerID] = _extends({}, ship, prevPos, {
-            thetaSpeed: action.thetaSpeed
-          });
-          updateShip(state, action.playerID, timeDiff);
+          updateShip(state, action.playerID, timeDiff, { thetaSpeed: action.thetaSpeed }, true // should rewind history
+          );
           return state;
         } else if (action.time > state.time) {
           return _extends({}, state, {
@@ -612,17 +610,8 @@ var gameReducer = function gameReducer(state, action) {
         // re-sync if necessary
         if (action.time < state.time) {
           var _timeDiff = state.time - action.time;
-          // rewind history
-          var _prevPos = null;
-          for (var _i = 0; _i < _timeDiff; _i++) {
-            _prevPos = state.ships[action.playerID].history.pop();
-          }
-          var _ship = state.ships[action.playerID];
-          state.ships[action.playerID] = _extends({}, _ship, _prevPos, {
-            thrust: action.thrust,
-            future: []
-          });
-          updateShip(state, action.playerID, _timeDiff);
+          updateShip(state, action.playerID, _timeDiff, { thrust: action.thrust, future: [] }, true // should rewind history
+          );
           return state;
         } else if (action.time > state.time) {
           return _extends({}, state, {
@@ -676,7 +665,7 @@ var gameReducer = function gameReducer(state, action) {
 };
 
 module.exports = { gameReducer: gameReducer };
-},{"../config":1,"../entities/explosion":3,"../selectors/selectors":16,"../utils/updateEntities":32,"./fireProjectileReducer":9}],11:[function(require,module,exports){
+},{"../config":1,"../entities/explosion":3,"../selectors/selectors":16,"../utils/updateEntities":33,"./fireProjectileReducer":9}],11:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -699,7 +688,8 @@ var lobbyReducer = function lobbyReducer(state, action) {
     case 'CREATE_GAME':
       {
         var gameID = action.gameID,
-            playerID = action.playerID;
+            playerID = action.playerID,
+            mode = action.mode;
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
@@ -728,7 +718,7 @@ var lobbyReducer = function lobbyReducer(state, action) {
         }
 
         return _extends({}, state, {
-          games: _extends({}, state.games, _defineProperty({}, gameID, { id: gameID, players: [playerID], started: false }))
+          games: _extends({}, state.games, _defineProperty({}, gameID, { id: gameID, mode: mode, players: [playerID], started: false }))
         });
       }
     case 'JOIN_GAME':
@@ -771,7 +761,9 @@ var lobbyReducer = function lobbyReducer(state, action) {
     case 'START':
       {
         var _gameID2 = action.gameID;
-        var players = state.games[_gameID2].players;
+        var _state$games$_gameID = state.games[_gameID2],
+            players = _state$games$_gameID.players,
+            _mode = _state$games$_gameID.mode;
 
         if (state.game != null && state.game.tickInterval != null) {
           return state;
@@ -782,7 +774,7 @@ var lobbyReducer = function lobbyReducer(state, action) {
           }, config.msPerTick);
         };
         return _extends({}, state, {
-          game: _extends({}, initGameState(players), {
+          game: _extends({}, initGameState(players, _mode), {
             tickInterval: setInterval(
             // HACK: store is only available via window
             function () {
@@ -856,7 +848,7 @@ var modalReducer = function modalReducer(state, action) {
 };
 
 module.exports = { modalReducer: modalReducer };
-},{"../selectors/selectors":16,"../utils/clientToServer":28}],13:[function(require,module,exports){
+},{"../selectors/selectors":16,"../utils/clientToServer":29}],13:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1128,7 +1120,7 @@ var handleTick = function handleTick(state) {
   var masses = [sun].concat(_toConsumableArray(planets));
 
   for (var id in state.ships) {
-    updateShip(state, id, 1 /* one tick */);
+    updateShip(state, id, 1 /* one tick */, {});
     var ship = state.ships[id];
     ship.future = [];
     var futureShip = _extends({}, ship);
@@ -1220,7 +1212,7 @@ var handleTick = function handleTick(state) {
 };
 
 module.exports = { tickReducer: tickReducer };
-},{"../config":1,"../selectors/selectors":16,"../utils/errors":29,"../utils/gravity":30,"../utils/queue":31,"../utils/updateEntities":32,"../utils/vectors":33,"./gameReducer":10}],16:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":16,"../utils/errors":30,"../utils/gravity":31,"../utils/queue":32,"../utils/updateEntities":33,"../utils/vectors":34,"./gameReducer":10}],16:[function(require,module,exports){
 'use strict';
 
 var _require = require('../utils/errors'),
@@ -1364,7 +1356,6 @@ var getNextTarget = function getNextTarget(state, playerID) {
   var currentShip = ships[playerID];
   var currentTarget = currentShip.target;
   var currentIndex = entityIDs.indexOf(currentTarget);
-  console.log('currentIndex ', currentIndex);
 
   var nextIndex = (currentIndex + 1) % entities.length;
   while (entities[nextIndex].playerID == playerID) {
@@ -1402,7 +1393,7 @@ module.exports = {
   getNextTarget: getNextTarget,
   getEntityByID: getEntityByID
 };
-},{"../config":1,"../utils/errors":29}],17:[function(require,module,exports){
+},{"../config":1,"../utils/errors":30}],17:[function(require,module,exports){
 'use strict';
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -1416,7 +1407,7 @@ var _require2 = require('../entities/ship'),
 var _require3 = require('../config'),
     config = _require3.config;
 
-var initGameState = function initGameState(players) {
+var initGameState = function initGameState(players, mode) {
   var _ships;
 
   var ship = config.ship,
@@ -1425,6 +1416,17 @@ var initGameState = function initGameState(players) {
       height = config.height,
       earth = config.earth;
 
+  var planets = [];
+  if (mode == 'planet') {
+    planets.push(makeEntity(earth.mass, earth.radius, { x: width / 2, y: height / 2 - 1000 }, // position
+    { x: -8.5, y: 0 // velocity
+    }));
+  }
+  if (mode == 'coop') {
+    planets.push(makeEntity(earth.mass, earth.radius, { x: width / 2, y: height / 2 - 1000 }, // position
+    { x: -8.5, y: 0 // velocity
+    }));
+  }
   return {
     gamePlayers: players,
     time: 0,
@@ -1442,13 +1444,7 @@ var initGameState = function initGameState(players) {
     )), _ships),
 
     sun: makeEntity(sun.mass, sun.radius, { x: width / 2, y: height / 2 }),
-    planets: [
-      // makeEntity(
-      //   earth.mass, earth.radius,
-      //   {x: width / 2, y: height / 2 - 1000}, // position
-      //   {x: -8.5, y: 0} // velocity
-      // ),
-    ],
+    planets: planets,
     projectiles: [],
     explosions: [],
 
@@ -1755,7 +1751,7 @@ var initCollisionSystem = function initCollisionSystem(store) {
 };
 
 module.exports = { initCollisionSystem: initCollisionSystem };
-},{"../config":1,"../selectors/selectors":16,"../ui/Button.react":23,"../utils/clientToServer":28,"../utils/vectors":33,"React":36}],20:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":16,"../ui/Button.react":23,"../utils/clientToServer":29,"../utils/vectors":34,"React":37}],20:[function(require,module,exports){
 'use strict';
 
 var _require = require('../config'),
@@ -1902,7 +1898,7 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
 };
 
 module.exports = { initKeyboardControlsSystem: initKeyboardControlsSystem };
-},{"../config":1,"../selectors/selectors":16,"../utils/clientToServer":28}],21:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":16,"../utils/clientToServer":29}],21:[function(require,module,exports){
 'use strict';
 
 var _require = require('../selectors/selectors'),
@@ -1962,7 +1958,7 @@ var initPlayerReadySystem = function initPlayerReadySystem(store) {
 };
 
 module.exports = { initPlayerReadySystem: initPlayerReadySystem };
-},{"../selectors/selectors":16,"../utils/clientToServer":28}],22:[function(require,module,exports){
+},{"../selectors/selectors":16,"../utils/clientToServer":29}],22:[function(require,module,exports){
 'use strict';
 
 var _require = require('../config'),
@@ -2194,7 +2190,7 @@ var Button = function (_React$Component) {
 }(React.Component);
 
 module.exports = Button;
-},{"React":36}],24:[function(require,module,exports){
+},{"React":37}],24:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2240,7 +2236,7 @@ var Canvas = function (_React$Component) {
 ;
 
 module.exports = Canvas;
-},{"React":36}],25:[function(require,module,exports){
+},{"React":37}],25:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2336,7 +2332,7 @@ var Chat = function (_React$Component) {
 }(React.Component);
 
 module.exports = Chat;
-},{"../selectors/selectors":16,"../utils/clientToServer":28,"./Button.react":23,"React":36}],26:[function(require,module,exports){
+},{"../selectors/selectors":16,"../utils/clientToServer":29,"./Button.react":23,"React":37}],26:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2489,7 +2485,7 @@ var Game = function (_React$Component) {
 ;
 
 module.exports = Game;
-},{"../config":1,"../selectors/selectors":16,"../utils/clientToServer":28,"./Button.react":23,"./Canvas.react":24,"./Chat.react":25,"./Lobby.react":27,"React":36}],27:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":16,"../utils/clientToServer":29,"./Button.react":23,"./Canvas.react":24,"./Chat.react":25,"./Lobby.react":27,"React":37}],27:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2516,10 +2512,11 @@ var _require2 = require('../utils/clientToServer'),
 
 var Button = require('./Button.react');
 var Chat = require('./Chat.react');
+var RadioPicker = require('./RadioPicker.react');
 
 /**
  * props: {store}
- * state: {...state.getState()}
+ * state: {...state.getState(), selectedMode: 'coop' | 'versus' | 'planet'}
  */
 
 var Lobby = function (_React$Component) {
@@ -2533,7 +2530,7 @@ var Lobby = function (_React$Component) {
     props.store.subscribe(function () {
       _this.setState(_extends({}, _this.props.store.getState()));
     });
-    _this.state = _extends({}, _this.props.store.getState());
+    _this.state = _extends({}, _this.props.store.getState(), { selectedMode: 'versus' });
     return _this;
   }
 
@@ -2674,10 +2671,13 @@ var Lobby = function (_React$Component) {
   }, {
     key: 'createButton',
     value: function createButton() {
+      var _this2 = this;
+
       var gameID = getNextGameID(this.state);
       var playerID = getClientPlayerID(this.state);
       var clientGame = getClientGame(this.state);
       var dispatch = this.props.store.dispatch;
+      var selectedMode = this.state.selectedMode;
 
       return React.createElement(
         'div',
@@ -2685,11 +2685,19 @@ var Lobby = function (_React$Component) {
         React.createElement(Button, {
           label: 'Create Game',
           onClick: function onClick() {
-            var createAction = { type: 'CREATE_GAME', playerID: playerID, gameID: gameID };
+            var createAction = { type: 'CREATE_GAME', playerID: playerID, gameID: gameID, mode: selectedMode };
             dispatchToServer(playerID, createAction);
             dispatch(createAction);
           },
           disabled: clientGame.id != 0
+        }),
+        'Game Mode',
+        React.createElement(RadioPicker, {
+          options: ['versus', 'coop'],
+          selected: this.state.selectedMode,
+          onChange: function onChange(option) {
+            return _this2.setState({ selectedMode: option });
+          }
         })
       );
     }
@@ -2719,7 +2727,94 @@ var Lobby = function (_React$Component) {
 }(React.Component);
 
 module.exports = Lobby;
-},{"../selectors/selectors":16,"../utils/clientToServer":28,"./Button.react":23,"./Chat.react":25,"React":36}],28:[function(require,module,exports){
+},{"../selectors/selectors":16,"../utils/clientToServer":29,"./Button.react":23,"./Chat.react":25,"./RadioPicker.react":28,"React":37}],28:[function(require,module,exports){
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var React = require('React');
+
+// props:
+// options: Array<string>
+// selected: string
+// onChange: (option) => void
+
+var RadioPicker = function (_React$Component) {
+  _inherits(RadioPicker, _React$Component);
+
+  function RadioPicker() {
+    _classCallCheck(this, RadioPicker);
+
+    return _possibleConstructorReturn(this, (RadioPicker.__proto__ || Object.getPrototypeOf(RadioPicker)).apply(this, arguments));
+  }
+
+  _createClass(RadioPicker, [{
+    key: "render",
+    value: function render() {
+      var _this2 = this;
+
+      var optionToggles = [];
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        var _loop = function _loop() {
+          var option = _step.value;
+
+          optionToggles.push(React.createElement(
+            "div",
+            { className: "radioOption" },
+            option,
+            React.createElement("input", { type: "radio",
+              className: "radioCheckbox",
+              key: 'radioOption_' + option,
+              value: option,
+              checked: option === _this2.props.selected,
+              onChange: function onChange() {
+                return _this2.props.onChange(option);
+              }
+            })
+          ));
+        };
+
+        for (var _iterator = this.props.options[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          _loop();
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
+
+      return React.createElement(
+        "div",
+        null,
+        optionToggles
+      );
+    }
+  }]);
+
+  return RadioPicker;
+}(React.Component);
+
+module.exports = RadioPicker;
+},{"React":37}],29:[function(require,module,exports){
 "use strict";
 
 /**
@@ -2747,7 +2842,7 @@ module.exports = {
   setupClientToServer: setupClientToServer,
   dispatchToServer: dispatchToServer
 };
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 "use strict";
 
 var invariant = function invariant(condition, message) {
@@ -2757,7 +2852,7 @@ var invariant = function invariant(condition, message) {
 };
 
 module.exports = { invariant: invariant };
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2856,7 +2951,7 @@ module.exports = {
   computeAccel: computeAccel,
   computeNextEntity: computeNextEntity
 };
-},{"../config":1,"../utils/vectors":33}],31:[function(require,module,exports){
+},{"../config":1,"../utils/vectors":34}],32:[function(require,module,exports){
 "use strict";
 
 var queueAdd = function queueAdd(queue, item, maxLength) {
@@ -2867,7 +2962,7 @@ var queueAdd = function queueAdd(queue, item, maxLength) {
 };
 
 module.exports = { queueAdd: queueAdd };
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2883,16 +2978,36 @@ var _require2 = require('../utils/queue'),
 var _require3 = require('../config'),
     config = _require3.config;
 
-var updateShip = function updateShip(state, id, numTicks) {
-  var sun = state.sun,
-      planets = state.planets;
+var updateShip = function updateShip(state, id, numTicks, nextShipProps, shouldRewindHistory) {
 
-  var masses = [sun].concat(_toConsumableArray(planets));
-  for (var i = 0; i < numTicks; i++) {
+  // rewind history
+  var rewoundPlanets = [];
+  if (shouldRewindHistory) {
+    // rewind ship
+    var prevShipPos = null;
+    for (var i = 0; i < numTicks; i++) {
+      prevShipPos = state.ships[id].history.pop();
+    }
     var ship = state.ships[id];
-    var history = ship.history;
-    queueAdd(history, ship, config.maxHistorySize);
-    state.ships[id] = _extends({}, ship, computeNextEntity(masses, ship, ship.thrust), {
+    state.ships[id] = _extends({}, ship, prevShipPos, nextShipProps);
+    // rewind planets
+    for (var j = 0; j < state.planets.length; j++) {
+      var planet = state.planets[j];
+      var prevPlanetPos = planet.history[planet.history.length - numTicks];
+      rewoundPlanets.push(_extends({}, planet, prevPlanetPos));
+    }
+  } else {
+    rewoundPlanets = state.planets;
+  }
+
+  var sun = state.sun;
+
+  var masses = [sun].concat(_toConsumableArray(rewoundPlanets));
+  for (var _i = 0; _i < numTicks; _i++) {
+    var _ship = state.ships[id];
+    var history = _ship.history;
+    queueAdd(history, _ship, config.maxHistorySize);
+    state.ships[id] = _extends({}, _ship, computeNextEntity(masses, _ship, _ship.thrust), {
       history: history
     });
   }
@@ -2902,7 +3017,7 @@ var updateProjectile = function updateProjectile(state, j, numTicks) {
   var sun = state.sun,
       planets = state.planets;
 
-  var masses = [sun].concat(_toConsumableArray(planets));
+  var masses = [sun]; // HACK: missiles don't care about gravity of anything other than the sun
   for (var i = 0; i < numTicks; i++) {
     var projectile = state.projectiles[j];
     var history = projectile.history;
@@ -2917,7 +3032,7 @@ module.exports = {
   updateShip: updateShip,
   updateProjectile: updateProjectile
 };
-},{"../config":1,"../utils/gravity":30,"../utils/queue":31}],33:[function(require,module,exports){
+},{"../config":1,"../utils/gravity":31,"../utils/queue":32}],34:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2993,7 +3108,7 @@ module.exports = {
   makeVector: makeVector,
   distance: distance
 };
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 (function (process){
 /** @license React v16.8.6
  * react.development.js
@@ -4898,7 +5013,7 @@ module.exports = react;
 }
 
 }).call(this,require('_process'))
-},{"_process":75,"object-assign":49,"prop-types/checkPropTypes":37}],35:[function(require,module,exports){
+},{"_process":76,"object-assign":50,"prop-types/checkPropTypes":38}],36:[function(require,module,exports){
 /** @license React v16.8.6
  * react.production.min.js
  *
@@ -4925,7 +5040,7 @@ b,d){return W().useImperativeHandle(a,b,d)},useDebugValue:function(){},useLayout
 b){void 0!==b.ref&&(h=b.ref,f=J.current);void 0!==b.key&&(g=""+b.key);var l=void 0;a.type&&a.type.defaultProps&&(l=a.type.defaultProps);for(c in b)K.call(b,c)&&!L.hasOwnProperty(c)&&(e[c]=void 0===b[c]&&void 0!==l?l[c]:b[c])}c=arguments.length-2;if(1===c)e.children=d;else if(1<c){l=Array(c);for(var m=0;m<c;m++)l[m]=arguments[m+2];e.children=l}return{$$typeof:p,type:a.type,key:g,ref:h,props:e,_owner:f}},createFactory:function(a){var b=M.bind(null,a);b.type=a;return b},isValidElement:N,version:"16.8.6",
 unstable_ConcurrentMode:x,unstable_Profiler:u,__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{ReactCurrentDispatcher:I,ReactCurrentOwner:J,assign:k}},Y={default:X},Z=Y&&X||Y;module.exports=Z.default||Z;
 
-},{"object-assign":49}],36:[function(require,module,exports){
+},{"object-assign":50}],37:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -4936,7 +5051,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react.development.js":34,"./cjs/react.production.min.js":35,"_process":75}],37:[function(require,module,exports){
+},{"./cjs/react.development.js":35,"./cjs/react.production.min.js":36,"_process":76}],38:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -5042,7 +5157,7 @@ checkPropTypes.resetWarningCache = function() {
 module.exports = checkPropTypes;
 
 }).call(this,require('_process'))
-},{"./lib/ReactPropTypesSecret":38,"_process":75}],38:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":39,"_process":76}],39:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  *
@@ -5056,7 +5171,7 @@ var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 
 module.exports = ReactPropTypesSecret;
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 var root = require('./_root');
 
 /** Built-in value references. */
@@ -5064,7 +5179,7 @@ var Symbol = root.Symbol;
 
 module.exports = Symbol;
 
-},{"./_root":46}],40:[function(require,module,exports){
+},{"./_root":47}],41:[function(require,module,exports){
 var Symbol = require('./_Symbol'),
     getRawTag = require('./_getRawTag'),
     objectToString = require('./_objectToString');
@@ -5094,7 +5209,7 @@ function baseGetTag(value) {
 
 module.exports = baseGetTag;
 
-},{"./_Symbol":39,"./_getRawTag":43,"./_objectToString":44}],41:[function(require,module,exports){
+},{"./_Symbol":40,"./_getRawTag":44,"./_objectToString":45}],42:[function(require,module,exports){
 (function (global){
 /** Detect free variable `global` from Node.js. */
 var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
@@ -5102,7 +5217,7 @@ var freeGlobal = typeof global == 'object' && global && global.Object === Object
 module.exports = freeGlobal;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 var overArg = require('./_overArg');
 
 /** Built-in value references. */
@@ -5110,7 +5225,7 @@ var getPrototype = overArg(Object.getPrototypeOf, Object);
 
 module.exports = getPrototype;
 
-},{"./_overArg":45}],43:[function(require,module,exports){
+},{"./_overArg":46}],44:[function(require,module,exports){
 var Symbol = require('./_Symbol');
 
 /** Used for built-in method references. */
@@ -5158,7 +5273,7 @@ function getRawTag(value) {
 
 module.exports = getRawTag;
 
-},{"./_Symbol":39}],44:[function(require,module,exports){
+},{"./_Symbol":40}],45:[function(require,module,exports){
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
 
@@ -5182,7 +5297,7 @@ function objectToString(value) {
 
 module.exports = objectToString;
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 /**
  * Creates a unary function that invokes `func` with its argument transformed.
  *
@@ -5199,7 +5314,7 @@ function overArg(func, transform) {
 
 module.exports = overArg;
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 var freeGlobal = require('./_freeGlobal');
 
 /** Detect free variable `self`. */
@@ -5210,7 +5325,7 @@ var root = freeGlobal || freeSelf || Function('return this')();
 
 module.exports = root;
 
-},{"./_freeGlobal":41}],47:[function(require,module,exports){
+},{"./_freeGlobal":42}],48:[function(require,module,exports){
 /**
  * Checks if `value` is object-like. A value is object-like if it's not `null`
  * and has a `typeof` result of "object".
@@ -5241,7 +5356,7 @@ function isObjectLike(value) {
 
 module.exports = isObjectLike;
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 var baseGetTag = require('./_baseGetTag'),
     getPrototype = require('./_getPrototype'),
     isObjectLike = require('./isObjectLike');
@@ -5305,7 +5420,7 @@ function isPlainObject(value) {
 
 module.exports = isPlainObject;
 
-},{"./_baseGetTag":40,"./_getPrototype":42,"./isObjectLike":47}],49:[function(require,module,exports){
+},{"./_baseGetTag":41,"./_getPrototype":43,"./isObjectLike":48}],50:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -5397,7 +5512,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],50:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 (function (process){
 /** @license React v16.8.6
  * react-dom.development.js
@@ -26679,7 +26794,7 @@ module.exports = reactDom;
 }
 
 }).call(this,require('_process'))
-},{"_process":75,"object-assign":49,"prop-types/checkPropTypes":53,"react":57,"scheduler":71,"scheduler/tracing":72}],51:[function(require,module,exports){
+},{"_process":76,"object-assign":50,"prop-types/checkPropTypes":54,"react":58,"scheduler":72,"scheduler/tracing":73}],52:[function(require,module,exports){
 /** @license React v16.8.6
  * react-dom.production.min.js
  *
@@ -26950,7 +27065,7 @@ x("38"):void 0;return Si(a,b,c,!1,d)},unmountComponentAtNode:function(a){Qi(a)?v
 X;X=!0;try{ki(a)}finally{(X=b)||W||Yh(1073741823,!1)}},__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{Events:[Ia,Ja,Ka,Ba.injectEventPluginsByName,pa,Qa,function(a){ya(a,Pa)},Eb,Fb,Dd,Da]}};function Ui(a,b){Qi(a)?void 0:x("299","unstable_createRoot");return new Pi(a,!0,null!=b&&!0===b.hydrate)}
 (function(a){var b=a.findFiberByHostInstance;return Te(n({},a,{overrideProps:null,currentDispatcherRef:Tb.ReactCurrentDispatcher,findHostInstanceByFiber:function(a){a=hd(a);return null===a?null:a.stateNode},findFiberByHostInstance:function(a){return b?b(a):null}}))})({findFiberByHostInstance:Ha,bundleType:0,version:"16.8.6",rendererPackageName:"react-dom"});var Wi={default:Vi},Xi=Wi&&Vi||Wi;module.exports=Xi.default||Xi;
 
-},{"object-assign":49,"react":57,"scheduler":71}],52:[function(require,module,exports){
+},{"object-assign":50,"react":58,"scheduler":72}],53:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -26992,21 +27107,21 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":50,"./cjs/react-dom.production.min.js":51,"_process":75}],53:[function(require,module,exports){
-arguments[4][37][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":54,"_process":75,"dup":37}],54:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":51,"./cjs/react-dom.production.min.js":52,"_process":76}],54:[function(require,module,exports){
 arguments[4][38][0].apply(exports,arguments)
-},{"dup":38}],55:[function(require,module,exports){
-arguments[4][34][0].apply(exports,arguments)
-},{"_process":75,"dup":34,"object-assign":49,"prop-types/checkPropTypes":58}],56:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":55,"_process":76,"dup":38}],55:[function(require,module,exports){
+arguments[4][39][0].apply(exports,arguments)
+},{"dup":39}],56:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
-},{"dup":35,"object-assign":49}],57:[function(require,module,exports){
+},{"_process":76,"dup":35,"object-assign":50,"prop-types/checkPropTypes":59}],57:[function(require,module,exports){
 arguments[4][36][0].apply(exports,arguments)
-},{"./cjs/react.development.js":55,"./cjs/react.production.min.js":56,"_process":75,"dup":36}],58:[function(require,module,exports){
+},{"dup":36,"object-assign":50}],58:[function(require,module,exports){
 arguments[4][37][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":59,"_process":75,"dup":37}],59:[function(require,module,exports){
+},{"./cjs/react.development.js":56,"./cjs/react.production.min.js":57,"_process":76,"dup":37}],59:[function(require,module,exports){
 arguments[4][38][0].apply(exports,arguments)
-},{"dup":38}],60:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":60,"_process":76,"dup":38}],60:[function(require,module,exports){
+arguments[4][39][0].apply(exports,arguments)
+},{"dup":39}],61:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -27065,7 +27180,7 @@ function applyMiddleware() {
     };
   };
 }
-},{"./compose":63}],61:[function(require,module,exports){
+},{"./compose":64}],62:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -27117,7 +27232,7 @@ function bindActionCreators(actionCreators, dispatch) {
   }
   return boundActionCreators;
 }
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -27263,7 +27378,7 @@ function combineReducers(reducers) {
   };
 }
 }).call(this,require('_process'))
-},{"./createStore":64,"./utils/warning":66,"_process":75,"lodash/isPlainObject":48}],63:[function(require,module,exports){
+},{"./createStore":65,"./utils/warning":67,"_process":76,"lodash/isPlainObject":49}],64:[function(require,module,exports){
 "use strict";
 
 exports.__esModule = true;
@@ -27300,7 +27415,7 @@ function compose() {
     };
   });
 }
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -27562,7 +27677,7 @@ var ActionTypes = exports.ActionTypes = {
     replaceReducer: replaceReducer
   }, _ref2[_symbolObservable2['default']] = observable, _ref2;
 }
-},{"lodash/isPlainObject":48,"symbol-observable":73}],65:[function(require,module,exports){
+},{"lodash/isPlainObject":49,"symbol-observable":74}],66:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -27611,7 +27726,7 @@ exports.bindActionCreators = _bindActionCreators2['default'];
 exports.applyMiddleware = _applyMiddleware2['default'];
 exports.compose = _compose2['default'];
 }).call(this,require('_process'))
-},{"./applyMiddleware":60,"./bindActionCreators":61,"./combineReducers":62,"./compose":63,"./createStore":64,"./utils/warning":66,"_process":75}],66:[function(require,module,exports){
+},{"./applyMiddleware":61,"./bindActionCreators":62,"./combineReducers":63,"./compose":64,"./createStore":65,"./utils/warning":67,"_process":76}],67:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -27637,7 +27752,7 @@ function warning(message) {
   } catch (e) {}
   /* eslint-enable no-empty */
 }
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 (function (process){
 /** @license React v0.13.6
  * scheduler-tracing.development.js
@@ -28064,7 +28179,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 }
 
 }).call(this,require('_process'))
-},{"_process":75}],68:[function(require,module,exports){
+},{"_process":76}],69:[function(require,module,exports){
 /** @license React v0.13.6
  * scheduler-tracing.production.min.js
  *
@@ -28076,7 +28191,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 
 'use strict';Object.defineProperty(exports,"__esModule",{value:!0});var b=0;exports.__interactionsRef=null;exports.__subscriberRef=null;exports.unstable_clear=function(a){return a()};exports.unstable_getCurrent=function(){return null};exports.unstable_getThreadID=function(){return++b};exports.unstable_trace=function(a,d,c){return c()};exports.unstable_wrap=function(a){return a};exports.unstable_subscribe=function(){};exports.unstable_unsubscribe=function(){};
 
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 (function (process,global){
 /** @license React v0.13.6
  * scheduler.development.js
@@ -28779,7 +28894,7 @@ exports.unstable_getFirstCallbackNode = unstable_getFirstCallbackNode;
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":75}],70:[function(require,module,exports){
+},{"_process":76}],71:[function(require,module,exports){
 (function (global){
 /** @license React v0.13.6
  * scheduler.production.min.js
@@ -28804,7 +28919,7 @@ b=c.previous;b.next=c.previous=a;a.next=c;a.previous=b}return a};exports.unstabl
 exports.unstable_shouldYield=function(){return!e&&(null!==d&&d.expirationTime<l||w())};exports.unstable_continueExecution=function(){null!==d&&p()};exports.unstable_pauseExecution=function(){};exports.unstable_getFirstCallbackNode=function(){return d};
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -28815,7 +28930,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":69,"./cjs/scheduler.production.min.js":70,"_process":75}],72:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":70,"./cjs/scheduler.production.min.js":71,"_process":76}],73:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -28826,7 +28941,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler-tracing.development.js":67,"./cjs/scheduler-tracing.production.min.js":68,"_process":75}],73:[function(require,module,exports){
+},{"./cjs/scheduler-tracing.development.js":68,"./cjs/scheduler-tracing.production.min.js":69,"_process":76}],74:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -28858,7 +28973,7 @@ if (typeof self !== 'undefined') {
 var result = (0, _ponyfill2['default'])(root);
 exports['default'] = result;
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./ponyfill.js":74}],74:[function(require,module,exports){
+},{"./ponyfill.js":75}],75:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -28882,7 +28997,7 @@ function symbolObservablePonyfill(root) {
 
 	return result;
 };
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 

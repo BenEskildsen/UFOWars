@@ -10,10 +10,11 @@ const {
 const {dispatchToServer} = require('../utils/clientToServer');
 const Button = require('./Button.react');
 const Chat = require('./Chat.react');
+const RadioPicker = require('./RadioPicker.react');
 
 /**
  * props: {store}
- * state: {...state.getState()}
+ * state: {...state.getState(), selectedMode: 'coop' | 'versus' | 'planet'}
  */
 class Lobby extends React.Component {
 
@@ -22,7 +23,7 @@ class Lobby extends React.Component {
     props.store.subscribe(() => {
       this.setState({...this.props.store.getState()});
     });
-    this.state = {...this.props.store.getState()};
+    this.state = {...this.props.store.getState(), selectedMode: 'versus'};
   }
 
   render() {
@@ -149,16 +150,23 @@ class Lobby extends React.Component {
     const playerID = getClientPlayerID(this.state);
     const clientGame = getClientGame(this.state);
     const {dispatch} = this.props.store;
+    const {selectedMode} = this.state;
     return (
       <div style={{margin: '4px'}}>
         <Button
           label="Create Game"
           onClick={() => {
-            const createAction = {type: 'CREATE_GAME', playerID, gameID, mode: 'versus'};
+            const createAction = {type: 'CREATE_GAME', playerID, gameID, mode: selectedMode};
             dispatchToServer(playerID, createAction);
             dispatch(createAction);
           }}
           disabled={clientGame.id != 0}
+        />
+        Game Mode
+        <RadioPicker
+          options={['versus', 'coop']}
+          selected={this.state.selectedMode}
+          onChange={(option) => this.setState({selectedMode: option})}
         />
       </div>
     );

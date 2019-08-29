@@ -13,16 +13,36 @@ var _require2 = require('../utils/queue'),
 var _require3 = require('../config'),
     config = _require3.config;
 
-var updateShip = function updateShip(state, id, numTicks) {
-  var sun = state.sun,
-      planets = state.planets;
+var updateShip = function updateShip(state, id, numTicks, nextShipProps, shouldRewindHistory) {
 
-  var masses = [sun].concat(_toConsumableArray(planets));
-  for (var i = 0; i < numTicks; i++) {
+  // rewind history
+  var rewoundPlanets = [];
+  if (shouldRewindHistory) {
+    // rewind ship
+    var prevShipPos = null;
+    for (var i = 0; i < numTicks; i++) {
+      prevShipPos = state.ships[id].history.pop();
+    }
     var ship = state.ships[id];
-    var history = ship.history;
-    queueAdd(history, ship, config.maxHistorySize);
-    state.ships[id] = _extends({}, ship, computeNextEntity(masses, ship, ship.thrust), {
+    state.ships[id] = _extends({}, ship, prevShipPos, nextShipProps);
+    // rewind planets
+    for (var j = 0; j < state.planets.length; j++) {
+      var planet = state.planets[j];
+      var prevPlanetPos = planet.history[planet.history.length - numTicks];
+      rewoundPlanets.push(_extends({}, planet, prevPlanetPos));
+    }
+  } else {
+    rewoundPlanets = state.planets;
+  }
+
+  var sun = state.sun;
+
+  var masses = [sun].concat(_toConsumableArray(rewoundPlanets));
+  for (var _i = 0; _i < numTicks; _i++) {
+    var _ship = state.ships[id];
+    var history = _ship.history;
+    queueAdd(history, _ship, config.maxHistorySize);
+    state.ships[id] = _extends({}, _ship, computeNextEntity(masses, _ship, _ship.thrust), {
       history: history
     });
   }
@@ -32,7 +52,7 @@ var updateProjectile = function updateProjectile(state, j, numTicks) {
   var sun = state.sun,
       planets = state.planets;
 
-  var masses = [sun].concat(_toConsumableArray(planets));
+  var masses = [sun]; // HACK: missiles don't care about gravity of anything other than the sun
   for (var i = 0; i < numTicks; i++) {
     var projectile = state.projectiles[j];
     var history = projectile.history;

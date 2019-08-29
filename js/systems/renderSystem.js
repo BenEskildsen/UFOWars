@@ -58,8 +58,8 @@ const render = (state: State, ctx: any): void => {
       ctx.lineWidth = 10;
       ctx.beginPath();
       ctx.arc(
-        targetEntity.position.x, targetEntity.position.y, 
-        50, 0, Math.PI * 2); 
+        targetEntity.position.x, targetEntity.position.y,
+        50, 0, Math.PI * 2);
       ctx.closePath();
       ctx.stroke();
       ctx.restore();

@@ -43,7 +43,7 @@ const handleTick = (state: GameState): GameState => {
   const masses = [sun, ...planets];
 
   for (const id in state.ships) {
-    updateShip(state, id, 1 /* one tick */);
+    updateShip(state, id, 1 /* one tick */, {});
     const ship: Ship = state.ships[id];
     ship.future = [];
     let futureShip = {...ship};
@@ -76,7 +76,7 @@ const handleTick = (state: GameState): GameState => {
     let missileTarget = getEntityByID(state, missile.target);
     if (missileTarget != null) {
       const dist = subtract(missileTarget.position, missile.position);
-      missile.theta = Math.atan2(dist.y, dist.x);    
+      missile.theta = Math.atan2(dist.y, dist.x);
     }
 
     if (missile.age > config.missile.thrustAt && missile.fuel.cur > 0) {

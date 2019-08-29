@@ -24,10 +24,11 @@ var _require2 = require('../utils/clientToServer'),
 
 var Button = require('./Button.react');
 var Chat = require('./Chat.react');
+var RadioPicker = require('./RadioPicker.react');
 
 /**
  * props: {store}
- * state: {...state.getState()}
+ * state: {...state.getState(), selectedMode: 'coop' | 'versus' | 'planet'}
  */
 
 var Lobby = function (_React$Component) {
@@ -41,7 +42,7 @@ var Lobby = function (_React$Component) {
     props.store.subscribe(function () {
       _this.setState(_extends({}, _this.props.store.getState()));
     });
-    _this.state = _extends({}, _this.props.store.getState());
+    _this.state = _extends({}, _this.props.store.getState(), { selectedMode: 'versus' });
     return _this;
   }
 
@@ -182,10 +183,13 @@ var Lobby = function (_React$Component) {
   }, {
     key: 'createButton',
     value: function createButton() {
+      var _this2 = this;
+
       var gameID = getNextGameID(this.state);
       var playerID = getClientPlayerID(this.state);
       var clientGame = getClientGame(this.state);
       var dispatch = this.props.store.dispatch;
+      var selectedMode = this.state.selectedMode;
 
       return React.createElement(
         'div',
@@ -193,11 +197,19 @@ var Lobby = function (_React$Component) {
         React.createElement(Button, {
           label: 'Create Game',
           onClick: function onClick() {
-            var createAction = { type: 'CREATE_GAME', playerID: playerID, gameID: gameID };
+            var createAction = { type: 'CREATE_GAME', playerID: playerID, gameID: gameID, mode: selectedMode };
             dispatchToServer(playerID, createAction);
             dispatch(createAction);
           },
           disabled: clientGame.id != 0
+        }),
+        'Game Mode',
+        React.createElement(RadioPicker, {
+          options: ['versus', 'coop'],
+          selected: this.state.selectedMode,
+          onChange: function onChange(option) {
+            return _this2.setState({ selectedMode: option });
+          }
         })
       );
     }
