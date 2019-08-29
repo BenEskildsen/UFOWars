@@ -54,6 +54,7 @@ export type State = {
 
 export type Game = {
   id: GameID,
+  mode: 'versus' | 'coop' | 'planet',
   players: Array<PlayerID>,
   started: boolean,
 };

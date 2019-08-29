@@ -1,17 +1,31 @@
 
  - - - - - - GAME - - - - - -
+ - fix rewinding time to rewind all entities the ship could be attracted to
+ - coop game mode
+    - asteroid entity
+    - lose when the planet gets hit
+ - planet defense game mode
+    - one player is the planet
+    - swap player positions each round
+    - missiles hitting planet should kill blue
+ - versus game mode
+    - should there be a planet at all?
+ - make max future path longer and more visible
  - send time step that the game ended and render that end state
- - swap player positions each round
- - add planet back in when rewind time works
  - missiles should look like torpedoes
- - missiles hitting planet should kill blue
+
+
+ - - - - - - SERVER - - - - -
+ - server should track players disconnecting and clean up games
+ - games should be resilient to server restarts mid-game
 
 
  - - - - - -  UI  - - - - - -
- - implement UI sidebar
+ - implement UI sidebar/legend
 
 
  - - - - - - LOBBY - - - - -
+ - make game modes selectable in a dropdown when creating a game
  - styling and fancy UI for lobby
 
 
@@ -20,8 +34,7 @@
  - improve collision detection to act on the shapes themselves
  - dispatchToServer shouldn't need to take in clientID
  - add singleplayer mode for faster testing
- - server should track players disconnecting and clean up games
-
+ - move rewinding of history into utils/updateShip/Projectile
 
  - - - - - - BUGS - - - - - -
  - only join one game at a time
@@ -29,9 +42,7 @@
 
 
  - - - - - - WISH - - - - - -
- - implement nitro-thrust using fuel
- - actually implement configurable speed of light delay
- - how should unique gameIDs be assigned to newly-created games?
+ - prevent players from going off-screen
  - server side code should live in its own directory?
 
 
@@ -96,3 +107,5 @@
  - explosion animation
  - missiles should destroy each other on collision
  - tune the game such that missile can ever actually hit eachother
+
+ - implement game modes concept
