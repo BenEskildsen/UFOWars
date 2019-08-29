@@ -7,10 +7,6 @@
  - missiles hitting planet should kill blue
 
 
- - - - - - - SERVER - - - - -
- - server should track players disconnecting and clean up games
-
-
  - - - - - -  UI  - - - - - -
  - implement UI sidebar
 
@@ -24,6 +20,7 @@
  - improve collision detection to act on the shapes themselves
  - dispatchToServer shouldn't need to take in clientID
  - add singleplayer mode for faster testing
+ - server should track players disconnecting and clean up games
 
 
  - - - - - - BUGS - - - - - -
