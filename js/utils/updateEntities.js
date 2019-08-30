@@ -15,7 +15,6 @@ const updateShip = (
 ): void => {
 
   // rewind history
-  let rewoundPlanets = [];
   if (shouldRewindHistory) {
     // rewind ship
     let prevShipPos = null;
@@ -28,24 +27,25 @@ const updateShip = (
       ...prevShipPos,
       ...nextShipProps,
     };
-    // rewind planets
+  }
+
+  const {sun} = state;
+  for (let i = 0; i < numTicks; i++) {
+    const ship: Ship = state.ships[id];
+    const history: Array<Entity> = ship.history;
+
+    // rewind planets to their positions at that tick
+    let rewoundPlanets = [];
     for (let j = 0; j < state.planets.length; j++) {
       const planet = state.planets[j];
-      const prevPlanetPos = planet.history[planet.history.length - numTicks];
+      const prevPlanetPos = planet.history[planet.history.length - numTicks - i];
       rewoundPlanets.push({
         ...planet,
         ...prevPlanetPos,
       });
     }
-  } else {
-    rewoundPlanets = state.planets;
-  }
+    const masses = [sun, ...rewoundPlanets];
 
-  const {sun} = state;
-  const masses = [sun, ...rewoundPlanets];
-  for (let i = 0; i < numTicks; i++) {
-    const ship: Ship = state.ships[id];
-    const history: Array<Entity> = ship.history;
     queueAdd(history, ship, config.maxHistorySize);
     state.ships[id] = {
       ...ship,
