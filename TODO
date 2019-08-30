@@ -33,6 +33,7 @@
  - - - - - - BUGS - - - - - -
  - only join one game at a time
  - don't let chat swallow arrow keys during game
+ - missile targeting off by one
 
 
  - - - - - - WISH - - - - - -
