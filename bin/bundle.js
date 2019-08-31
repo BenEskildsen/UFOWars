@@ -10,7 +10,7 @@ var config = {
   ship: {
     thrust: 0.05,
     thetaSpeed: 5 * Math.PI / 180,
-    radius: 35,
+    radius: 40,
     mass: 10,
     maxFuel: 100,
     maxLaser: 100
@@ -20,7 +20,7 @@ var config = {
     mass: 100000
   },
   earth: {
-    radius: 30,
+    radius: 35,
     mass: 10000
   },
   missile: {
@@ -38,11 +38,19 @@ var config = {
     color: 'white',
     offset: 100
   },
+  asteroid: {
+    mass: 10,
+    radius: 25,
+    speed: 8,
+    thetaSpeed: 3 * Math.PI / 180,
+    thetaFuzziness: 30, // degrees
+    maxAge: 10000
+  },
   G: 0.75, // gravitational constant
   maxHistorySize: 150,
   maxFutureSize: 100,
   laserSize: 4, // deprecated in favor of laserSpeed
-  laserSpeed: 20,
+  laserSpeed: 50,
   maxProjectiles: 100,
   c: Infinity, // speed of light, in pixels per tick
   playerColors: ['white', 'LightSkyBlue', 'OrangeRed']
@@ -52,7 +60,59 @@ module.exports = { config: config };
 },{}],2:[function(require,module,exports){
 'use strict';
 
-var nextID = 0;
+var _require = require('./entity'),
+    makeEntity = _require.makeEntity;
+
+var _require2 = require('../config'),
+    config = _require2.config;
+
+var makeAsteroid = function makeAsteroid(position, velocity) {
+  var asteroid = makeEntity(config.asteroid.mass, config.asteroid.radius, position, velocity, 0 // theta
+  );
+
+  asteroid.type = 'asteroid';
+  asteroid.thetaSpeed = config.asteroid.thetaSpeed;
+  asteroid.age = 0;
+
+  return asteroid;
+};
+
+var renderAsteroid = function renderAsteroid(state, ctx, asteroid) {
+  ctx.save();
+  ctx.strokeStyle = 'white';
+  ctx.translate(asteroid.position.x, asteroid.position.y);
+  ctx.rotate(asteroid.theta);
+  ctx.lineWidth = 4;
+
+  // circular asteroid
+  // ctx.beginPath();
+  // ctx.arc(
+  //   0, 0, asteroid.radius, 0, Math.PI * 2,
+  // );
+  // ctx.closePath();
+  // ctx.stroke();
+
+  // square asteroid
+  var squaredRad = asteroid.radius - 5; // make drawing slightly smaller than radius
+  ctx.beginPath();
+  ctx.moveTo(-squaredRad, -squaredRad);
+  ctx.lineTo(-squaredRad, squaredRad);
+  ctx.lineTo(squaredRad, squaredRad);
+  ctx.lineTo(squaredRad, -squaredRad);
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.restore();
+};
+
+module.exports = { makeAsteroid: makeAsteroid, renderAsteroid: renderAsteroid };
+},{"../config":1,"./entity":3}],3:[function(require,module,exports){
+'use strict';
+
+// HACK: need to make this global so that people creating missiles can
+// give them unique ids and not have the ids collide if both players fire
+// at the same time
+window.nextID = 0;
 
 var makeEntity = function makeEntity(mass, radius, position, velocity, theta) {
   return {
@@ -70,7 +130,7 @@ var makeEntity = function makeEntity(mass, radius, position, velocity, theta) {
 };
 
 module.exports = { makeEntity: makeEntity };
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -88,7 +148,7 @@ var makeExplosion = function makeExplosion(position, rate, age, color, radius) {
 };
 
 module.exports = { makeExplosion: makeExplosion };
-},{"./entity":2}],4:[function(require,module,exports){
+},{"./entity":3}],5:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -146,24 +206,15 @@ var renderProjectile = function renderProjectile(state, ctx, projectile) {
 
 var renderLaser = function renderLaser(state, ctx, projectile) {
   ctx.save();
-  var color = 'white';
-  var length = 50;
-  var width = 50;
-  if (projectile.type == 'laser') {
-    color = 'lime';
-    length = config.laserSpeed;
-    width = 2;
-  }
-  ctx.strokeStyle = getPlayerColor(state, projectile.playerID);
-  ctx.lineWidth = 1;
-  ctx.fillStyle = color;
   ctx.beginPath();
+  var length = config.laserSpeed;
+  var width = 8;
+  ctx.fillStyle = 'lime';
   ctx.translate(projectile.position.x, projectile.position.y);
   ctx.rotate(projectile.theta);
   ctx.rect(0, 0, length, width);
-  ctx.fill();
-  ctx.stroke();
   ctx.closePath();
+  ctx.fill();
   ctx.restore();
 };
 
@@ -206,7 +257,7 @@ module.exports = {
   renderProjectile: renderProjectile,
   renderLaser: renderLaser
 };
-},{"../config":1,"../selectors/selectors":16,"../utils/vectors":34,"./entity":2}],5:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":17,"../utils/vectors":36,"./entity":3}],6:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -246,9 +297,9 @@ var renderShip = function renderShip(state, ctx, id) {
   // ship
   ctx.save();
   ctx.fillStyle = color;
-  ctx.beginPath();
   ctx.translate(ship.position.x, ship.position.y);
   ctx.rotate(ship.theta);
+  ctx.beginPath();
   ctx.moveTo(ship.radius, 0);
   ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
   ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
@@ -268,7 +319,7 @@ var renderShip = function renderShip(state, ctx, id) {
   ctx.restore();
 
   // path
-  ctx.beginPath();
+  ctx.save();
   ctx.strokeStyle = color;
   // scale line width with screensize
   var scale = config.width / config.canvasWidth;
@@ -328,10 +379,12 @@ var renderShip = function renderShip(state, ctx, id) {
       }
     }
   }
+
+  ctx.restore();
 };
 
 module.exports = { makeShip: makeShip, renderShip: renderShip };
-},{"../config":1,"../selectors/selectors":16,"./entity":2}],6:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":17,"./entity":3}],7:[function(require,module,exports){
 'use strict';
 
 var _require = require('redux'),
@@ -359,6 +412,9 @@ var _require6 = require('./systems/collisionSystem'),
 var _require7 = require('./systems/playerReadySystem'),
     initPlayerReadySystem = _require7.initPlayerReadySystem;
 
+var _require8 = require('./systems/asteroidSystem'),
+    initAsteroidSystem = _require8.initAsteroidSystem;
+
 var store = createStore(rootReducer);
 window.store = store; // useful for debugging
 
@@ -381,10 +437,11 @@ store.subscribe(function () {
   initRenderSystem(store);
   initKeyboardControlsSystem(store);
   initCollisionSystem(store);
+  initAsteroidSystem(store);
 });
 
 ReactDOM.render(React.createElement(Game, { store: store }), document.getElementById('container'));
-},{"./reducers/rootReducer":14,"./systems/collisionSystem":19,"./systems/keyboardControlsSystem":20,"./systems/playerReadySystem":21,"./systems/renderSystem":22,"./ui/Game.react":26,"./utils/clientToServer":29,"react":58,"react-dom":53,"redux":66}],7:[function(require,module,exports){
+},{"./reducers/rootReducer":15,"./systems/asteroidSystem":20,"./systems/collisionSystem":21,"./systems/keyboardControlsSystem":22,"./systems/playerReadySystem":23,"./systems/renderSystem":24,"./ui/Game.react":28,"./utils/clientToServer":31,"react":60,"react-dom":55,"redux":68}],8:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -438,7 +495,7 @@ var animationReducer = function animationReducer(state, action) {
 };
 
 module.exports = { animationReducer: animationReducer };
-},{"../config":1}],8:[function(require,module,exports){
+},{"../config":1}],9:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -477,7 +534,7 @@ var chatReducer = function chatReducer(state, action) {
 };
 
 module.exports = { chatReducer: chatReducer };
-},{"../config":1,"../selectors/selectors":16,"../state/initGameState":17}],9:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":17,"../state/initGameState":18}],10:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -527,7 +584,8 @@ var fireProjectileReducer = function fireProjectileReducer(state, action) {
     case 'FIRE_MISSILE':
       {
         var _playerID = action.playerID,
-            target = action.target;
+            target = action.target,
+            id = action.id;
         var _projectiles = state.projectiles,
             _ships = state.ships;
 
@@ -547,6 +605,9 @@ var fireProjectileReducer = function fireProjectileReducer(state, action) {
           });
         }
         var _projectile = makeMissileProjectile(_playerID, _shipPosition, _shipTheta, shipVelocity, target);
+        _projectile.id = id;
+        window.nextID = id + 11; // HACK we really don't want the two players to make different
+        // entities with the same id
         queueAdd(_projectiles, _projectile, config.maxProjectiles);
         return _extends({}, state, {
           projectiles: _projectiles
@@ -558,7 +619,7 @@ var fireProjectileReducer = function fireProjectileReducer(state, action) {
 };
 
 module.exports = { fireProjectileReducer: fireProjectileReducer };
-},{"../config":1,"../entities/projectile":4,"../utils/queue":32,"../utils/vectors":34}],10:[function(require,module,exports){
+},{"../config":1,"../entities/projectile":5,"../utils/queue":34,"../utils/vectors":36}],11:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -580,8 +641,8 @@ var _require3 = require('../utils/updateEntities'),
 var _require4 = require('../entities/explosion'),
     makeExplosion = _require4.makeExplosion;
 
-var _require5 = require('../selectors/selectors'),
-    getNextTarget = _require5.getNextTarget;
+var _require5 = require('../entities/asteroid'),
+    makeAsteroid = _require5.makeAsteroid;
 
 var gameReducer = function gameReducer(state, action) {
   switch (action.type) {
@@ -642,30 +703,58 @@ var gameReducer = function gameReducer(state, action) {
         });
       }
     case 'SHIFT_TARGET':
-      var playerID = action.playerID;
+      var playerID = action.playerID,
+          targetID = action.targetID;
 
-      var nextTarget = getNextTarget(state, playerID);
       return _extends({}, state, {
         ships: _extends({}, state.ships, _defineProperty({}, playerID, _extends({}, state.ships[playerID], {
-          target: nextTarget
+          target: targetID
         })))
       });
     case 'DESTROY_MISSILE':
-      var id = action.id;
+      {
+        var id = action.id;
 
-      var nextMissiles = state.projectiles.filter(function (projectile) {
-        return projectile.id != id;
-      });
-      return _extends({}, state, {
-        projectiles: nextMissiles
-      });
+        var nextMissiles = state.projectiles.filter(function (projectile) {
+          return projectile.id != id;
+        });
+        return _extends({}, state, {
+          projectiles: nextMissiles
+        });
+      }
+    case 'MAKE_ASTEROID':
+      {
+        var _position = action.position,
+            velocity = action.velocity,
+            _id = action.id;
+
+        var asteroid = makeAsteroid(_position, velocity);
+        asteroid.id = _id;
+        window.nextID = _id + 13; // HACK
+        asteroid.theta += Math.random() * Math.PI;
+        return _extends({}, state, {
+          asteroids: [].concat(_toConsumableArray(state.asteroids), [asteroid])
+        });
+      }
+    case 'DESTROY_ASTEROID':
+      {
+        var _id2 = action.id;
+
+        var nextAsteroids = state.asteroids.filter(function (projectile) {
+          return projectile.id != _id2;
+        });
+        return _extends({}, state, {
+          asteroids: nextAsteroids
+        });
+      }
+
   }
 
   return state;
 };
 
 module.exports = { gameReducer: gameReducer };
-},{"../config":1,"../entities/explosion":3,"../selectors/selectors":16,"../utils/updateEntities":33,"./fireProjectileReducer":9}],11:[function(require,module,exports){
+},{"../config":1,"../entities/asteroid":2,"../entities/explosion":4,"../utils/updateEntities":35,"./fireProjectileReducer":10}],12:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -790,7 +879,7 @@ var lobbyReducer = function lobbyReducer(state, action) {
 };
 
 module.exports = { lobbyReducer: lobbyReducer };
-},{"../config":1,"../selectors/selectors":16,"../state/initGameState":17}],12:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":17,"../state/initGameState":18}],13:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -848,7 +937,7 @@ var modalReducer = function modalReducer(state, action) {
 };
 
 module.exports = { modalReducer: modalReducer };
-},{"../selectors/selectors":16,"../utils/clientToServer":29}],13:[function(require,module,exports){
+},{"../selectors/selectors":17,"../utils/clientToServer":31}],14:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -972,7 +1061,7 @@ var playerReducer = function playerReducer(state, action) {
 };
 
 module.exports = { playerReducer: playerReducer };
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1032,6 +1121,8 @@ var rootReducer = function rootReducer(state, action) {
     case 'MAKE_EXPLOSION':
     case 'SHIFT_TARGET':
     case 'DESTROY_MISSILE':
+    case 'MAKE_ASTEROID':
+    case 'DESTROY_ASTEROID':
       if (!state.game) return state;
       return _extends({}, state, {
         game: gameReducer(state.game, action)
@@ -1049,7 +1140,7 @@ var rootReducer = function rootReducer(state, action) {
 };
 
 module.exports = { rootReducer: rootReducer };
-},{"../state/initState":18,"./animationReducer":7,"./chatReducer":8,"./gameReducer":10,"./lobbyReducer":11,"./modalReducer":12,"./playerReducer":13,"./tickReducer":15}],15:[function(require,module,exports){
+},{"../state/initState":19,"./animationReducer":8,"./chatReducer":9,"./gameReducer":11,"./lobbyReducer":12,"./modalReducer":13,"./playerReducer":14,"./tickReducer":16}],16:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -1068,7 +1159,8 @@ var _require3 = require('../utils/vectors'),
 
 var _require4 = require('../utils/updateEntities'),
     updateShip = _require4.updateShip,
-    updateProjectile = _require4.updateProjectile;
+    updateProjectile = _require4.updateProjectile,
+    updateGenericEntity = _require4.updateGenericEntity;
 
 var _require5 = require('../config'),
     config = _require5.config;
@@ -1139,10 +1231,46 @@ var handleTick = function handleTick(state) {
     });
   });
 
+  // update asteroids
+  var nextAsteroids = [];
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = state.asteroids[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var asteroid = _step.value;
+
+      var nextAsteroid = updateGenericEntity(state, asteroid);
+      nextAsteroid.age += 1;
+      nextAsteroids.push(nextAsteroid);
+    }
+    // asteroids colliding with sun
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  nextAsteroids = nextAsteroids.filter(function (asteroid) {
+    var dist = distance(subtract(asteroid.position, sun.position));
+    return dist > sun.radius;
+  });
+
   // update projectiles
   for (var i = 0; i < state.projectiles.length; i++) {
     // handle missiles
     if (state.projectiles[i].type != 'missile') {
+      updateProjectile(state, i, 1 /* one tick */);
       continue;
     }
     var missile = state.projectiles[i];
@@ -1162,16 +1290,17 @@ var handleTick = function handleTick(state) {
     updateProjectile(state, i, 1 /* one tick */);
   }
 
+  // NOTE: anything you want to actually update position-wise needs to go before this!!
   // check on queued actions
   var nextState = state;
   var nextActionQueue = [];
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
 
   try {
-    for (var _iterator = state.actionQueue[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var action = _step.value;
+    for (var _iterator2 = state.actionQueue[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var action = _step2.value;
 
       if (action.time == state.time) {
         nextState = gameReducer(nextState, action);
@@ -1182,16 +1311,16 @@ var handleTick = function handleTick(state) {
 
     // projectiles colliding with sun
   } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
   } finally {
     try {
-      if (!_iteratorNormalCompletion && _iterator.return) {
-        _iterator.return();
+      if (!_iteratorNormalCompletion2 && _iterator2.return) {
+        _iterator2.return();
       }
     } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
+      if (_didIteratorError2) {
+        throw _iteratorError2;
       }
     }
   }
@@ -1204,15 +1333,20 @@ var handleTick = function handleTick(state) {
   nextProjectiles = nextProjectiles.filter(function (projectile) {
     return !(projectile.type == 'missile' && projectile.age > config.missile.maxAge);
   });
+  // clean up old asteroids
+  nextAsteroids = nextAsteroids.filter(function (asteroid) {
+    return asteroid.age < config.asteroid.maxAge;
+  });
 
   return _extends({}, nextState, {
     projectiles: nextProjectiles,
-    actionQueue: nextActionQueue
+    actionQueue: nextActionQueue,
+    asteroids: nextAsteroids
   });
 };
 
 module.exports = { tickReducer: tickReducer };
-},{"../config":1,"../selectors/selectors":16,"../utils/errors":30,"../utils/gravity":31,"../utils/queue":32,"../utils/updateEntities":33,"../utils/vectors":34,"./gameReducer":10}],16:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":17,"../utils/errors":32,"../utils/gravity":33,"../utils/queue":34,"../utils/updateEntities":35,"../utils/vectors":36,"./gameReducer":11}],17:[function(require,module,exports){
 'use strict';
 
 var _require = require('../utils/errors'),
@@ -1292,6 +1426,10 @@ var getOtherPlayerID = function getOtherPlayerID(state) {
   }
 };
 
+var getGameMode = function getGameMode(state) {
+  return getClientGame(state).mode;
+};
+
 var getPlayerByID = function getPlayerByID(state, playerID) {
   var _iteratorNormalCompletion3 = true;
   var _didIteratorError3 = false;
@@ -1346,9 +1484,10 @@ var getPlayerColor = function getPlayerColor(state, playerID) {
 var getNextTarget = function getNextTarget(state, playerID) {
   var ships = state.ships,
       planets = state.planets,
-      projectiles = state.projectiles;
+      projectiles = state.projectiles,
+      asteroids = state.asteroids;
 
-  var entities = Object.values(ships).concat(projectiles).concat(planets);
+  var entities = Object.values(ships).concat(projectiles).concat(planets).concat(asteroids);
   var entityIDs = entities.map(function (entity) {
     return entity.id;
   });
@@ -1382,6 +1521,12 @@ var getEntityByID = function getEntityByID(state, id) {
   return entities[index];
 };
 
+var getHostPlayerID = function getHostPlayerID(state) {
+  for (var id in state.game.ships) {
+    return id; // HACK :)
+  }
+};
+
 module.exports = {
   getClientPlayerID: getClientPlayerID,
   getOtherPlayerID: getOtherPlayerID,
@@ -1391,9 +1536,11 @@ module.exports = {
   getNextGameID: getNextGameID,
   getPlayerColor: getPlayerColor,
   getNextTarget: getNextTarget,
-  getEntityByID: getEntityByID
+  getEntityByID: getEntityByID,
+  getGameMode: getGameMode,
+  getHostPlayerID: getHostPlayerID
 };
-},{"../config":1,"../utils/errors":30}],17:[function(require,module,exports){
+},{"../config":1,"../utils/errors":32}],18:[function(require,module,exports){
 'use strict';
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -1417,14 +1564,17 @@ var initGameState = function initGameState(players, mode) {
       earth = config.earth;
 
   var planets = [];
-  if (mode == 'planet') {
-    planets.push(makeEntity(earth.mass, earth.radius, { x: width / 2, y: height / 2 - 1000 }, // position
-    { x: -8.5, y: 0 // velocity
-    }));
-  }
-  if (mode == 'coop') {
-    planets.push(makeEntity(earth.mass, earth.radius, { x: width / 2, y: height / 2 - 1000 }, // position
-    { x: -8.5, y: 0 // velocity
+  // no planet defense mode for now
+  // if (mode == 'planet') {
+  //   planets.push(makeEntity(
+  //     earth.mass, earth.radius,
+  //     {x: width / 2, y: height / 2 - 1000}, // position
+  //     {x: -8.5, y: 0} // velocity
+  //   ));
+  // }
+  if (mode == 'coop' || mode == 'versus') {
+    planets.push(makeEntity(earth.mass, earth.radius, { x: width / 2 - 600, y: height / 2 }, // position
+    { x: 0, y: 10 // velocity
     }));
   }
   return {
@@ -1447,13 +1597,14 @@ var initGameState = function initGameState(players, mode) {
     planets: planets,
     projectiles: [],
     explosions: [],
+    asteroids: [],
 
     actionQueue: []
   };
 };
 
 module.exports = { initGameState: initGameState };
-},{"../config":1,"../entities/entity":2,"../entities/ship":5}],18:[function(require,module,exports){
+},{"../config":1,"../entities/entity":3,"../entities/ship":6}],19:[function(require,module,exports){
 'use strict';
 
 var initState = function initState() {
@@ -1467,7 +1618,93 @@ var initState = function initState() {
 };
 
 module.exports = { initState: initState };
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
+'use strict';
+
+// no flow checking cuz it's annoying
+
+var _require = require('../utils/vectors'),
+    makeVector = _require.makeVector,
+    vectorTheta = _require.vectorTheta,
+    add = _require.add,
+    subtract = _require.subtract,
+    distance = _require.distance;
+
+var _require2 = require('../config'),
+    config = _require2.config;
+
+var _require3 = require('../selectors/selectors'),
+    getClientPlayerID = _require3.getClientPlayerID,
+    getGameMode = _require3.getGameMode,
+    getHostPlayerID = _require3.getHostPlayerID;
+
+var _require4 = require('../utils/clientToServer'),
+    dispatchToServer = _require4.dispatchToServer;
+
+/**
+ * Creates asteroids in coop mode
+ */
+var initAsteroidSystem = function initAsteroidSystem(store) {
+
+  var time = store.getState().game.time;
+  store.subscribe(function () {
+    var state = store.getState();
+    // only check on a new tick
+    if (state.game.time == time) {
+      return;
+    }
+    time = state.game.time;
+
+    var clientPlayerID = getClientPlayerID(state);
+    var thisPlayerIsHost = clientPlayerID === getHostPlayerID(state);
+    var gameMode = getGameMode(state);
+
+    // only the host makes asteroids in a coop game
+    if (!thisPlayerIsHost || gameMode != 'coop') {
+      return;
+    }
+
+    // naive way to generate asteroids every once in a while
+    if (Math.round(Math.random() * 40) < 2) {
+      var action = randomAsteroidAction(state);
+      dispatchToServer(clientPlayerID, action);
+      store.dispatch(action);
+    }
+  });
+};
+
+var randomAsteroidAction = function randomAsteroidAction(state) {
+  var width = config.width,
+      height = config.height;
+
+  var x = 0;
+  var y = 0;
+  var branch = Math.floor(Math.random() * 4);
+  if (branch == 0) {
+    x = Math.round(Math.random() * 10);
+    y = Math.round(Math.random() * height - 10);
+  } else if (branch == 1) {
+    x = Math.round(Math.random() * 10) + width;
+    y = Math.round(Math.random() * height + 10) - 5;
+  } else if (branch == 2) {
+    x = Math.round(Math.random() * width + 10) - 5;
+    y = Math.round(Math.random() * 10) + height;
+  } else {
+    x = Math.round(Math.random() * width + 10) - 5;
+    y = Math.round(Math.random() * -10);
+  }
+  var position = { x: x, y: y };
+  var direction = subtract({ x: width / 2, y: height / 2 }, position);
+  var theta = vectorTheta(direction) / Math.PI * 180;
+  var fuzzyTheta = theta * (Math.random() * config.asteroid.thetaFuzziness * 2 - config.asteroid.thetaFuzziness) / 180 * Math.PI;
+  var velocity = makeVector(fuzzyTheta, config.asteroid.speed);
+  velocity.y *= -1;
+
+  return { type: 'MAKE_ASTEROID', position: position, velocity: velocity, id: window.nextID + 7 };
+};
+
+module.exports = { initAsteroidSystem: initAsteroidSystem };
+},{"../config":1,"../selectors/selectors":17,"../utils/clientToServer":31,"../utils/vectors":36}],21:[function(require,module,exports){
 'use strict';
 
 // no flow checking cuz it's annoying
@@ -1483,7 +1720,9 @@ var _require2 = require('../config'),
 var _require3 = require('../selectors/selectors'),
     getOtherPlayerID = _require3.getOtherPlayerID,
     getPlayerByID = _require3.getPlayerByID,
-    getClientPlayerID = _require3.getClientPlayerID;
+    getClientPlayerID = _require3.getClientPlayerID,
+    getHostPlayerID = _require3.getHostPlayerID,
+    getGameMode = _require3.getGameMode;
 
 var _require4 = require('../utils/clientToServer'),
     dispatchToServer = _require4.dispatchToServer;
@@ -1516,22 +1755,24 @@ var initCollisionSystem = function initCollisionSystem(store) {
     var gameOver = false;
     var message = '';
     var loserID = null;
+    var bothLose = false;
+    var gameMode = getGameMode(state);
 
     // ship collides with sun
-    for (var id in state.game.ships) {
-      var ship = state.game.ships[id];
+    for (var _id in state.game.ships) {
+      var ship = state.game.ships[_id];
       var distVec = subtract(ship.position, sun.position);
       var dist = distance(distVec);
       if (dist < sun.radius) {
         gameOver = true;
-        message = getPlayerByID(state, id).name + ' crashed into the sun!';
-        loserID = id;
+        message = getPlayerByID(state, _id).name + ' crashed into the sun!';
+        loserID = _id;
       }
     }
 
     // ship collides with planet
-    for (var _id in state.game.ships) {
-      var _ship = state.game.ships[_id];
+    for (var _id2 in state.game.ships) {
+      var _ship = state.game.ships[_id2];
       var _iteratorNormalCompletion = true;
       var _didIteratorError = false;
       var _iteratorError = undefined;
@@ -1544,8 +1785,11 @@ var initCollisionSystem = function initCollisionSystem(store) {
           var _dist = distance(_distVec);
           if (_dist < planet.radius) {
             gameOver = true;
-            message = getPlayerByID(state, _id).name + ' crashed into the earth!';
-            loserID = _id;
+            message = getPlayerByID(state, _id2).name + ' crashed into the earth!';
+            loserID = _id2;
+            if (gameMode == 'coop') {
+              bothLose = true;
+            }
           }
         }
       } catch (err) {
@@ -1565,7 +1809,7 @@ var initCollisionSystem = function initCollisionSystem(store) {
     }
 
     // ship collides with projectile
-    for (var _id2 in state.game.ships) {
+    for (var _id3 in state.game.ships) {
       var _iteratorNormalCompletion2 = true;
       var _didIteratorError2 = false;
       var _iteratorError2 = undefined;
@@ -1574,14 +1818,17 @@ var initCollisionSystem = function initCollisionSystem(store) {
         for (var _iterator2 = state.game.projectiles[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
           var projectile = _step2.value;
 
-          var _ship2 = state.game.ships[_id2];
+          var _ship2 = state.game.ships[_id3];
           var _distVec2 = subtract(_ship2.position, projectile.position);
           var _dist2 = distance(_distVec2);
           // don't get hit by your own laser you just fired
-          if (_dist2 < _ship2.radius + projectile.radius && !(projectile.playerID == _id2 && projectile.history.length < 25)) {
+          if (_dist2 < _ship2.radius + projectile.radius && !(projectile.playerID == _id3 && projectile.history.length < 25)) {
             gameOver = true;
-            message = getPlayerByID(state, _id2).name + ' was hit by a ' + projectile.type + '!';
-            loserID = _id2;
+            message = getPlayerByID(state, _id3).name + ' was hit by a ' + projectile.type + '!';
+            loserID = _id3;
+            if (gameMode == 'coop') {
+              bothLose = true;
+            }
           }
         }
       } catch (err) {
@@ -1601,13 +1848,7 @@ var initCollisionSystem = function initCollisionSystem(store) {
     }
 
     var thisClientID = getClientPlayerID(state);
-    var thisPlayerIsHost = false;
-    for (var _id3 in state.game.ships) {
-      if (_id3 == thisClientID) {
-        thisPlayerIsHost = true;
-      }
-      break;
-    }
+    var thisPlayerIsHost = thisClientID === getHostPlayerID(state);
 
     // missile collides with missile
     var _iteratorNormalCompletion3 = true;
@@ -1617,20 +1858,20 @@ var initCollisionSystem = function initCollisionSystem(store) {
     try {
       for (var _iterator3 = state.game.projectiles[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
         var projectile1 = _step3.value;
-        var _iteratorNormalCompletion4 = true;
-        var _didIteratorError4 = false;
-        var _iteratorError4 = undefined;
+        var _iteratorNormalCompletion7 = true;
+        var _didIteratorError7 = false;
+        var _iteratorError7 = undefined;
 
         try {
-          for (var _iterator4 = state.game.projectiles[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-            var projectile2 = _step4.value;
+          for (var _iterator7 = state.game.projectiles[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+            var projectile2 = _step7.value;
 
             if (projectile1 == projectile2) {
               continue;
             }
-            var _distVec3 = subtract(projectile1.position, projectile2.position);
-            var _dist3 = distance(_distVec3);
-            if (_dist3 < projectile1.radius * 2) {
+            var _distVec4 = subtract(projectile1.position, projectile2.position);
+            var _dist4 = distance(_distVec4);
+            if (_dist4 < projectile1.radius * 2) {
               var action1 = { type: 'DESTROY_MISSILE', id: projectile1.id, time: time };
               var explosionAction1 = {
                 type: 'MAKE_EXPLOSION',
@@ -1662,20 +1903,22 @@ var initCollisionSystem = function initCollisionSystem(store) {
             }
           }
         } catch (err) {
-          _didIteratorError4 = true;
-          _iteratorError4 = err;
+          _didIteratorError7 = true;
+          _iteratorError7 = err;
         } finally {
           try {
-            if (!_iteratorNormalCompletion4 && _iterator4.return) {
-              _iterator4.return();
+            if (!_iteratorNormalCompletion7 && _iterator7.return) {
+              _iterator7.return();
             }
           } finally {
-            if (_didIteratorError4) {
-              throw _iteratorError4;
+            if (_didIteratorError7) {
+              throw _iteratorError7;
             }
           }
         }
       }
+
+      // projectile collides with asteroid
     } catch (err) {
       _didIteratorError3 = true;
       _iteratorError3 = err;
@@ -1687,6 +1930,170 @@ var initCollisionSystem = function initCollisionSystem(store) {
       } finally {
         if (_didIteratorError3) {
           throw _iteratorError3;
+        }
+      }
+    }
+
+    var _iteratorNormalCompletion4 = true;
+    var _didIteratorError4 = false;
+    var _iteratorError4 = undefined;
+
+    try {
+      for (var _iterator4 = state.game.projectiles[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+        var _projectile = _step4.value;
+        var _iteratorNormalCompletion8 = true;
+        var _didIteratorError8 = false;
+        var _iteratorError8 = undefined;
+
+        try {
+          for (var _iterator8 = state.game.asteroids[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
+            var _asteroid = _step8.value;
+
+            var _distVec5 = subtract(_projectile.position, _asteroid.position);
+            var _dist5 = distance(_distVec5);
+            if (_dist5 < _asteroid.radius + 5) {
+              var _action = { type: 'DESTROY_MISSILE', id: _projectile.id, time: time };
+              var _action2 = { type: 'DESTROY_ASTEROID', id: _asteroid.id, time: time };
+              var _explosionAction = {
+                type: 'MAKE_EXPLOSION',
+                position: _asteroid.position,
+                age: config.explosion.age,
+                rate: config.explosion.rate + random(),
+                color: ['yellow', 'orange', 'white'][floor(random() * 3)],
+                radius: round(random() * 5) - 10
+              };
+              if (thisPlayerIsHost) {
+                dispatch(_action);
+                dispatch(_action2);
+                dispatch(_explosionAction);
+                dispatchToServer(thisClientID, _action);
+                dispatchToServer(thisClientID, _action2);
+                dispatchToServer(thisClientID, _explosionAction);
+              }
+            }
+          }
+        } catch (err) {
+          _didIteratorError8 = true;
+          _iteratorError8 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion8 && _iterator8.return) {
+              _iterator8.return();
+            }
+          } finally {
+            if (_didIteratorError8) {
+              throw _iteratorError8;
+            }
+          }
+        }
+      }
+
+      // asteroid collides with planet
+    } catch (err) {
+      _didIteratorError4 = true;
+      _iteratorError4 = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion4 && _iterator4.return) {
+          _iterator4.return();
+        }
+      } finally {
+        if (_didIteratorError4) {
+          throw _iteratorError4;
+        }
+      }
+    }
+
+    var _iteratorNormalCompletion5 = true;
+    var _didIteratorError5 = false;
+    var _iteratorError5 = undefined;
+
+    try {
+      for (var _iterator5 = state.game.asteroids[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+        var _asteroid2 = _step5.value;
+        var _iteratorNormalCompletion9 = true;
+        var _didIteratorError9 = false;
+        var _iteratorError9 = undefined;
+
+        try {
+          for (var _iterator9 = state.game.planets[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
+            var _planet = _step9.value;
+
+            var _distVec6 = subtract(_asteroid2.position, _planet.position);
+            var _dist6 = distance(_distVec6);
+            // only host does this computation
+            if (_dist6 < _planet.radius && thisPlayerIsHost) {
+              gameOver = true;
+              message = 'an asteroid crashed into the earth!';
+              loserID = id;
+              var _bothLose = true;
+            }
+          }
+        } catch (err) {
+          _didIteratorError9 = true;
+          _iteratorError9 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion9 && _iterator9.return) {
+              _iterator9.return();
+            }
+          } finally {
+            if (_didIteratorError9) {
+              throw _iteratorError9;
+            }
+          }
+        }
+      }
+
+      // ship collides with asteroid
+    } catch (err) {
+      _didIteratorError5 = true;
+      _iteratorError5 = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion5 && _iterator5.return) {
+          _iterator5.return();
+        }
+      } finally {
+        if (_didIteratorError5) {
+          throw _iteratorError5;
+        }
+      }
+    }
+
+    for (var _id4 in state.game.ships) {
+      var _iteratorNormalCompletion6 = true;
+      var _didIteratorError6 = false;
+      var _iteratorError6 = undefined;
+
+      try {
+        for (var _iterator6 = state.game.asteroids[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+          var asteroid = _step6.value;
+
+          var _ship3 = state.game.ships[_id4];
+          var _distVec3 = subtract(_ship3.position, asteroid.position);
+          var _dist3 = distance(_distVec3);
+          if (_dist3 < _ship3.radius + asteroid.radius) {
+            gameOver = true;
+            message = getPlayerByID(state, _id4).name + ' was hit by an asteroid!';
+            loserID = _id4;
+            if (gameMode == 'coop') {
+              bothLose = true;
+            }
+          }
+        }
+      } catch (err) {
+        _didIteratorError6 = true;
+        _iteratorError6 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion6 && _iterator6.return) {
+            _iterator6.return();
+          }
+        } finally {
+          if (_didIteratorError6) {
+            throw _iteratorError6;
+          }
         }
       }
     }
@@ -1710,8 +2117,8 @@ var initCollisionSystem = function initCollisionSystem(store) {
       dispatchToServer(thisClientID, stopAction);
 
       // update scores
-      for (var _id4 in state.game.ships) {
-        var player = getPlayerByID(state, _id4);
+      for (var _id5 in state.game.ships) {
+        var player = getPlayerByID(state, _id5);
         if (player.id != loserID) {
           var scoreAction = {
             type: 'SET_PLAYER_SCORE',
@@ -1743,22 +2150,26 @@ var initCollisionSystem = function initCollisionSystem(store) {
       dispatch({
         type: 'SET_MODAL', title: 'You Lose!', text: message, name: 'gameover'
       });
+      var otherPlayerTitle = bothLose ? 'You Lose!' : 'You Win!';
       dispatchToServer(thisClientID, {
-        type: 'SET_MODAL', title: 'You Win!', text: message, name: 'gameover'
+        type: 'SET_MODAL', title: otherPlayerTitle, text: message, name: 'gameover'
       });
     }
   });
 };
 
 module.exports = { initCollisionSystem: initCollisionSystem };
-},{"../config":1,"../selectors/selectors":16,"../ui/Button.react":23,"../utils/clientToServer":29,"../utils/vectors":34,"React":37}],20:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":17,"../ui/Button.react":25,"../utils/clientToServer":31,"../utils/vectors":36,"React":39}],22:[function(require,module,exports){
 'use strict';
 
 var _require = require('../config'),
     config = _require.config;
 
 var _require2 = require('../selectors/selectors'),
-    getClientPlayerID = _require2.getClientPlayerID;
+    getGameMode = _require2.getGameMode,
+    getNextTarget = _require2.getNextTarget,
+    getClientPlayerID = _require2.getClientPlayerID,
+    getHostPlayerID = _require2.getHostPlayerID;
 
 var _require3 = require('../utils/clientToServer'),
     dispatchToServer = _require3.dispatchToServer;
@@ -1877,28 +2288,44 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
             }
           }
 
+          dontFire = dontFire && gameMode == 'versus'; // can fire more in co-op
           if (dontFire) {
             break;
           }
           target = state.game.ships[playerID].target;
-          var _action5 = { type: 'FIRE_MISSILE', time: time, playerID: playerID, target: target };
-          dispatchToServer(playerID, _action5);
-          dispatch(_action5);
+          var thisPlayerIsHost = getClientPlayerID(state) === getHostPlayerID(state);
+          var offset = thisPlayerIsHost ? 5 : 10;
+          var id = window.nextID + offset; // HACK: pass this along so both players
+          // agree what its id is
+          var gameMode = getGameMode(state);
+          if (gameMode == 'versus') {
+            var _action5 = { type: 'FIRE_MISSILE', time: time, playerID: playerID, target: target, id: id };
+            dispatchToServer(playerID, _action5);
+            dispatch(_action5);
+          } else {
+            var _action6 = { type: 'FIRE_LASER', time: time, playerID: playerID };
+            dispatchToServer(playerID, _action6);
+            dispatch(_action6);
+          }
           break;
         }
 
       case 16:
         {
           // shift
-          var _action6 = { type: 'SHIFT_TARGET', playerID: playerID };
-          dispatch(_action6);
+          var targetID = getNextTarget(state.game, playerID);
+          var _action7 = { type: 'SHIFT_TARGET', playerID: playerID, targetID: targetID };
+          if (getGameMode(state) == 'coop') {
+            dispatchToServer(playerID, _action7);
+          }
+          dispatch(_action7);
         }
     }
   };
 };
 
 module.exports = { initKeyboardControlsSystem: initKeyboardControlsSystem };
-},{"../config":1,"../selectors/selectors":16,"../utils/clientToServer":29}],21:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":17,"../utils/clientToServer":31}],23:[function(require,module,exports){
 'use strict';
 
 var _require = require('../selectors/selectors'),
@@ -1958,7 +2385,7 @@ var initPlayerReadySystem = function initPlayerReadySystem(store) {
 };
 
 module.exports = { initPlayerReadySystem: initPlayerReadySystem };
-},{"../selectors/selectors":16,"../utils/clientToServer":29}],22:[function(require,module,exports){
+},{"../selectors/selectors":17,"../utils/clientToServer":31}],24:[function(require,module,exports){
 'use strict';
 
 var _require = require('../config'),
@@ -1974,6 +2401,9 @@ var _require3 = require('../entities/ship'),
 
 var _require4 = require('../entities/projectile'),
     renderProjectile = _require4.renderProjectile;
+
+var _require5 = require('../entities/asteroid'),
+    renderAsteroid = _require5.renderAsteroid;
 
 /**
  * Render things into the canvas
@@ -2044,7 +2474,7 @@ var render = function render(state, ctx) {
       renderProjectile(state, ctx, projectile);
     }
 
-    // render sun
+    // render asteroids
   } catch (err) {
     _didIteratorError = true;
     _iteratorError = err;
@@ -2060,31 +2490,18 @@ var render = function render(state, ctx) {
     }
   }
 
-  var sun = game.sun;
-
-  ctx.fillStyle = 'yellow';
-  ctx.beginPath();
-  ctx.arc(sun.position.x, sun.position.y, sun.radius, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.fill();
-
-  // render planets
   var _iteratorNormalCompletion2 = true;
   var _didIteratorError2 = false;
   var _iteratorError2 = undefined;
 
   try {
-    for (var _iterator2 = game.planets[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-      var planet = _step2.value;
+    for (var _iterator2 = game.asteroids[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var asteroid = _step2.value;
 
-      ctx.fillStyle = 'steelblue';
-      ctx.beginPath();
-      ctx.arc(planet.position.x, planet.position.y, planet.radius, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.fill();
+      renderAsteroid(state, ctx, asteroid);
     }
 
-    // render explosions
+    // render sun
   } catch (err) {
     _didIteratorError2 = true;
     _iteratorError2 = err;
@@ -2100,25 +2517,31 @@ var render = function render(state, ctx) {
     }
   }
 
+  var sun = game.sun;
+
+  ctx.fillStyle = 'yellow';
+  ctx.beginPath();
+  ctx.arc(sun.position.x, sun.position.y, sun.radius, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // render planets
   var _iteratorNormalCompletion3 = true;
   var _didIteratorError3 = false;
   var _iteratorError3 = undefined;
 
   try {
-    for (var _iterator3 = game.explosions[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-      var explosion = _step3.value;
+    for (var _iterator3 = game.planets[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+      var planet = _step3.value;
 
-      if (explosion.radius <= 0) {
-        continue;
-      }
-      ctx.globalAlpha = 1 - (config.explosion.age - explosion.age) / config.explosion.age;
-      ctx.fillStyle = explosion.color;
+      ctx.fillStyle = 'steelblue';
       ctx.beginPath();
-      ctx.arc(explosion.position.x, explosion.position.y, explosion.radius, 0, Math.PI * 2);
+      ctx.arc(planet.position.x, planet.position.y, planet.radius, 0, Math.PI * 2);
       ctx.closePath();
       ctx.fill();
-      ctx.globalAlpha = 1;
     }
+
+    // render explosions
   } catch (err) {
     _didIteratorError3 = true;
     _iteratorError3 = err;
@@ -2134,11 +2557,45 @@ var render = function render(state, ctx) {
     }
   }
 
+  var _iteratorNormalCompletion4 = true;
+  var _didIteratorError4 = false;
+  var _iteratorError4 = undefined;
+
+  try {
+    for (var _iterator4 = game.explosions[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+      var explosion = _step4.value;
+
+      if (explosion.radius <= 0) {
+        continue;
+      }
+      ctx.globalAlpha = 1 - (config.explosion.age - explosion.age) / config.explosion.age;
+      ctx.fillStyle = explosion.color;
+      ctx.beginPath();
+      ctx.arc(explosion.position.x, explosion.position.y, explosion.radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  } catch (err) {
+    _didIteratorError4 = true;
+    _iteratorError4 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion4 && _iterator4.return) {
+        _iterator4.return();
+      }
+    } finally {
+      if (_didIteratorError4) {
+        throw _iteratorError4;
+      }
+    }
+  }
+
   ctx.restore();
 };
 
 module.exports = { initRenderSystem: initRenderSystem };
-},{"../config":1,"../entities/projectile":4,"../entities/ship":5,"../selectors/selectors":16}],23:[function(require,module,exports){
+},{"../config":1,"../entities/asteroid":2,"../entities/projectile":5,"../entities/ship":6,"../selectors/selectors":17}],25:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2190,7 +2647,7 @@ var Button = function (_React$Component) {
 }(React.Component);
 
 module.exports = Button;
-},{"React":37}],24:[function(require,module,exports){
+},{"React":39}],26:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2236,7 +2693,7 @@ var Canvas = function (_React$Component) {
 ;
 
 module.exports = Canvas;
-},{"React":37}],25:[function(require,module,exports){
+},{"React":39}],27:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2332,7 +2789,7 @@ var Chat = function (_React$Component) {
 }(React.Component);
 
 module.exports = Chat;
-},{"../selectors/selectors":16,"../utils/clientToServer":29,"./Button.react":23,"React":37}],26:[function(require,module,exports){
+},{"../selectors/selectors":17,"../utils/clientToServer":31,"./Button.react":25,"React":39}],28:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2485,7 +2942,7 @@ var Game = function (_React$Component) {
 ;
 
 module.exports = Game;
-},{"../config":1,"../selectors/selectors":16,"../utils/clientToServer":29,"./Button.react":23,"./Canvas.react":24,"./Chat.react":25,"./Lobby.react":27,"React":37}],27:[function(require,module,exports){
+},{"../config":1,"../selectors/selectors":17,"../utils/clientToServer":31,"./Button.react":25,"./Canvas.react":26,"./Chat.react":27,"./Lobby.react":29,"React":39}],29:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2530,7 +2987,7 @@ var Lobby = function (_React$Component) {
     props.store.subscribe(function () {
       _this.setState(_extends({}, _this.props.store.getState()));
     });
-    _this.state = _extends({}, _this.props.store.getState(), { selectedMode: 'versus' });
+    _this.state = _extends({}, _this.props.store.getState(), { selectedMode: 'coop' });
     return _this;
   }
 
@@ -2727,7 +3184,7 @@ var Lobby = function (_React$Component) {
 }(React.Component);
 
 module.exports = Lobby;
-},{"../selectors/selectors":16,"../utils/clientToServer":29,"./Button.react":23,"./Chat.react":25,"./RadioPicker.react":28,"React":37}],28:[function(require,module,exports){
+},{"../selectors/selectors":17,"../utils/clientToServer":31,"./Button.react":25,"./Chat.react":27,"./RadioPicker.react":30,"React":39}],30:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2814,7 +3271,7 @@ var RadioPicker = function (_React$Component) {
 }(React.Component);
 
 module.exports = RadioPicker;
-},{"React":37}],29:[function(require,module,exports){
+},{"React":39}],31:[function(require,module,exports){
 "use strict";
 
 /**
@@ -2842,7 +3299,7 @@ module.exports = {
   setupClientToServer: setupClientToServer,
   dispatchToServer: dispatchToServer
 };
-},{}],30:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 "use strict";
 
 var invariant = function invariant(condition, message) {
@@ -2852,7 +3309,7 @@ var invariant = function invariant(condition, message) {
 };
 
 module.exports = { invariant: invariant };
-},{}],31:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -2951,7 +3408,7 @@ module.exports = {
   computeAccel: computeAccel,
   computeNextEntity: computeNextEntity
 };
-},{"../config":1,"../utils/vectors":34}],32:[function(require,module,exports){
+},{"../config":1,"../utils/vectors":36}],34:[function(require,module,exports){
 "use strict";
 
 var queueAdd = function queueAdd(queue, item, maxLength) {
@@ -2962,7 +3419,7 @@ var queueAdd = function queueAdd(queue, item, maxLength) {
 };
 
 module.exports = { queueAdd: queueAdd };
-},{}],33:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -3028,11 +3485,20 @@ var updateProjectile = function updateProjectile(state, j, numTicks) {
   }
 };
 
+var updateGenericEntity = function updateGenericEntity(state, entity) {
+  var sun = state.sun,
+      planets = state.planets;
+
+  var masses = [sun].concat(_toConsumableArray(planets));
+  return _extends({}, entity, computeNextEntity(masses, entity, 0 /* no thrust */));
+};
+
 module.exports = {
   updateShip: updateShip,
-  updateProjectile: updateProjectile
+  updateProjectile: updateProjectile,
+  updateGenericEntity: updateGenericEntity
 };
-},{"../config":1,"../utils/gravity":31,"../utils/queue":32}],34:[function(require,module,exports){
+},{"../config":1,"../utils/gravity":33,"../utils/queue":34}],36:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -3076,6 +3542,7 @@ var add = function add() {
   return resultVec;
 };
 
+// NOTE: see vectorTheta note if subtracting vectors to find the angle between them
 var subtract = function subtract() {
   for (var _len2 = arguments.length, vectors = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
     vectors[_key2] = arguments[_key2];
@@ -3102,13 +3569,22 @@ var distance = function distance(vector) {
   return Math.sqrt(x * x + y * y);
 };
 
+// what is the angle of this vector
+// NOTE: that when subtracting two vectors in order to compute the theta
+// between them, the target should be the first argument
+// hmm this may not work :S
+var vectorTheta = function vectorTheta(vector) {
+  return Math.atan2(vector.y, vector.x);
+};
+
 module.exports = {
   add: add,
   subtract: subtract,
   makeVector: makeVector,
-  distance: distance
+  distance: distance,
+  vectorTheta: vectorTheta
 };
-},{}],35:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 (function (process){
 /** @license React v16.8.6
  * react.development.js
@@ -5013,7 +5489,7 @@ module.exports = react;
 }
 
 }).call(this,require('_process'))
-},{"_process":76,"object-assign":50,"prop-types/checkPropTypes":38}],36:[function(require,module,exports){
+},{"_process":78,"object-assign":52,"prop-types/checkPropTypes":40}],38:[function(require,module,exports){
 /** @license React v16.8.6
  * react.production.min.js
  *
@@ -5040,7 +5516,7 @@ b,d){return W().useImperativeHandle(a,b,d)},useDebugValue:function(){},useLayout
 b){void 0!==b.ref&&(h=b.ref,f=J.current);void 0!==b.key&&(g=""+b.key);var l=void 0;a.type&&a.type.defaultProps&&(l=a.type.defaultProps);for(c in b)K.call(b,c)&&!L.hasOwnProperty(c)&&(e[c]=void 0===b[c]&&void 0!==l?l[c]:b[c])}c=arguments.length-2;if(1===c)e.children=d;else if(1<c){l=Array(c);for(var m=0;m<c;m++)l[m]=arguments[m+2];e.children=l}return{$$typeof:p,type:a.type,key:g,ref:h,props:e,_owner:f}},createFactory:function(a){var b=M.bind(null,a);b.type=a;return b},isValidElement:N,version:"16.8.6",
 unstable_ConcurrentMode:x,unstable_Profiler:u,__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{ReactCurrentDispatcher:I,ReactCurrentOwner:J,assign:k}},Y={default:X},Z=Y&&X||Y;module.exports=Z.default||Z;
 
-},{"object-assign":50}],37:[function(require,module,exports){
+},{"object-assign":52}],39:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -5051,7 +5527,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react.development.js":35,"./cjs/react.production.min.js":36,"_process":76}],38:[function(require,module,exports){
+},{"./cjs/react.development.js":37,"./cjs/react.production.min.js":38,"_process":78}],40:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -5157,7 +5633,7 @@ checkPropTypes.resetWarningCache = function() {
 module.exports = checkPropTypes;
 
 }).call(this,require('_process'))
-},{"./lib/ReactPropTypesSecret":39,"_process":76}],39:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":41,"_process":78}],41:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  *
@@ -5171,7 +5647,7 @@ var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 
 module.exports = ReactPropTypesSecret;
 
-},{}],40:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 var root = require('./_root');
 
 /** Built-in value references. */
@@ -5179,7 +5655,7 @@ var Symbol = root.Symbol;
 
 module.exports = Symbol;
 
-},{"./_root":47}],41:[function(require,module,exports){
+},{"./_root":49}],43:[function(require,module,exports){
 var Symbol = require('./_Symbol'),
     getRawTag = require('./_getRawTag'),
     objectToString = require('./_objectToString');
@@ -5209,7 +5685,7 @@ function baseGetTag(value) {
 
 module.exports = baseGetTag;
 
-},{"./_Symbol":40,"./_getRawTag":44,"./_objectToString":45}],42:[function(require,module,exports){
+},{"./_Symbol":42,"./_getRawTag":46,"./_objectToString":47}],44:[function(require,module,exports){
 (function (global){
 /** Detect free variable `global` from Node.js. */
 var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
@@ -5217,7 +5693,7 @@ var freeGlobal = typeof global == 'object' && global && global.Object === Object
 module.exports = freeGlobal;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],43:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 var overArg = require('./_overArg');
 
 /** Built-in value references. */
@@ -5225,7 +5701,7 @@ var getPrototype = overArg(Object.getPrototypeOf, Object);
 
 module.exports = getPrototype;
 
-},{"./_overArg":46}],44:[function(require,module,exports){
+},{"./_overArg":48}],46:[function(require,module,exports){
 var Symbol = require('./_Symbol');
 
 /** Used for built-in method references. */
@@ -5273,7 +5749,7 @@ function getRawTag(value) {
 
 module.exports = getRawTag;
 
-},{"./_Symbol":40}],45:[function(require,module,exports){
+},{"./_Symbol":42}],47:[function(require,module,exports){
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
 
@@ -5297,7 +5773,7 @@ function objectToString(value) {
 
 module.exports = objectToString;
 
-},{}],46:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 /**
  * Creates a unary function that invokes `func` with its argument transformed.
  *
@@ -5314,7 +5790,7 @@ function overArg(func, transform) {
 
 module.exports = overArg;
 
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 var freeGlobal = require('./_freeGlobal');
 
 /** Detect free variable `self`. */
@@ -5325,7 +5801,7 @@ var root = freeGlobal || freeSelf || Function('return this')();
 
 module.exports = root;
 
-},{"./_freeGlobal":42}],48:[function(require,module,exports){
+},{"./_freeGlobal":44}],50:[function(require,module,exports){
 /**
  * Checks if `value` is object-like. A value is object-like if it's not `null`
  * and has a `typeof` result of "object".
@@ -5356,7 +5832,7 @@ function isObjectLike(value) {
 
 module.exports = isObjectLike;
 
-},{}],49:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 var baseGetTag = require('./_baseGetTag'),
     getPrototype = require('./_getPrototype'),
     isObjectLike = require('./isObjectLike');
@@ -5420,7 +5896,7 @@ function isPlainObject(value) {
 
 module.exports = isPlainObject;
 
-},{"./_baseGetTag":41,"./_getPrototype":43,"./isObjectLike":48}],50:[function(require,module,exports){
+},{"./_baseGetTag":43,"./_getPrototype":45,"./isObjectLike":50}],52:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -5512,7 +5988,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 (function (process){
 /** @license React v16.8.6
  * react-dom.development.js
@@ -26794,7 +27270,7 @@ module.exports = reactDom;
 }
 
 }).call(this,require('_process'))
-},{"_process":76,"object-assign":50,"prop-types/checkPropTypes":54,"react":58,"scheduler":72,"scheduler/tracing":73}],52:[function(require,module,exports){
+},{"_process":78,"object-assign":52,"prop-types/checkPropTypes":56,"react":60,"scheduler":74,"scheduler/tracing":75}],54:[function(require,module,exports){
 /** @license React v16.8.6
  * react-dom.production.min.js
  *
@@ -27065,7 +27541,7 @@ x("38"):void 0;return Si(a,b,c,!1,d)},unmountComponentAtNode:function(a){Qi(a)?v
 X;X=!0;try{ki(a)}finally{(X=b)||W||Yh(1073741823,!1)}},__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{Events:[Ia,Ja,Ka,Ba.injectEventPluginsByName,pa,Qa,function(a){ya(a,Pa)},Eb,Fb,Dd,Da]}};function Ui(a,b){Qi(a)?void 0:x("299","unstable_createRoot");return new Pi(a,!0,null!=b&&!0===b.hydrate)}
 (function(a){var b=a.findFiberByHostInstance;return Te(n({},a,{overrideProps:null,currentDispatcherRef:Tb.ReactCurrentDispatcher,findHostInstanceByFiber:function(a){a=hd(a);return null===a?null:a.stateNode},findFiberByHostInstance:function(a){return b?b(a):null}}))})({findFiberByHostInstance:Ha,bundleType:0,version:"16.8.6",rendererPackageName:"react-dom"});var Wi={default:Vi},Xi=Wi&&Vi||Wi;module.exports=Xi.default||Xi;
 
-},{"object-assign":50,"react":58,"scheduler":72}],53:[function(require,module,exports){
+},{"object-assign":52,"react":60,"scheduler":74}],55:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -27107,21 +27583,21 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":51,"./cjs/react-dom.production.min.js":52,"_process":76}],54:[function(require,module,exports){
-arguments[4][38][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":55,"_process":76,"dup":38}],55:[function(require,module,exports){
-arguments[4][39][0].apply(exports,arguments)
-},{"dup":39}],56:[function(require,module,exports){
-arguments[4][35][0].apply(exports,arguments)
-},{"_process":76,"dup":35,"object-assign":50,"prop-types/checkPropTypes":59}],57:[function(require,module,exports){
-arguments[4][36][0].apply(exports,arguments)
-},{"dup":36,"object-assign":50}],58:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":53,"./cjs/react-dom.production.min.js":54,"_process":78}],56:[function(require,module,exports){
+arguments[4][40][0].apply(exports,arguments)
+},{"./lib/ReactPropTypesSecret":57,"_process":78,"dup":40}],57:[function(require,module,exports){
+arguments[4][41][0].apply(exports,arguments)
+},{"dup":41}],58:[function(require,module,exports){
 arguments[4][37][0].apply(exports,arguments)
-},{"./cjs/react.development.js":56,"./cjs/react.production.min.js":57,"_process":76,"dup":37}],59:[function(require,module,exports){
+},{"_process":78,"dup":37,"object-assign":52,"prop-types/checkPropTypes":61}],59:[function(require,module,exports){
 arguments[4][38][0].apply(exports,arguments)
-},{"./lib/ReactPropTypesSecret":60,"_process":76,"dup":38}],60:[function(require,module,exports){
+},{"dup":38,"object-assign":52}],60:[function(require,module,exports){
 arguments[4][39][0].apply(exports,arguments)
-},{"dup":39}],61:[function(require,module,exports){
+},{"./cjs/react.development.js":58,"./cjs/react.production.min.js":59,"_process":78,"dup":39}],61:[function(require,module,exports){
+arguments[4][40][0].apply(exports,arguments)
+},{"./lib/ReactPropTypesSecret":62,"_process":78,"dup":40}],62:[function(require,module,exports){
+arguments[4][41][0].apply(exports,arguments)
+},{"dup":41}],63:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -27180,7 +27656,7 @@ function applyMiddleware() {
     };
   };
 }
-},{"./compose":64}],62:[function(require,module,exports){
+},{"./compose":66}],64:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -27232,7 +27708,7 @@ function bindActionCreators(actionCreators, dispatch) {
   }
   return boundActionCreators;
 }
-},{}],63:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -27378,7 +27854,7 @@ function combineReducers(reducers) {
   };
 }
 }).call(this,require('_process'))
-},{"./createStore":65,"./utils/warning":67,"_process":76,"lodash/isPlainObject":49}],64:[function(require,module,exports){
+},{"./createStore":67,"./utils/warning":69,"_process":78,"lodash/isPlainObject":51}],66:[function(require,module,exports){
 "use strict";
 
 exports.__esModule = true;
@@ -27415,7 +27891,7 @@ function compose() {
     };
   });
 }
-},{}],65:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -27677,7 +28153,7 @@ var ActionTypes = exports.ActionTypes = {
     replaceReducer: replaceReducer
   }, _ref2[_symbolObservable2['default']] = observable, _ref2;
 }
-},{"lodash/isPlainObject":49,"symbol-observable":74}],66:[function(require,module,exports){
+},{"lodash/isPlainObject":51,"symbol-observable":76}],68:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -27726,7 +28202,7 @@ exports.bindActionCreators = _bindActionCreators2['default'];
 exports.applyMiddleware = _applyMiddleware2['default'];
 exports.compose = _compose2['default'];
 }).call(this,require('_process'))
-},{"./applyMiddleware":61,"./bindActionCreators":62,"./combineReducers":63,"./compose":64,"./createStore":65,"./utils/warning":67,"_process":76}],67:[function(require,module,exports){
+},{"./applyMiddleware":63,"./bindActionCreators":64,"./combineReducers":65,"./compose":66,"./createStore":67,"./utils/warning":69,"_process":78}],69:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -27752,7 +28228,7 @@ function warning(message) {
   } catch (e) {}
   /* eslint-enable no-empty */
 }
-},{}],68:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 (function (process){
 /** @license React v0.13.6
  * scheduler-tracing.development.js
@@ -28179,7 +28655,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 }
 
 }).call(this,require('_process'))
-},{"_process":76}],69:[function(require,module,exports){
+},{"_process":78}],71:[function(require,module,exports){
 /** @license React v0.13.6
  * scheduler-tracing.production.min.js
  *
@@ -28191,7 +28667,7 @@ exports.unstable_unsubscribe = unstable_unsubscribe;
 
 'use strict';Object.defineProperty(exports,"__esModule",{value:!0});var b=0;exports.__interactionsRef=null;exports.__subscriberRef=null;exports.unstable_clear=function(a){return a()};exports.unstable_getCurrent=function(){return null};exports.unstable_getThreadID=function(){return++b};exports.unstable_trace=function(a,d,c){return c()};exports.unstable_wrap=function(a){return a};exports.unstable_subscribe=function(){};exports.unstable_unsubscribe=function(){};
 
-},{}],70:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 (function (process,global){
 /** @license React v0.13.6
  * scheduler.development.js
@@ -28894,7 +29370,7 @@ exports.unstable_getFirstCallbackNode = unstable_getFirstCallbackNode;
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":76}],71:[function(require,module,exports){
+},{"_process":78}],73:[function(require,module,exports){
 (function (global){
 /** @license React v0.13.6
  * scheduler.production.min.js
@@ -28919,7 +29395,7 @@ b=c.previous;b.next=c.previous=a;a.next=c;a.previous=b}return a};exports.unstabl
 exports.unstable_shouldYield=function(){return!e&&(null!==d&&d.expirationTime<l||w())};exports.unstable_continueExecution=function(){null!==d&&p()};exports.unstable_pauseExecution=function(){};exports.unstable_getFirstCallbackNode=function(){return d};
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],72:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -28930,7 +29406,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":70,"./cjs/scheduler.production.min.js":71,"_process":76}],73:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":72,"./cjs/scheduler.production.min.js":73,"_process":78}],75:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -28941,7 +29417,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this,require('_process'))
-},{"./cjs/scheduler-tracing.development.js":68,"./cjs/scheduler-tracing.production.min.js":69,"_process":76}],74:[function(require,module,exports){
+},{"./cjs/scheduler-tracing.development.js":70,"./cjs/scheduler-tracing.production.min.js":71,"_process":78}],76:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -28973,7 +29449,7 @@ if (typeof self !== 'undefined') {
 var result = (0, _ponyfill2['default'])(root);
 exports['default'] = result;
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./ponyfill.js":75}],75:[function(require,module,exports){
+},{"./ponyfill.js":77}],77:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -28997,7 +29473,7 @@ function symbolObservablePonyfill(root) {
 
 	return result;
 };
-},{}],76:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -29183,4 +29659,4 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[6]);
+},{}]},{},[7]);

@@ -34,9 +34,9 @@ const renderShip = (state: State, ctx: any, id: PlayerID): void => {
   // ship
   ctx.save();
   ctx.fillStyle = color;
-  ctx.beginPath();
   ctx.translate(ship.position.x, ship.position.y);
   ctx.rotate(ship.theta);
+  ctx.beginPath();
   ctx.moveTo(ship.radius, 0);
   ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
   ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
@@ -56,7 +56,7 @@ const renderShip = (state: State, ctx: any, id: PlayerID): void => {
   ctx.restore();
 
   // path
-  ctx.beginPath();
+  ctx.save();
   ctx.strokeStyle = color;
   // scale line width with screensize
   const scale = config.width / config.canvasWidth;
@@ -73,6 +73,7 @@ const renderShip = (state: State, ctx: any, id: PlayerID): void => {
   for (const futureShip of ship.future) {
     ctx.fillRect(futureShip.position.x, futureShip.position.y, scale/1.5, scale/1.5);
   }
+  ctx.restore();
 }
 
 module.exports = {makeShip, renderShip};

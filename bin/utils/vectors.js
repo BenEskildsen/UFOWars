@@ -41,6 +41,7 @@ var add = function add() {
   return resultVec;
 };
 
+// NOTE: see vectorTheta note if subtracting vectors to find the angle between them
 var subtract = function subtract() {
   for (var _len2 = arguments.length, vectors = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
     vectors[_key2] = arguments[_key2];
@@ -67,9 +68,18 @@ var distance = function distance(vector) {
   return Math.sqrt(x * x + y * y);
 };
 
+// what is the angle of this vector
+// NOTE: that when subtracting two vectors in order to compute the theta
+// between them, the target should be the first argument
+// hmm this may not work :S
+var vectorTheta = function vectorTheta(vector) {
+  return Math.atan2(vector.y, vector.x);
+};
+
 module.exports = {
   add: add,
   subtract: subtract,
   makeVector: makeVector,
-  distance: distance
+  distance: distance,
+  vectorTheta: vectorTheta
 };

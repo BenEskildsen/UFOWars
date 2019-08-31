@@ -63,7 +63,16 @@ var updateProjectile = function updateProjectile(state, j, numTicks) {
   }
 };
 
+var updateGenericEntity = function updateGenericEntity(state, entity) {
+  var sun = state.sun,
+      planets = state.planets;
+
+  var masses = [sun].concat(_toConsumableArray(planets));
+  return _extends({}, entity, computeNextEntity(masses, entity, 0 /* no thrust */));
+};
+
 module.exports = {
   updateShip: updateShip,
-  updateProjectile: updateProjectile
+  updateProjectile: updateProjectile,
+  updateGenericEntity: updateGenericEntity
 };

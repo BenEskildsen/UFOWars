@@ -25,6 +25,9 @@ var _require6 = require('./systems/collisionSystem'),
 var _require7 = require('./systems/playerReadySystem'),
     initPlayerReadySystem = _require7.initPlayerReadySystem;
 
+var _require8 = require('./systems/asteroidSystem'),
+    initAsteroidSystem = _require8.initAsteroidSystem;
+
 var store = createStore(rootReducer);
 window.store = store; // useful for debugging
 
@@ -47,6 +50,7 @@ store.subscribe(function () {
   initRenderSystem(store);
   initKeyboardControlsSystem(store);
   initCollisionSystem(store);
+  initAsteroidSystem(store);
 });
 
 ReactDOM.render(React.createElement(Game, { store: store }), document.getElementById('container'));

@@ -1,6 +1,11 @@
 
 const {config} = require('../config');
-const {getClientPlayerID} = require('../selectors/selectors');
+const {
+  getGameMode,
+  getNextTarget,
+  getClientPlayerID,
+  getHostPlayerID,
+} = require('../selectors/selectors');
 const {dispatchToServer} = require('../utils/clientToServer');
 
 const initKeyboardControlsSystem = (store) => {
@@ -76,18 +81,34 @@ const initKeyboardControlsSystem = (store) => {
             break;
           }
         }
+        dontFire = dontFire && gameMode == 'versus'; // can fire more in co-op
         if (dontFire) {
           break;
         }
         target = state.game.ships[playerID].target;
-        const action = {type: 'FIRE_MISSILE', time, playerID, target};
-        dispatchToServer(playerID, action);
-        dispatch(action);
+        const thisPlayerIsHost = getClientPlayerID(state) === getHostPlayerID(state);
+        const offset = thisPlayerIsHost ? 5 : 10;
+        const id = window.nextID + offset; // HACK: pass this along so both players
+                                           // agree what its id is
+        const gameMode = getGameMode(state);
+        if (gameMode == 'versus') {
+          const action = {type: 'FIRE_MISSILE', time, playerID, target, id};
+          dispatchToServer(playerID, action);
+          dispatch(action);
+        } else {
+          const action = {type: 'FIRE_LASER', time, playerID};
+          dispatchToServer(playerID, action);
+          dispatch(action);
+        }
         break;
       }
 
       case 16: { // shift
-        const action = {type: 'SHIFT_TARGET', playerID};
+        const targetID = getNextTarget(state.game, playerID);
+        const action = {type: 'SHIFT_TARGET', playerID, targetID};
+        if (getGameMode(state) == 'coop') {
+          dispatchToServer(playerID, action);
+        }
         dispatch(action);
       }
     }

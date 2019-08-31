@@ -21,14 +21,17 @@ var initGameState = function initGameState(players, mode) {
       earth = config.earth;
 
   var planets = [];
-  if (mode == 'planet') {
-    planets.push(makeEntity(earth.mass, earth.radius, { x: width / 2, y: height / 2 - 1000 }, // position
-    { x: -8.5, y: 0 // velocity
-    }));
-  }
-  if (mode == 'coop') {
-    planets.push(makeEntity(earth.mass, earth.radius, { x: width / 2, y: height / 2 - 1000 }, // position
-    { x: -8.5, y: 0 // velocity
+  // no planet defense mode for now
+  // if (mode == 'planet') {
+  //   planets.push(makeEntity(
+  //     earth.mass, earth.radius,
+  //     {x: width / 2, y: height / 2 - 1000}, // position
+  //     {x: -8.5, y: 0} // velocity
+  //   ));
+  // }
+  if (mode == 'coop' || mode == 'versus') {
+    planets.push(makeEntity(earth.mass, earth.radius, { x: width / 2 - 600, y: height / 2 }, // position
+    { x: 0, y: 10 // velocity
     }));
   }
   return {
@@ -51,6 +54,7 @@ var initGameState = function initGameState(players, mode) {
     planets: planets,
     projectiles: [],
     explosions: [],
+    asteroids: [],
 
     actionQueue: []
   };

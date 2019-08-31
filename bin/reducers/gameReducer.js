@@ -19,8 +19,8 @@ var _require3 = require('../utils/updateEntities'),
 var _require4 = require('../entities/explosion'),
     makeExplosion = _require4.makeExplosion;
 
-var _require5 = require('../selectors/selectors'),
-    getNextTarget = _require5.getNextTarget;
+var _require5 = require('../entities/asteroid'),
+    makeAsteroid = _require5.makeAsteroid;
 
 var gameReducer = function gameReducer(state, action) {
   switch (action.type) {
@@ -81,23 +81,51 @@ var gameReducer = function gameReducer(state, action) {
         });
       }
     case 'SHIFT_TARGET':
-      var playerID = action.playerID;
+      var playerID = action.playerID,
+          targetID = action.targetID;
 
-      var nextTarget = getNextTarget(state, playerID);
       return _extends({}, state, {
         ships: _extends({}, state.ships, _defineProperty({}, playerID, _extends({}, state.ships[playerID], {
-          target: nextTarget
+          target: targetID
         })))
       });
     case 'DESTROY_MISSILE':
-      var id = action.id;
+      {
+        var id = action.id;
 
-      var nextMissiles = state.projectiles.filter(function (projectile) {
-        return projectile.id != id;
-      });
-      return _extends({}, state, {
-        projectiles: nextMissiles
-      });
+        var nextMissiles = state.projectiles.filter(function (projectile) {
+          return projectile.id != id;
+        });
+        return _extends({}, state, {
+          projectiles: nextMissiles
+        });
+      }
+    case 'MAKE_ASTEROID':
+      {
+        var _position = action.position,
+            velocity = action.velocity,
+            _id = action.id;
+
+        var asteroid = makeAsteroid(_position, velocity);
+        asteroid.id = _id;
+        window.nextID = _id + 13; // HACK
+        asteroid.theta += Math.random() * Math.PI;
+        return _extends({}, state, {
+          asteroids: [].concat(_toConsumableArray(state.asteroids), [asteroid])
+        });
+      }
+    case 'DESTROY_ASTEROID':
+      {
+        var _id2 = action.id;
+
+        var nextAsteroids = state.asteroids.filter(function (projectile) {
+          return projectile.id != _id2;
+        });
+        return _extends({}, state, {
+          asteroids: nextAsteroids
+        });
+      }
+
   }
 
   return state;

@@ -47,7 +47,8 @@ var fireProjectileReducer = function fireProjectileReducer(state, action) {
     case 'FIRE_MISSILE':
       {
         var _playerID = action.playerID,
-            target = action.target;
+            target = action.target,
+            id = action.id;
         var _projectiles = state.projectiles,
             _ships = state.ships;
 
@@ -67,6 +68,9 @@ var fireProjectileReducer = function fireProjectileReducer(state, action) {
           });
         }
         var _projectile = makeMissileProjectile(_playerID, _shipPosition, _shipTheta, shipVelocity, target);
+        _projectile.id = id;
+        window.nextID = id + 11; // HACK we really don't want the two players to make different
+        // entities with the same id
         queueAdd(_projectiles, _projectile, config.maxProjectiles);
         return _extends({}, state, {
           projectiles: _projectiles

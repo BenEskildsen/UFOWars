@@ -57,6 +57,8 @@ var rootReducer = function rootReducer(state, action) {
     case 'MAKE_EXPLOSION':
     case 'SHIFT_TARGET':
     case 'DESTROY_MISSILE':
+    case 'MAKE_ASTEROID':
+    case 'DESTROY_ASTEROID':
       if (!state.game) return state;
       return _extends({}, state, {
         game: gameReducer(state.game, action)

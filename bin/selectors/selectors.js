@@ -77,6 +77,10 @@ var getOtherPlayerID = function getOtherPlayerID(state) {
   }
 };
 
+var getGameMode = function getGameMode(state) {
+  return getClientGame(state).mode;
+};
+
 var getPlayerByID = function getPlayerByID(state, playerID) {
   var _iteratorNormalCompletion3 = true;
   var _didIteratorError3 = false;
@@ -131,9 +135,10 @@ var getPlayerColor = function getPlayerColor(state, playerID) {
 var getNextTarget = function getNextTarget(state, playerID) {
   var ships = state.ships,
       planets = state.planets,
-      projectiles = state.projectiles;
+      projectiles = state.projectiles,
+      asteroids = state.asteroids;
 
-  var entities = Object.values(ships).concat(projectiles).concat(planets);
+  var entities = Object.values(ships).concat(projectiles).concat(planets).concat(asteroids);
   var entityIDs = entities.map(function (entity) {
     return entity.id;
   });
@@ -167,6 +172,12 @@ var getEntityByID = function getEntityByID(state, id) {
   return entities[index];
 };
 
+var getHostPlayerID = function getHostPlayerID(state) {
+  for (var id in state.game.ships) {
+    return id; // HACK :)
+  }
+};
+
 module.exports = {
   getClientPlayerID: getClientPlayerID,
   getOtherPlayerID: getOtherPlayerID,
@@ -176,5 +187,7 @@ module.exports = {
   getNextGameID: getNextGameID,
   getPlayerColor: getPlayerColor,
   getNextTarget: getNextTarget,
-  getEntityByID: getEntityByID
+  getEntityByID: getEntityByID,
+  getGameMode: getGameMode,
+  getHostPlayerID: getHostPlayerID
 };

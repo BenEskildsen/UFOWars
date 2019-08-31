@@ -33,6 +33,10 @@ const getOtherPlayerID = (state: State): PlayerID => {
   }
 };
 
+const getGameMode = (state: State): 'versus' | 'coop' | 'planet' => {
+  return getClientGame(state).mode;
+};
+
 const getPlayerByID = (state: State, playerID: PlayerID): Player => {
   for (const player of state.players) {
     if (player.id == playerID) {
@@ -62,9 +66,12 @@ const getPlayerColor = (state: State, playerID: PlayerID): Color => {
   return config.playerColors[colorIndex];
 }
 
-const getNextTarget = (state: GameState, playerID: PlayerID): Entity => {
-  const {ships, planets, projectiles} = state;
-  const entities = Object.values(ships).concat(projectiles).concat(planets);
+const getNextTarget = (state: GameState, playerID: PlayerID): EntityID => {
+  const {ships, planets, projectiles, asteroids} = state;
+  const entities = Object.values(ships)
+    .concat(projectiles)
+    .concat(planets)
+    .concat(asteroids);
   const entityIDs = entities.map(entity => entity.id);
 
   const currentShip = ships[playerID];
@@ -91,6 +98,12 @@ const getEntityByID = (state: GameState, id: EntityID): ?Entity => {
   return entities[index];
 }
 
+const getHostPlayerID = (state: State): PlayerID => {
+  for (const id in state.game.ships) {
+    return id; // HACK :)
+  }
+}
+
 module.exports = {
   getClientPlayerID,
   getOtherPlayerID,
@@ -101,4 +114,6 @@ module.exports = {
   getPlayerColor,
   getNextTarget,
   getEntityByID,
+  getGameMode,
+  getHostPlayerID,
 };

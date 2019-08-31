@@ -16,7 +16,8 @@ var _require3 = require('../utils/vectors'),
 
 var _require4 = require('../utils/updateEntities'),
     updateShip = _require4.updateShip,
-    updateProjectile = _require4.updateProjectile;
+    updateProjectile = _require4.updateProjectile,
+    updateGenericEntity = _require4.updateGenericEntity;
 
 var _require5 = require('../config'),
     config = _require5.config;
@@ -87,10 +88,46 @@ var handleTick = function handleTick(state) {
     });
   });
 
+  // update asteroids
+  var nextAsteroids = [];
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = state.asteroids[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var asteroid = _step.value;
+
+      var nextAsteroid = updateGenericEntity(state, asteroid);
+      nextAsteroid.age += 1;
+      nextAsteroids.push(nextAsteroid);
+    }
+    // asteroids colliding with sun
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  nextAsteroids = nextAsteroids.filter(function (asteroid) {
+    var dist = distance(subtract(asteroid.position, sun.position));
+    return dist > sun.radius;
+  });
+
   // update projectiles
   for (var i = 0; i < state.projectiles.length; i++) {
     // handle missiles
     if (state.projectiles[i].type != 'missile') {
+      updateProjectile(state, i, 1 /* one tick */);
       continue;
     }
     var missile = state.projectiles[i];
@@ -110,16 +147,17 @@ var handleTick = function handleTick(state) {
     updateProjectile(state, i, 1 /* one tick */);
   }
 
+  // NOTE: anything you want to actually update position-wise needs to go before this!!
   // check on queued actions
   var nextState = state;
   var nextActionQueue = [];
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
 
   try {
-    for (var _iterator = state.actionQueue[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var action = _step.value;
+    for (var _iterator2 = state.actionQueue[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var action = _step2.value;
 
       if (action.time == state.time) {
         nextState = gameReducer(nextState, action);
@@ -130,16 +168,16 @@ var handleTick = function handleTick(state) {
 
     // projectiles colliding with sun
   } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
   } finally {
     try {
-      if (!_iteratorNormalCompletion && _iterator.return) {
-        _iterator.return();
+      if (!_iteratorNormalCompletion2 && _iterator2.return) {
+        _iterator2.return();
       }
     } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
+      if (_didIteratorError2) {
+        throw _iteratorError2;
       }
     }
   }
@@ -152,10 +190,15 @@ var handleTick = function handleTick(state) {
   nextProjectiles = nextProjectiles.filter(function (projectile) {
     return !(projectile.type == 'missile' && projectile.age > config.missile.maxAge);
   });
+  // clean up old asteroids
+  nextAsteroids = nextAsteroids.filter(function (asteroid) {
+    return asteroid.age < config.asteroid.maxAge;
+  });
 
   return _extends({}, nextState, {
     projectiles: nextProjectiles,
-    actionQueue: nextActionQueue
+    actionQueue: nextActionQueue,
+    asteroids: nextAsteroids
   });
 };
 

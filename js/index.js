@@ -11,6 +11,7 @@ const {initRenderSystem} = require('./systems/renderSystem');
 const {initKeyboardControlsSystem} = require('./systems/keyboardControlsSystem');
 const {initCollisionSystem} = require('./systems/collisionSystem');
 const {initPlayerReadySystem} = require('./systems/playerReadySystem');
+const {initAsteroidSystem} = require('./systems/asteroidSystem');
 
 const store = createStore(rootReducer);
 window.store = store; // useful for debugging
@@ -34,6 +35,7 @@ store.subscribe(() => {
   initRenderSystem(store);
   initKeyboardControlsSystem(store);
   initCollisionSystem(store);
+  initAsteroidSystem(store);
 });
 
 ReactDOM.render(

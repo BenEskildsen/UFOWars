@@ -2,7 +2,10 @@
 
 import type {Mass, Radians, Vector, Size, Entity} from '../types';
 
-let nextID = 0;
+// HACK: need to make this global so that people creating missiles can
+// give them unique ids and not have the ids collide if both players fire
+// at the same time
+window.nextID = 0;
 
 const makeEntity = (
   mass: Mass,

@@ -42,7 +42,7 @@ var Lobby = function (_React$Component) {
     props.store.subscribe(function () {
       _this.setState(_extends({}, _this.props.store.getState()));
     });
-    _this.state = _extends({}, _this.props.store.getState(), { selectedMode: 'versus' });
+    _this.state = _extends({}, _this.props.store.getState(), { selectedMode: 'coop' });
     return _this;
   }
 

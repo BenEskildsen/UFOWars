@@ -3,7 +3,11 @@
 const {computeNextEntity} = require('../utils/gravity');
 const {queueAdd} = require('../utils/queue');
 const {subtract, distance} = require('../utils/vectors');
-const {updateShip, updateProjectile} = require('../utils/updateEntities');
+const {
+  updateShip,
+  updateProjectile,
+  updateGenericEntity,
+} = require('../utils/updateEntities');
 const {config} = require('../config');
 const {sin, cos, abs, sqrt} = Math;
 const {gameReducer} = require('./gameReducer');
@@ -64,10 +68,24 @@ const handleTick = (state: GameState): GameState => {
     };
   });
 
+  // update asteroids
+  let nextAsteroids = [];
+  for (const asteroid of state.asteroids) {
+    const nextAsteroid = updateGenericEntity(state, asteroid);
+    nextAsteroid.age += 1;
+    nextAsteroids.push(nextAsteroid);
+  }
+  // asteroids colliding with sun
+  nextAsteroids = nextAsteroids.filter(asteroid => {
+    const dist = distance(subtract(asteroid.position, sun.position));
+    return dist > sun.radius;
+  });
+
   // update projectiles
   for (let i = 0; i < state.projectiles.length; i++) {
     // handle missiles
     if (state.projectiles[i].type != 'missile') {
+      updateProjectile(state, i, 1 /* one tick */);
       continue;
     }
     const missile = state.projectiles[i];
@@ -87,6 +105,7 @@ const handleTick = (state: GameState): GameState => {
     updateProjectile(state, i, 1 /* one tick */);
   }
 
+  // NOTE: anything you want to actually update position-wise needs to go before this!!
   // check on queued actions
   let nextState = state;
   const nextActionQueue = [];
@@ -107,11 +126,16 @@ const handleTick = (state: GameState): GameState => {
   nextProjectiles = nextProjectiles.filter(projectile => {
     return !(projectile.type == 'missile' && projectile.age > config.missile.maxAge)
   });
+  // clean up old asteroids
+  nextAsteroids = nextAsteroids.filter(asteroid => {
+    return asteroid.age < config.asteroid.maxAge;
+  });
 
   return {
     ...nextState,
     projectiles: nextProjectiles,
     actionQueue: nextActionQueue,
+    asteroids: nextAsteroids,
   };
 }
 

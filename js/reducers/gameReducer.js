@@ -4,7 +4,7 @@ const {config} = require('../config');
 const {fireProjectileReducer} = require('./fireProjectileReducer');
 const {updateShip, updateProjectile} = require('../utils/updateEntities');
 const {makeExplosion} = require('../entities/explosion');
-const {getNextTarget} = require('../selectors/selectors');
+const {makeAsteroid} = require('../entities/asteroid');
 
 import type {State, GameState, Ship, Action} from '../types';
 
@@ -81,25 +81,45 @@ const gameReducer = (state: GameState, action: Action): GameState => {
       };
     }
     case 'SHIFT_TARGET':
-      const {playerID} = action;
-      const nextTarget = getNextTarget(state, playerID);
+      const {playerID, targetID} = action;
       return {
         ...state,
         ships: {
           ...state.ships,
           [playerID]: {
             ...state.ships[playerID],
-            target: nextTarget,
+            target: targetID,
           },
         },
       }
-    case 'DESTROY_MISSILE':
+    case 'DESTROY_MISSILE': {
       const {id} = action;
       const nextMissiles = state.projectiles.filter(projectile => projectile.id != id);
       return {
         ...state,
         projectiles: nextMissiles,
       }
+    }
+    case 'MAKE_ASTEROID': {
+      const {position, velocity, id} = action;
+      const asteroid = makeAsteroid(position, velocity);
+      asteroid.id = id;
+      window.nextID = id + 13; // HACK
+      asteroid.theta += Math.random() * Math.PI;
+      return {
+        ...state,
+        asteroids: [...state.asteroids, asteroid],
+      };
+    }
+    case 'DESTROY_ASTEROID': {
+      const {id} = action;
+      const nextAsteroids = state.asteroids.filter(projectile => projectile.id != id);
+      return {
+        ...state,
+        asteroids: nextAsteroids,
+      }
+    }
+
   }
 
   return state;

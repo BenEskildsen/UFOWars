@@ -55,3 +55,5 @@ Date  Time Started  Time Spent  Work Completed
 8/28     9pm        1hr 30m     Make game modes selectable in the lobby
                                 Move rewind time into update ship
                                 Implement rewinding the planet
+
+8/30     8am        6hr         Implement asteroid, and asteroid system for coop

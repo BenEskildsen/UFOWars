@@ -37,9 +37,9 @@ var renderShip = function renderShip(state, ctx, id) {
   // ship
   ctx.save();
   ctx.fillStyle = color;
-  ctx.beginPath();
   ctx.translate(ship.position.x, ship.position.y);
   ctx.rotate(ship.theta);
+  ctx.beginPath();
   ctx.moveTo(ship.radius, 0);
   ctx.lineTo(-1 * ship.radius / 2, -1 * ship.radius / 2);
   ctx.lineTo(-1 * ship.radius / 2, ship.radius / 2);
@@ -59,7 +59,7 @@ var renderShip = function renderShip(state, ctx, id) {
   ctx.restore();
 
   // path
-  ctx.beginPath();
+  ctx.save();
   ctx.strokeStyle = color;
   // scale line width with screensize
   var scale = config.width / config.canvasWidth;
@@ -119,6 +119,8 @@ var renderShip = function renderShip(state, ctx, id) {
       }
     }
   }
+
+  ctx.restore();
 };
 
 module.exports = { makeShip: makeShip, renderShip: renderShip };

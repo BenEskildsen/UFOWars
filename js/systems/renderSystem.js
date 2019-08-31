@@ -2,6 +2,7 @@ const {config} = require('../config');
 const {getClientPlayerID, getPlayerColor, getEntityByID} = require('../selectors/selectors');
 const {renderShip} = require('../entities/ship');
 const {renderProjectile} = require('../entities/projectile');
+const {renderAsteroid} = require('../entities/asteroid');
 
 import type {Store, Game} from '../types';
 
@@ -69,6 +70,11 @@ const render = (state: State, ctx: any): void => {
   // render projectiles
   for (const projectile of game.projectiles) {
     renderProjectile(state, ctx, projectile);
+  }
+
+  // render asteroids
+  for (const asteroid of game.asteroids) {
+    renderAsteroid(state, ctx, asteroid);
   }
 
   // render sun

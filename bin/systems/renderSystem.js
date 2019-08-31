@@ -14,6 +14,9 @@ var _require3 = require('../entities/ship'),
 var _require4 = require('../entities/projectile'),
     renderProjectile = _require4.renderProjectile;
 
+var _require5 = require('../entities/asteroid'),
+    renderAsteroid = _require5.renderAsteroid;
+
 /**
  * Render things into the canvas
  */
@@ -83,7 +86,7 @@ var render = function render(state, ctx) {
       renderProjectile(state, ctx, projectile);
     }
 
-    // render sun
+    // render asteroids
   } catch (err) {
     _didIteratorError = true;
     _iteratorError = err;
@@ -99,31 +102,18 @@ var render = function render(state, ctx) {
     }
   }
 
-  var sun = game.sun;
-
-  ctx.fillStyle = 'yellow';
-  ctx.beginPath();
-  ctx.arc(sun.position.x, sun.position.y, sun.radius, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.fill();
-
-  // render planets
   var _iteratorNormalCompletion2 = true;
   var _didIteratorError2 = false;
   var _iteratorError2 = undefined;
 
   try {
-    for (var _iterator2 = game.planets[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-      var planet = _step2.value;
+    for (var _iterator2 = game.asteroids[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var asteroid = _step2.value;
 
-      ctx.fillStyle = 'steelblue';
-      ctx.beginPath();
-      ctx.arc(planet.position.x, planet.position.y, planet.radius, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.fill();
+      renderAsteroid(state, ctx, asteroid);
     }
 
-    // render explosions
+    // render sun
   } catch (err) {
     _didIteratorError2 = true;
     _iteratorError2 = err;
@@ -139,13 +129,53 @@ var render = function render(state, ctx) {
     }
   }
 
+  var sun = game.sun;
+
+  ctx.fillStyle = 'yellow';
+  ctx.beginPath();
+  ctx.arc(sun.position.x, sun.position.y, sun.radius, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // render planets
   var _iteratorNormalCompletion3 = true;
   var _didIteratorError3 = false;
   var _iteratorError3 = undefined;
 
   try {
-    for (var _iterator3 = game.explosions[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-      var explosion = _step3.value;
+    for (var _iterator3 = game.planets[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+      var planet = _step3.value;
+
+      ctx.fillStyle = 'steelblue';
+      ctx.beginPath();
+      ctx.arc(planet.position.x, planet.position.y, planet.radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // render explosions
+  } catch (err) {
+    _didIteratorError3 = true;
+    _iteratorError3 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion3 && _iterator3.return) {
+        _iterator3.return();
+      }
+    } finally {
+      if (_didIteratorError3) {
+        throw _iteratorError3;
+      }
+    }
+  }
+
+  var _iteratorNormalCompletion4 = true;
+  var _didIteratorError4 = false;
+  var _iteratorError4 = undefined;
+
+  try {
+    for (var _iterator4 = game.explosions[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+      var explosion = _step4.value;
 
       if (explosion.radius <= 0) {
         continue;
@@ -159,16 +189,16 @@ var render = function render(state, ctx) {
       ctx.globalAlpha = 1;
     }
   } catch (err) {
-    _didIteratorError3 = true;
-    _iteratorError3 = err;
+    _didIteratorError4 = true;
+    _iteratorError4 = err;
   } finally {
     try {
-      if (!_iteratorNormalCompletion3 && _iterator3.return) {
-        _iterator3.return();
+      if (!_iteratorNormalCompletion4 && _iterator4.return) {
+        _iterator4.return();
       }
     } finally {
-      if (_didIteratorError3) {
-        throw _iteratorError3;
+      if (_didIteratorError4) {
+        throw _iteratorError4;
       }
     }
   }

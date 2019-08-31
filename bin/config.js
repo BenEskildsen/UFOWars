@@ -9,7 +9,7 @@ var config = {
   ship: {
     thrust: 0.05,
     thetaSpeed: 5 * Math.PI / 180,
-    radius: 35,
+    radius: 40,
     mass: 10,
     maxFuel: 100,
     maxLaser: 100
@@ -19,7 +19,7 @@ var config = {
     mass: 100000
   },
   earth: {
-    radius: 30,
+    radius: 35,
     mass: 10000
   },
   missile: {
@@ -37,11 +37,19 @@ var config = {
     color: 'white',
     offset: 100
   },
+  asteroid: {
+    mass: 10,
+    radius: 25,
+    speed: 8,
+    thetaSpeed: 3 * Math.PI / 180,
+    thetaFuzziness: 30, // degrees
+    maxAge: 10000
+  },
   G: 0.75, // gravitational constant
   maxHistorySize: 150,
   maxFutureSize: 100,
   laserSize: 4, // deprecated in favor of laserSpeed
-  laserSpeed: 20,
+  laserSpeed: 50,
   maxProjectiles: 100,
   c: Infinity, // speed of light, in pixels per tick
   playerColors: ['white', 'LightSkyBlue', 'OrangeRed']

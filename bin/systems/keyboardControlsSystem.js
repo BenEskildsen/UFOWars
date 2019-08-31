@@ -4,7 +4,10 @@ var _require = require('../config'),
     config = _require.config;
 
 var _require2 = require('../selectors/selectors'),
-    getClientPlayerID = _require2.getClientPlayerID;
+    getGameMode = _require2.getGameMode,
+    getNextTarget = _require2.getNextTarget,
+    getClientPlayerID = _require2.getClientPlayerID,
+    getHostPlayerID = _require2.getHostPlayerID;
 
 var _require3 = require('../utils/clientToServer'),
     dispatchToServer = _require3.dispatchToServer;
@@ -123,21 +126,37 @@ var initKeyboardControlsSystem = function initKeyboardControlsSystem(store) {
             }
           }
 
+          dontFire = dontFire && gameMode == 'versus'; // can fire more in co-op
           if (dontFire) {
             break;
           }
           target = state.game.ships[playerID].target;
-          var _action5 = { type: 'FIRE_MISSILE', time: time, playerID: playerID, target: target };
-          dispatchToServer(playerID, _action5);
-          dispatch(_action5);
+          var thisPlayerIsHost = getClientPlayerID(state) === getHostPlayerID(state);
+          var offset = thisPlayerIsHost ? 5 : 10;
+          var id = window.nextID + offset; // HACK: pass this along so both players
+          // agree what its id is
+          var gameMode = getGameMode(state);
+          if (gameMode == 'versus') {
+            var _action5 = { type: 'FIRE_MISSILE', time: time, playerID: playerID, target: target, id: id };
+            dispatchToServer(playerID, _action5);
+            dispatch(_action5);
+          } else {
+            var _action6 = { type: 'FIRE_LASER', time: time, playerID: playerID };
+            dispatchToServer(playerID, _action6);
+            dispatch(_action6);
+          }
           break;
         }
 
       case 16:
         {
           // shift
-          var _action6 = { type: 'SHIFT_TARGET', playerID: playerID };
-          dispatch(_action6);
+          var targetID = getNextTarget(state.game, playerID);
+          var _action7 = { type: 'SHIFT_TARGET', playerID: playerID, targetID: targetID };
+          if (getGameMode(state) == 'coop') {
+            dispatchToServer(playerID, _action7);
+          }
+          dispatch(_action7);
         }
     }
   };

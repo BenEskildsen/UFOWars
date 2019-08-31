@@ -6,6 +6,8 @@ const {
   getOtherPlayerID,
   getPlayerByID,
   getClientPlayerID,
+  getHostPlayerID,
+  getGameMode,
 } = require('../selectors/selectors');
 const {dispatchToServer} = require('../utils/clientToServer');
 const React = require('React');
@@ -34,6 +36,8 @@ const initCollisionSystem = (store: Store): void => {
     let gameOver = false;
     let message = '';
     let loserID = null;
+    let bothLose = false;
+    const gameMode = getGameMode(state);
 
     // ship collides with sun
     for (const id in state.game.ships) {
@@ -57,6 +61,9 @@ const initCollisionSystem = (store: Store): void => {
           gameOver = true;
           message = getPlayerByID(state, id).name + ' crashed into the earth!';
           loserID = id;
+          if (gameMode == 'coop') {
+            bothLose = true;
+          }
         }
       }
     }
@@ -74,18 +81,15 @@ const initCollisionSystem = (store: Store): void => {
           gameOver = true;
           message = getPlayerByID(state, id).name + ' was hit by a ' + projectile.type + '!';
           loserID = id;
+          if (gameMode == 'coop') {
+            bothLose = true;
+          }
         }
       }
     }
 
     const thisClientID = getClientPlayerID(state);
-    let thisPlayerIsHost = false;
-    for (const id in state.game.ships) {
-      if (id == thisClientID) {
-        thisPlayerIsHost = true;
-      }
-      break;
-    }
+    const thisPlayerIsHost = thisClientID === getHostPlayerID(state);
 
     // missile collides with missile
     for (const projectile1 of state.game.projectiles) {
@@ -123,6 +127,66 @@ const initCollisionSystem = (store: Store): void => {
             dispatchToServer(thisClientID, action2);
             dispatchToServer(thisClientID, explosionAction1);
             dispatchToServer(thisClientID, explosionAction2);
+          }
+        }
+      }
+    }
+
+    // projectile collides with asteroid
+    for (const projectile of state.game.projectiles) {
+      for (const asteroid of state.game.asteroids) {
+        const distVec = subtract(projectile.position, asteroid.position);
+        const dist = distance(distVec);
+        if (dist < asteroid.radius + 5) {
+          const action1 = {type: 'DESTROY_MISSILE', id: projectile.id, time};
+          const action2 = {type: 'DESTROY_ASTEROID', id: asteroid.id, time};
+          const explosionAction = {
+            type: 'MAKE_EXPLOSION',
+            position: asteroid.position,
+            age: config.explosion.age,
+            rate: config.explosion.rate + random(),
+            color: ['yellow', 'orange', 'white'][floor(random() * 3)],
+            radius: round(random() * 5) - 10
+          };
+          if (thisPlayerIsHost) {
+            dispatch(action1);
+            dispatch(action2);
+            dispatch(explosionAction);
+            dispatchToServer(thisClientID, action1);
+            dispatchToServer(thisClientID, action2);
+            dispatchToServer(thisClientID, explosionAction);
+          }
+        }
+      }
+    }
+
+    // asteroid collides with planet
+    for (const asteroid of state.game.asteroids) {
+      for (const planet of state.game.planets) {
+        const distVec = subtract(asteroid.position, planet.position);
+        const dist = distance(distVec);
+        // only host does this computation
+        if (dist < (planet.radius + asteroid.radius) && thisPlayerIsHost) {
+          gameOver = true;
+          message = 'an asteroid crashed into the earth!';
+          loserID = id;
+          let bothLose = true;
+        }
+      }
+    }
+
+    // ship collides with asteroid
+    for (const id in state.game.ships) {
+      for (const asteroid of state.game.asteroids) {
+        const ship = state.game.ships[id];
+        const distVec = subtract(ship.position, asteroid.position);
+        const dist = distance(distVec);
+        if (dist < ship.radius + asteroid.radius) {
+          gameOver = true;
+          message = getPlayerByID(state, id).name + ' was hit by an asteroid!';
+          loserID = id;
+          if (gameMode == 'coop') {
+            bothLose = true;
           }
         }
       }
@@ -183,8 +247,9 @@ const initCollisionSystem = (store: Store): void => {
       dispatch({
         type: 'SET_MODAL', title: 'You Lose!', text: message, name: 'gameover',
       });
+      let otherPlayerTitle = bothLose ? 'You Lose!' : 'You Win!';
       dispatchToServer(thisClientID, {
-        type: 'SET_MODAL', title: 'You Win!', text: message, name: 'gameover',
+        type: 'SET_MODAL', title: otherPlayerTitle, text: message, name: 'gameover',
       });
     }
   });

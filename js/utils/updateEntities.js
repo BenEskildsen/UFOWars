@@ -57,7 +57,7 @@ const updateShip = (
 
 const updateProjectile = (
   state: GameState,
-  j: number, // projectile entityID
+  j: number, // projectile index
   numTicks: number,
 ): void => {
   const {sun, planets} = state;
@@ -74,7 +74,20 @@ const updateProjectile = (
   }
 };
 
+const updateGenericEntity = (
+  state: GameState,
+  entity: Entity,
+): void => {
+  const {sun, planets} = state;
+  const masses = [sun, ...planets];
+  return {
+    ...entity,
+    ...computeNextEntity(masses, entity, 0, /* no thrust */),
+  };
+}
+
 module.exports = {
   updateShip,
   updateProjectile,
+  updateGenericEntity,
 };

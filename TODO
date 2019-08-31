@@ -1,14 +1,10 @@
 
  - - - - - - GAME - - - - - -
  - coop game mode
-    - asteroid entity
-    - lose when the planet gets hit
  - planet defense game mode
     - one player is the planet
     - swap player positions each round
     - missiles hitting planet should kill blue
- - versus game mode
-    - should there be a planet at all?
  - missiles should look like torpedoes
 
 
@@ -109,3 +105,6 @@
  - make max future path longer and more visible
  - move rewinding of history into utils/updateShip/Projectile
  - fix rewinding time to rewind all entities the ship could be attracted to
+
+ - asteroid entity
+ - lose when the planet gets hit

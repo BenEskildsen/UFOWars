@@ -23,7 +23,7 @@ class Lobby extends React.Component {
     props.store.subscribe(() => {
       this.setState({...this.props.store.getState()});
     });
-    this.state = {...this.props.store.getState(), selectedMode: 'versus'};
+    this.state = {...this.props.store.getState(), selectedMode: 'coop'};
   }
 
   render() {

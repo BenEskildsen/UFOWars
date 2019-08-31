@@ -55,24 +55,15 @@ const renderProjectile = (state, ctx, projectile): void => {
 
 const renderLaser = (state, ctx, projectile): void => {
   ctx.save();
-  let color = 'white';
-  let length = 50;
-  let width = 50;
-  if (projectile.type == 'laser') {
-    color = 'lime';
-    length = config.laserSpeed;
-    width = 2;
-  }
-  ctx.strokeStyle = getPlayerColor(state, projectile.playerID);
-  ctx.lineWidth = 1;
-  ctx.fillStyle = color;
   ctx.beginPath();
+  const length = config.laserSpeed;
+  const width = 8;
+  ctx.fillStyle = 'lime';
   ctx.translate(projectile.position.x, projectile.position.y);
   ctx.rotate(projectile.theta);
   ctx.rect(0, 0, length, width);
-  ctx.fill();
-  ctx.stroke();
   ctx.closePath();
+  ctx.fill();
   ctx.restore();
 }
 

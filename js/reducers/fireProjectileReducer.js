@@ -34,7 +34,7 @@ const fireProjectileReducer = (state: GameState, action: Action): GameState => {
       };
     }
     case 'FIRE_MISSILE': {
-      const {playerID, target} = action;
+      const {playerID, target, id} = action;
       const {projectiles, ships} = state;
       let shipPosition = ships[playerID].position;
       let shipTheta = ships[playerID].theta;
@@ -59,6 +59,9 @@ const fireProjectileReducer = (state: GameState, action: Action): GameState => {
         shipVelocity,
         target,
       );
+      projectile.id = id;
+      window.nextID = id + 11; // HACK we really don't want the two players to make different
+                               // entities with the same id
       queueAdd(projectiles, projectile, config.maxProjectiles);
       return {
         ...state,
