@@ -2,8 +2,6 @@
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
 var _require = require('../utils/gravity'),
     computeNextEntity = _require.computeNextEntity;
 
@@ -16,7 +14,6 @@ var _require3 = require('../config'),
 var updateShip = function updateShip(state, id, numTicks, nextShipProps, shouldRewindHistory) {
 
   // rewind history
-  var rewoundPlanets = [];
   if (shouldRewindHistory) {
     // rewind ship
     var prevShipPos = null;
@@ -25,22 +22,23 @@ var updateShip = function updateShip(state, id, numTicks, nextShipProps, shouldR
     }
     var ship = state.ships[id];
     state.ships[id] = _extends({}, ship, prevShipPos, nextShipProps);
-    // rewind planets
-    for (var j = 0; j < state.planets.length; j++) {
-      var planet = state.planets[j];
-      var prevPlanetPos = planet.history[planet.history.length - numTicks];
-      rewoundPlanets.push(_extends({}, planet, prevPlanetPos));
-    }
-  } else {
-    rewoundPlanets = state.planets;
   }
 
   var sun = state.sun;
 
-  var masses = [sun].concat(_toConsumableArray(rewoundPlanets));
   for (var _i = 0; _i < numTicks; _i++) {
     var _ship = state.ships[id];
     var history = _ship.history;
+
+    // rewind planets to their positions at that tick
+    var rewoundPlanets = [];
+    for (var j = 0; j < state.planets.length; j++) {
+      var planet = state.planets[j];
+      var prevPlanetPos = planet.history[planet.history.length - numTicks - _i];
+      rewoundPlanets.push(_extends({}, planet, prevPlanetPos));
+    }
+    var masses = [sun].concat(rewoundPlanets);
+
     queueAdd(history, _ship, config.maxHistorySize);
     state.ships[id] = _extends({}, _ship, computeNextEntity(masses, _ship, _ship.thrust), {
       history: history
